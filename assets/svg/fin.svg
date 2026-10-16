@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="128" viewBox="0 0 112 128">
+  <!-- The triangular rock that gives Dorsal Cove its name. -->
+  <path d="M14 122 Q20 70 52 18 Q60 6 66 20 Q84 70 100 122 Z" fill="#7d8691" stroke="#2b1d12" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M30 110 Q38 70 56 34" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" opacity="0.3"/>
+</svg>
