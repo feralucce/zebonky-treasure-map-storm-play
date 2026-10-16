@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="64" viewBox="0 0 48 64">
+  <!-- legs tucked -->
+  <rect x="10" y="40" width="8" height="12" rx="4" fill="#2b1d12" transform="rotate(20 14 42)"/>
+  <rect x="30" y="40" width="8" height="12" rx="4" fill="#2b1d12" transform="rotate(-20 34 42)"/>
+  <rect x="4" y="48" width="13" height="7" rx="3.5" fill="#2b1d12"/>
+  <rect x="31" y="48" width="13" height="7" rx="3.5" fill="#2b1d12"/>
+  <!-- body -->
+  <rect x="3" y="3" width="42" height="42" rx="11" fill="#4d9e76" stroke="#2b1d12" stroke-width="3"/>
+  <rect x="9" y="8" width="14" height="6" rx="3" fill="#ffffff" opacity="0.35"/>
+  <!-- eyes, wide open -->
+  <circle cx="17" cy="21" r="6.5" fill="#ffffff" stroke="#2b1d12" stroke-width="2"/>
+  <circle cx="31" cy="21" r="6.5" fill="#ffffff" stroke="#2b1d12" stroke-width="2"/>
+  <circle cx="19" cy="20" r="2.5" fill="#2b1d12"/>
+  <circle cx="33" cy="20" r="2.5" fill="#2b1d12"/>
+  <ellipse cx="24" cy="34" rx="4" ry="4.5" fill="#2b1d12"/>
+</svg>
