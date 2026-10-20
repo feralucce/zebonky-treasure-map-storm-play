@@ -349,6 +349,7 @@ export class PlatformerScene extends Phaser.Scene {
       p.setPosition(this.start.x, this.start.y);
       p.setVelocity(0, 0);
       this.safe = { ...this.start };
+      this.wild.forEach((z) => { if (z.fed) z.catchUpAt(this.start.x, this.floorNear(this.start.x, this.start.y + 48) ?? this.start.y + 32, false); });
       this.energy = MAX_ENERGY;
       this.refreshHud();
       this.cameras.main.fadeIn(350, 43, 29, 18);
@@ -1061,6 +1062,8 @@ export class PlatformerScene extends Phaser.Scene {
       const x = this.floorUnder(back, feet) ? back : this.safe.x;
       p.setPosition(x, this.safe.y - 20);
       this.cameras.main.flash(200, 255, 255, 255);
+      // Tamed Zebonkies come back with you.
+      this.wild.forEach((z) => { if (z.fed) z.catchUpAt(x, feet, p.flipX); });
       this.hurt();
     }
   }

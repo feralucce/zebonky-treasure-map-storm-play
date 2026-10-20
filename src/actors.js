@@ -26,7 +26,8 @@ const CHARGE_SPEED = 210;       // slower than the player, so it can be jumped
 const WANDER_SPEED = 60;
 const WANDER_RANGE = TILE * 2;
 const STUN_MS = 900;            // pause after bumping the player
-const FOOD_SMELL = TILE * 4;    // food landing this close gets eaten
+const FOOD_SMELL = NOTICE;      // food this close gets charged at and eaten
+const FOOD_CHARGE = 250;        // a bit faster than charging the player
 const GUIDE_NEAR = TILE * 3.5;  // the guide moves on when the player is this close
 const GUIDE_SPEED = 340;        // px per second while bounding ahead
 
@@ -68,6 +69,7 @@ const DAZE_MS = 1500;           // confused after being landed on
 const FOLLOW_NEAR = TILE * 2.5; // a fed Zebonky stops this close behind you
 const FOLLOW_FAR = TILE * 4;    // and starts walking again past this
 const FOLLOW_LOST = TILE * 16;  // further than this it catches up in a blink
+const FOLLOW_STUCK_MS = 1500;   // no closer to the player for this long: catch up
 const SWIM_SPEED = 120;         // paddling along the surface
 const FLOAT_RISE = 170;         // water carries a Zebonky up at this speed
 
@@ -252,8 +254,9 @@ export class WildZebonky {
     // Fell out of the level: back on the edge it fell from (or, when fed,
     // back beside the player), like the explorer.
     if (s.y > this.scene.worldH + 200) {
-      if (this.isFed) this.catchUp(player);
-      else this.reappear(this.safe.x, this.safe.y);
+      if (!this.isFed) this.reappear(this.safe.x, this.safe.y);
+      else if (player.body.blocked.down || player.body.touching.down) this.catchUp(player);
+      else { s.setVelocity(0, 0); s.body.setGravityY(-this.scene.physics.world.gravity.y); }  // wait, out of sight
       return;
     }
     // Leaping out of the water: keep pushing toward the bank (touching the
@@ -302,7 +305,8 @@ export class WildZebonky {
         this.feed();
         return;
       } else {
-        this.move(Math.sign(f.x - s.x) * 150, 'walk', true);
+        // Food! It charges, leaping gaps to get there.
+        this.move(Math.sign(f.x - s.x) * FOOD_CHARGE, 'run', true);
         return;
       }
     }
@@ -339,13 +343,29 @@ export class WildZebonky {
   // Fed: tags along a little way behind the player.
   follow(player) {
     const s = this.sprite;
+    const now = this.scene.time.now;
     const dx = player.x - s.x;
     const far = Math.abs(dx);
-    if (far > FOLLOW_LOST || Math.abs(player.y - s.y) > TILE * 8) {
+    const rise = Math.abs(player.body.bottom - s.y);
+    const standing = player.body.blocked.down || player.body.touching.down;
+    // Can't keep up (a climb too high for it, a door, a long way back)?
+    // Once the player is standing somewhere, pop up beside them.
+    const behind = far > FOLLOW_FAR || rise > TILE * 1.5;
+    const gap = Math.hypot(far, rise);
+    if (!behind) {
+      this.stuckSince = 0;
+    } else if (!this.stuckSince || gap < this.bestGap - 16) {
+      this.stuckSince = now;
+      this.bestGap = gap;
+    }
+    const stuck = behind && this.stuckSince && now - this.stuckSince > FOLLOW_STUCK_MS;
+    if (standing && (far > FOLLOW_LOST || stuck)) {
       this.catchUp(player);
       return;
     }
-    if (far > FOLLOW_FAR || (this.walking && far > FOLLOW_NEAR)) {
+    // Each tamed Zebonky keeps its own distance, so several trail in a line.
+    const spread = Math.max(0, this.scene.wild.filter((z) => z.fed).indexOf(this)) * 48;
+    if (far > FOLLOW_FAR + spread || (this.walking && far > FOLLOW_NEAR + spread)) {
       const fast = far > TILE * 6;
       this.walking = this.move(Math.sign(dx) * (fast ? 280 : 170), fast ? 'run' : 'walk', true);
     } else {
@@ -393,25 +413,36 @@ export class WildZebonky {
     s.body.reset(s.x, s.y);          // move the body with it, not just the picture
     s.body.setGravityY(0);
     this.overshootUntil = 0;
-    this.scene.tweens.add({ targets: s, alpha: { from: 0, to: 1 }, duration: 300 });
+    this.scene.tweens.killTweensOf(s);
+    s.setAngle(0);
+    s.setAlpha(0.2);
+    this.scene.tweens.add({ targets: s, alpha: 1, duration: 300 });
   }
 
   // Left far behind (a door, a long fall): pop up just behind the player,
   // on floor. If there's none behind, in front; failing that, where the
   // player last stood safely.
   catchUp(player) {
+    this.catchUpAt(player.x, player.body.bottom, player.flipX);
+  }
+
+  // Pop up on floor beside a spot (feet at feetY): behind if there's floor
+  // there, else in front, else right at the spot.
+  catchUpAt(x0, feetY, facingLeft) {
     const scene = this.scene;
-    const feet = player.body.bottom;
-    const back = player.flipX ? 1 : -1;
-    for (const x of [player.x + back * FOLLOW_NEAR, player.x - back * FOLLOW_NEAR, player.x]) {
-      const y = scene.floorNear(x, feet);
+    const back = facingLeft ? 1 : -1;
+    this.stuckSince = 0;
+    // Several tamed Zebonkies line up rather than stack in one spot.
+    const spread = Math.max(0, scene.wild.filter((z) => z.fed).indexOf(this)) * 40;
+    const near = FOLLOW_NEAR + spread;
+    for (const x of [x0 + back * near, x0 - back * near, x0 + back * TILE, x0]) {
+      const y = scene.floorNear(x, feetY);
       if (y !== null && scene.floorUnder(x, y)) {
         this.reappear(x, y);
         return;
       }
     }
-    const safe = scene.safe;
-    this.reappear(safe.x, safe.feet ?? feet);
+    this.reappear(x0, feetY);
   }
 }
 
