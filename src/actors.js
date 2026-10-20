@@ -490,7 +490,10 @@ export class GuideZebonky {
     if (this.travelling || this.revealed) return;
     const s = this.sprite;
     s.setFlipX(player.x > s.x);
-    const near = Math.abs(player.x - s.x) < GUIDE_NEAR && Math.abs(player.y - s.y) < TILE * 5;
+    // The player has to actually reach it: close, and on its level (not
+    // passing underneath or above).
+    const rise = player.body.bottom - s.y;
+    const near = Math.hypot(player.x - s.x, rise) < GUIDE_NEAR && rise > -TILE && rise < TILE * 1.25;
     if (!near) return;
     if (this.index < this.points.length - 1) this.travelTo(this.index + 1);
     else {
@@ -505,8 +508,10 @@ export class GuideZebonky {
     this.travelling = true;
     const s = this.sprite;
     const to = this.points[i];
-    const route = this.scene.routeBetween(s.x, s.y, to.x, to.y);
-    const hops = route ? this.hopsAlong(route) : this.straightHops(to);
+    // If the waiting point can't be reached on foot (the designer warns about
+    // that), it goes as far toward it as the player could and waits there.
+    const route = this.scene.routeBetween(s.x, s.y, to.x, to.y, true);
+    const hops = route ? this.hopsAlong(route) : [];
     const next = () => {
       const h = hops.shift();
       if (!h) {
@@ -528,7 +533,8 @@ export class GuideZebonky {
       }
       play(s, this.art, h.type === 'run' ? 'run' : h.type === 'swim' ? 'walk' : 'jump');
       const p = { t: 0 };
-      const speed = h.type === 'swim' ? GUIDE_SPEED * 0.55 : GUIDE_SPEED;
+      // swimming is slower; the uphill waterfall carries it up fast
+      const speed = h.type === 'swim' ? GUIDE_SPEED * 0.55 : h.type === 'ride' ? 640 : GUIDE_SPEED;
       this.scene.tweens.add({
         targets: p,
         t: 1,
@@ -557,6 +563,19 @@ export class GuideZebonky {
         continue;
       }
       let lift = 0;
+      if (type === 'current') {
+        // Step into the waterfall, ride it up past the landing, hop out onto it.
+        const scene = this.scene;
+        const r = Math.floor((a.y - 4) / TILE);
+        const c = Math.floor(a.x / TILE);
+        const side = scene.cellAt(r, c - 1) === 'W' || scene.cellAt(r - 1, c - 1) === 'W' ? -1 : 1;
+        const inX = (c + side) * TILE + TILE / 2;
+        const topY = b.y - TILE * 0.6;
+        hops.push({ type: 'swim', x0: a.x, y0: a.y, x1: inX, y1: a.y, lift: 0 });
+        hops.push({ type: 'ride', x0: inX, y0: a.y, x1: inX, y1: topY, lift: 0 });
+        hops.push({ type: 'jump', x0: inX, y0: topY, x1: b.x, y1: b.y, lift: 24 });
+        continue;
+      }
       if (type === 'jump') {
         const up = b.y < a.y;
         const peak = Math.min(a.y, b.y) - (up ? 0.55 : 0.35) * TILE;
@@ -569,11 +588,5 @@ export class GuideZebonky {
     return hops;
   }
 
-  // No route the player could take (shouldn't happen in a level that can be
-  // finished): bound straight there rather than get stuck.
-  straightHops(to) {
-    const s = this.sprite;
-    const lift = 40 + Math.max(0, s.y - to.y) / 2;
-    return [{ type: 'jump', x0: s.x, y0: s.y, x1: to.x, y1: to.y, lift }];
-  }
+
 }

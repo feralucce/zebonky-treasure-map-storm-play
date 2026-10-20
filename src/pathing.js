@@ -5,8 +5,11 @@
 // A spot is somewhere you can stand (an empty tile with floor or a platform
 // under it) or the surface of water. The moves between spots:
 //   walk     one tile left or right on the same level
-//   jump     up 1 tile and up to 3 across, up 2 and up to 2 across, or
-//            across a gap of up to 3 tiles (landing level or lower)
+//   jump     as far as a running, full-height jump really carries her (up to
+//            2 tiles up; about 3 across at 2 up, 4 at 1 up or level, 5
+//            when landing lower); also straight up through a platform
+//   current  into the uphill waterfall, which carries you up; step out onto
+//            anything within 3 tiles of it on the way
 //   drop     step off a ledge and fall, or drop down through a platform
 //   swim     along the water's surface; hop out onto a bank up to 2 tiles up
 //   door     through a pair of hidden doors
@@ -14,6 +17,22 @@
 // ground. Used by the game (the guide's route) and the designer (warnings).
 
 const SOLID = new Set(['#', 's', 'R']);
+
+// How many tiles across a running, full-height jump carries you when it
+// lands h tiles lower (h negative: higher), from the game's physics
+// (Platformer.js: jump 790 px/s, gravity 1900, run 300 px/s, 64 px tiles),
+// plus most of a tile for taking off at one edge and landing on the other.
+const JUMP_V = 790;
+const GRAVITY = 1900;
+const RUN = 300;
+const TILE_PX = 64;
+function reach(h) {
+  const rise = -h * TILE_PX;                       // how far up the landing is
+  const disc = JUMP_V * JUMP_V - 2 * GRAVITY * rise;
+  if (disc < 0) return -1;                         // too high to reach at all
+  const t = (JUMP_V + Math.sqrt(disc)) / GRAVITY;  // time until coming down to it
+  return Math.floor((RUN * t) / TILE_PX + 0.6);
+}
 const BODY = 0.27;                     // half the player's width, in tiles
 
 export function makeNav(rows) {
@@ -27,6 +46,7 @@ export function makeNav(rows) {
   };
   const solid = (r, c) => SOLID.has(ch(r, c));
   const water = (r, c) => ch(r, c) === '~';
+  const current = (r, c) => ch(r, c) === 'W';
   const floorAt = (r, c) => solid(r, c) || ch(r, c) === '=';
   const stand = (r, c) => r >= 0 && r < R && !solid(r, c) && !water(r, c) && floorAt(r + 1, c);
   const surface = (r, c) => water(r, c) && !water(r - 1, c) && !solid(r - 1, c);
@@ -92,17 +112,34 @@ export function makeNav(rows) {
         const y = fallFrom(r, c + d);
         if (y !== null) add(y, c + d, 'drop', 1 + 0.2 * (y - r));
       }
-      // jumps: up 1 (up to 3 across), up 2 (up to 2 across), or across a gap
-      for (let dist = 1; dist <= 4; dist++) {
+      // jumps, as far as the real jump reaches (taking off from the edge of
+      // a tile and landing with a toe on the far one)
+      for (let dist = d < 0 ? 0 : 1; dist <= 7; dist++) {
         const nc = c + d * dist;
-        for (let h = -2; h <= 6; h++) {
+        for (let h = -2; h <= 8; h++) {
+          if (dist === 0 && h >= 0) continue;   // straight up only
           if (h === 0 && dist === 1) continue;
-          if (h === -1 && dist > 3) continue;
-          if (h === -2 && dist > 2) continue;
+          if (dist > reach(h)) continue;
           if (h > 0 && dist === 1) continue;    // that's a drop
           const nr = r + h;
           if (!isSpot(nr, nc)) continue;
           if (arcClear(r, c, nr, nc, h < 0)) add(nr, nc, 'jump', 1.5 + dist * 0.5 + Math.abs(h) * 0.5);
+        }
+      }
+    }
+    // into the uphill waterfall beside you: ride it up and step out
+    for (const d of [-1, 1]) {
+      if (!current(r, c + d) && !current(r - 1, c + d)) continue;
+      let lo = c + d;
+      let hi = c + d;
+      while (current(r, lo - 1) || current(r - 1, lo - 1)) lo--;
+      while (current(r, hi + 1) || current(r - 1, hi + 1)) hi++;
+      let top = r;
+      while (top > 0 && (current(top - 1, lo) || current(top - 1, hi))) top--;
+      for (let nr = Math.max(0, top - 1); nr < r; nr++) {
+        for (let nc = lo - 3; nc <= hi + 3; nc++) {
+          if (nc >= lo && nc <= hi) continue;
+          if (stand(nr, nc)) add(nr, nc, 'current', 3 + (r - nr) * 0.2 + Math.abs(nc - c) * 0.3);
         }
       }
     }
@@ -135,7 +172,7 @@ export function makeNav(rows) {
 
   // Cheapest route between two tiles, as a list of steps [{r, c, type}],
   // the first being the start. Null when there's no way the player could go.
-  function find(from, to) {
+  function find(from, to, closest = false) {
     const a = nearestSpot(from.r, from.c);
     const b = nearestSpot(to.r, to.c);
     if (!a || !b) return null;
@@ -158,15 +195,27 @@ export function makeNav(rows) {
         open.push({ r: m.r, c: m.c, cost });
       }
     }
-    if (!best.has(key(b))) return null;
+    let goal = b;
+    if (!best.has(key(b))) {
+      if (!closest) return null;
+      // The reachable spot nearest the goal.
+      let bestD = Infinity;
+      best.forEach((_, k) => {
+        const r = Math.floor(k / 10000);
+        const c = k % 10000;
+        const dd = Math.hypot(r - b.r, c - b.c);
+        if (dd < bestD) { bestD = dd; goal = { r, c }; }
+      });
+    }
     const path = [];
-    let p = { r: b.r, c: b.c, type: 'end' };
+    let p = { r: goal.r, c: goal.c, type: 'end' };
     while (p) {
       const back = prev.get(key(p));
       path.unshift({ r: p.r, c: p.c, type: back ? back.type : 'start' });
       if (!back) break;
       p = { r: back.r, c: back.c };
     }
+    path.reached = goal === b;
     return path;
   }
 

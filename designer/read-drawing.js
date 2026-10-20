@@ -288,7 +288,7 @@ export async function readDrawing(svgText) {
       let from = guideAt[guideAt.length - 1];
       waitCells.forEach((w, i) => {
         if (!nav.find(from, w)) {
-          warnings.push(`The guide can't get ${i ? `from waiting point ${i}` : 'from its start'} to waiting point ${i + 1} on a route the player could take (a jump too high or too far?). It will leap straight there instead.`);
+          warnings.push(`The guide can't get ${i ? `from waiting point ${i}` : 'from its start'} to waiting point ${i + 1} on a route the player could take (a jump too high or too far?). It will get as close as it can and wait there.`);
         }
         from = w;
       });

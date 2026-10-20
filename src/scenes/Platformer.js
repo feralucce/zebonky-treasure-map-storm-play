@@ -462,13 +462,15 @@ export class PlatformerScene extends Phaser.Scene {
 
   // A route between two feet positions that the player could take, as
   // points [{x, y, type}] (feet), or null if there's none.
-  routeBetween(x0, y0, x1, y1) {
+  // With `closest`, when there's no full route it returns the route to the
+  // reachable spot nearest the goal instead.
+  routeBetween(x0, y0, x1, y1, closest = false) {
     const cell = (x, y) => ({ c: Math.floor(x / TILE), r: Math.floor((y - 4) / TILE) });
-    const path = this.nav.find(cell(x0, y0), cell(x1, y1));
+    const path = this.nav.find(cell(x0, y0), cell(x1, y1), closest);
     if (!path) return null;
     return path.map((p, k) => ({
       type: p.type,
-      x: k === path.length - 1 ? x1 : p.c * TILE + TILE / 2,
+      x: k === path.length - 1 && path.reached ? x1 : p.c * TILE + TILE / 2,
       y: this.nav.surface(p.r, p.c) ? p.r * TILE + 30 : (p.r + 1) * TILE,
     }));
   }
