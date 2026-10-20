@@ -7,8 +7,11 @@
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
 //   G  goal flag       S  secret exit (only appears in levels with a secret)
 //   P  player start    .  empty
+//   1-9  hidden door: the two cells with the same digit are a pair. Stand in
+//        one and press Up to come out at the other. Nothing is drawn there.
 // Rows shorter than the widest row are padded with empty space.
 // `signs` are little wooden hints: { col, row, text }.
+// `artset` names the art applied to the drawing (see data/artsets.js).
 
 export const TILE = 64;
 
@@ -58,6 +61,32 @@ export const LAYOUTS = {
   },
 };
 
-export function layoutFor(levelId) {
-  return LAYOUTS[levelId] || SAMPLE_LAYOUT;
+// The level designer (designer/index.html) hands a drawing to the game by
+// saving its layout here, then opening index.html?test=1&level=<id>. The
+// level id only borrows that level's name and quiz questions.
+export const TEST_LAYOUT_KEY = 'zebonky-tms-test-layout';
+
+export function testParams() {
+  const q = new URLSearchParams(window.location.search);
+  if (!q.has('test')) return null;
+  return { levelId: q.get('level') || 'dorsal', test: true };
+}
+
+function testLayout() {
+  try {
+    const raw = localStorage.getItem(TEST_LAYOUT_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    // Nothing handed over: fall through to the sample.
+  }
+  return null;
+}
+
+// Levels saved from the designer (assets/levels/<id>.json), filled in by
+// Boot. A drawn level wins over the hand-typed one above.
+export const DRAWN = {};
+
+export function layoutFor(levelId, test = false) {
+  if (test) return testLayout() || SAMPLE_LAYOUT;
+  return DRAWN[levelId] || LAYOUTS[levelId] || SAMPLE_LAYOUT;
 }

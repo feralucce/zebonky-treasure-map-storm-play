@@ -7,6 +7,7 @@ import { TILE, layoutFor } from '../data/levels.js';
 import { state } from '../state.js';
 import { COLORS, heading, text } from '../theme.js';
 import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole } from '../data/artsets.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -21,6 +22,8 @@ const SWIM_STROKE = 430;
 const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto land
 // The Dorsal Cove waterfall flows uphill and carries you with it.
 const CURRENT_LIFT = 660;
+// Hidden doors: a short fade while you slip through.
+const DOOR_FADE_MS = 160;
 
 // Solid tile characters -> [texture on top of a stack, texture underneath].
 const SOLID_TEXTURES = {
@@ -36,6 +39,11 @@ export class PlatformerScene extends Phaser.Scene {
 
   init(data) {
     this.levelId = data.levelId;
+    this.test = !!data.test;
+    // A designer test run never touches the player's saved progress.
+    state.noSave = this.test;
+    this.inDoor = false;
+    this.touchDoor = false;
     this.done = false;
     this.lastGrounded = 0;
     this.jumpPressedAt = -1000;
@@ -45,7 +53,9 @@ export class PlatformerScene extends Phaser.Scene {
 
   create() {
     const lvl = LEVELS[this.levelId];
-    const layout = layoutFor(this.levelId);
+    const layout = layoutFor(this.levelId, this.test);
+    this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
+    this.artName = layout.artset;
     const rows = layout.rows;
     const cols = Math.max(...rows.map((r) => r.length));
     const worldW = cols * TILE;
@@ -57,9 +67,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.add.rectangle(0, worldH, worldW, 200, 0x6b4a2e).setOrigin(0).setDepth(-1);
     this.physics.world.checkCollision.down = false; // pits are open
     this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH, MAP_H));
-    this.cameras.main.setBackgroundColor(lvl.color);
+    this.cameras.main.setBackgroundColor((this.art && this.art.sky) || lvl.color);
 
-    this.buildBackdrop(worldW, worldH);
+    if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
+    else this.buildBackdrop(worldW, worldH);
 
     this.solids = this.physics.add.staticGroup();
     this.platforms = this.physics.add.staticGroup();
@@ -73,6 +84,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.current = new Set();
     this.surfaceRow = {};
     this.falls = [];
+    const isSolid = (r, c) => !!SOLID_TEXTURES[at(r, c)];
+    const isPlatform = (r, c) => at(r, c) === '=';
+    // Hidden doors: digit -> the cells carrying it.
+    const doorCells = {};
     const isWater = (r, c) => at(r, c) === '~' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
 
     rows.forEach((row, r) => {
@@ -81,9 +96,13 @@ export class PlatformerScene extends Phaser.Scene {
         const y = r * TILE + TILE / 2;
         if (SOLID_TEXTURES[ch]) {
           // Picture only; collision comes from the merged boxes built below.
-          const [topTex, fillTex] = SOLID_TEXTURES[ch];
-          const top = !SOLID_TEXTURES[at(r - 1, c)];
-          this.add.image(x, y, top ? topTex : fillTex);
+          if (!this.drawArtSolid(ch, isSolid, r, c, x, y, at)) {
+            const [topTex, fillTex] = SOLID_TEXTURES[ch];
+            const top = !SOLID_TEXTURES[at(r - 1, c)];
+            this.add.image(x, y, top ? topTex : fillTex);
+          }
+        } else if (ch >= '1' && ch <= '9') {
+          (doorCells[ch] = doorCells[ch] || []).push({ c, r });
         } else if (isWater(r, c)) {
           const surface = !isWater(r - 1, c);
           this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
@@ -98,7 +117,8 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ch === 'F') {
           this.add.image(x + 16, (r + 1) * TILE + 6, 'fin').setOrigin(0.5, 1);
         } else if (ch === '=') {
-          const p = this.platforms.create(x, r * TILE + 14, 'platform');
+          const tex = this.artTexture(this.art && this.art.platform, platformRole(isPlatform, r, c), r, c) || 'platform';
+          const p = this.platforms.create(x, r * TILE + 14, tex);
           p.body.checkCollision.down = false;
           p.body.checkCollision.left = false;
           p.body.checkCollision.right = false;
@@ -115,6 +135,7 @@ export class PlatformerScene extends Phaser.Scene {
       });
     });
     this.buildSolidBoxes(rows);
+    this.buildDoors(doorCells);
 
     (layout.signs || []).forEach((s) => {
       const x = s.col * TILE + TILE / 2;
@@ -143,7 +164,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
 
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,ESC');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,ESC,R');
+    if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
 
     this.buildHud(lvl);
@@ -156,6 +178,103 @@ export class PlatformerScene extends Phaser.Scene {
     });
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
+  }
+
+  // ---------- art set ----------
+
+  // A picture from the art set for this role, varied by position.
+  artTexture(group, role, r, c) {
+    if (!group) return null;
+    const files = roleFiles(group, role) || group[role];
+    if (!files || !files.length) return null;
+    const key = texKey(this.artName, pick(files, c, r));
+    return this.textures.exists(key) ? key : null;
+  }
+
+  // Auto-tiled solid ground. Returns false when the set has no art for it.
+  drawArtSolid(ch, isSolid, r, c, x, y, at) {
+    const set = this.art && this.art.sets && this.art.sets[TERRAIN_SETS[ch]];
+    if (!set) return false;
+    const role = solidRole(isSolid, r, c);
+    const key = this.artTexture(set, role, r, c);
+    if (!key) return false;
+    this.add.image(x, y, key);
+    // Little extras on open grass: tufts, pebbles, flowers.
+    const scatter = this.art.scatter || [];
+    if (role.startsWith('top') && scatter.length && at(r - 1, c) === '.'
+        && tileHash(c + 101, r + 7) < (this.art.scatter_chance || 0)) {
+      const sk = texKey(this.artName, pick(scatter, c + 13, r));
+      if (this.textures.exists(sk)) this.add.image(x, r * TILE + 6, sk).setOrigin(0.5, 1).setDepth(1);
+    }
+    return true;
+  }
+
+  // Background layers from the art set. Each repeats across the level,
+  // every other copy mirrored so the join always matches.
+  buildArtBackdrop(worldW, worldH) {
+    this.art.background.forEach((layer, i) => {
+      const key = texKey(this.artName, layer.file);
+      if (!this.textures.exists(key)) return;
+      const sf = layer.scroll ?? 0.35;
+      const w = this.textures.get(key).getSourceImage().width;
+      const span = (worldW - MAP_W) * sf + MAP_W + w;
+      const top = layer.anchor === 'top';
+      const y = top ? (layer.offset || 0) : worldH - (layer.offset || 0);
+      for (let n = 0, x = 0; x < span; n++, x += w) {
+        this.add.image(x, y, key).setOrigin(0, top ? 0 : 1)
+          .setScrollFactor(sf, 1).setDepth(-10 + i)
+          .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+      }
+    });
+  }
+
+  // ---------- hidden doors ----------
+
+  // Two cells with the same digit are a pair. Nothing marks them; standing
+  // in one shows a little hint, and Up takes you to the other.
+  buildDoors(doorCells) {
+    this.doors = {};
+    Object.values(doorCells).forEach((cells) => {
+      if (cells.length !== 2) return;
+      const [a, b] = cells;
+      this.doors[`${a.c},${a.r}`] = b;
+      this.doors[`${b.c},${b.r}`] = a;
+    });
+    this.doorHint = this.add.text(0, 0, '\u2191', heading(34, COLORS.yellowCss, {
+      stroke: COLORS.inkCss, strokeThickness: 8,
+    })).setOrigin(0.5).setDepth(8).setVisible(false);
+    this.tweens.add({ targets: this.doorHint, alpha: 0.35, duration: 450, yoyo: true, repeat: -1 });
+  }
+
+  doorUnder(p) {
+    const c = Math.floor(p.x / TILE);
+    const r = Math.floor((p.y + 10) / TILE);
+    return this.doors[`${c},${r}`] || null;
+  }
+
+  goThroughDoor(to) {
+    this.inDoor = true;
+    const p = this.player;
+    p.setVelocity(0, 0);
+    p.setAcceleration(0, 0);
+    p.body.enable = false;
+    this.doorHint.setVisible(false);
+    this.btnDoor.setVisible(false);
+    this.tweens.add({
+      targets: p, alpha: 0, scaleX: 0.6, duration: DOOR_FADE_MS,
+      onComplete: () => {
+        this.cameras.main.fadeOut(DOOR_FADE_MS, 43, 29, 18);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          p.setPosition(to.c * TILE + TILE / 2, (to.r + 1) * TILE - 32);
+          this.safe = { x: p.x, y: p.y - 4 };
+          this.cameras.main.fadeIn(DOOR_FADE_MS, 43, 29, 18);
+          this.tweens.add({
+            targets: p, alpha: 1, scaleX: 1, duration: DOOR_FADE_MS,
+            onComplete: () => { p.body.enable = true; this.inDoor = false; },
+          });
+        });
+      },
+    });
   }
 
   // Solid tiles become as few, as large, invisible boxes as possible.
@@ -206,7 +325,7 @@ export class PlatformerScene extends Phaser.Scene {
 
   spawnTreasure(x, y, index) {
     const item = LEVELS[this.levelId].items[index];
-    if (!item || state.hasTreasure(this.levelId, item.id)) return;
+    if (!item || (!this.test && state.hasTreasure(this.levelId, item.id))) return;
     const t = this.treasures.create(x, y, 'treasure');
     t.itemIndex = index;
     t.baseY = y;
@@ -244,11 +363,15 @@ export class PlatformerScene extends Phaser.Scene {
       stroke: COLORS.inkCss, strokeThickness: 12,
     })).setOrigin(0.5).setScrollFactor(0);
     this.tweens.add({ targets: this.player, y: this.player.y - 30, duration: 250, yoyo: true, repeat: 2 });
-    this.time.delayedCall(1300, () => finishLevel(this, this.levelId, kind));
+    this.time.delayedCall(1300, () => {
+      if (this.test) this.scene.restart();
+      else finishLevel(this, this.levelId, kind);
+    });
   }
 
   leave() {
     if (this.done) return;
+    if (this.test) { this.scene.restart(); return; }
     this.done = true;
     leaveLevel(this, this.levelId);
   }
@@ -329,16 +452,32 @@ export class PlatformerScene extends Phaser.Scene {
     hold(this.add.image(80, y, 'btn-left'), 'left');
     hold(this.add.image(190, y, 'btn-right'), 'right');
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
+    // Shown only while standing in a hidden door.
+    this.btnDoor = this.add.image(MAP_W - 210, y - 8, 'btn-jump').setScale(0.8).setTint(0xffc93c)
+      .setScrollFactor(0).setAlpha(0.85).setVisible(false).setInteractive();
+    this.btnDoor.on('pointerdown', () => { this.touchDoor = true; });
     this.input.addPointer(2);
   }
 
   // ---------- movement ----------
 
   update(time, delta) {
-    if (this.done || !this.player.body.enable) return;
+    if (this.done || this.inDoor || !this.player.body.enable) return;
     const p = this.player;
     const k = this.keys;
     const onFloor = p.body.blocked.down || p.body.touching.down;
+
+    // Hidden door underfoot: Up (or the door button) goes through instead of jumping.
+    const door = onFloor ? this.doorUnder(p) : null;
+    this.doorHint.setVisible(!!door);
+    this.btnDoor.setVisible(!!door);
+    if (door) {
+      this.doorHint.setPosition(p.x, p.y - 62);
+      const up = Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W) || this.touchDoor;
+      this.touchDoor = false;
+      if (up) { this.goThroughDoor(door); return; }
+    }
+    this.touchDoor = false;
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;

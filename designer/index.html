@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Level Designer - Treasure Map Storm</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #2b1d12; --parch: #f6ead0; --paper: #fffaf0; --green: #4d9e76; --gold: #ffc93c; --warn: #b5482b; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--parch); color: var(--ink); font: 600 16px Nunito, 'Segoe UI', sans-serif; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; background: var(--ink); color: var(--parch); }
+  header h1 { margin: 0; font: 800 22px Poppins, sans-serif; }
+  header a { color: var(--gold); margin-left: auto; }
+  main { padding: 18px 20px 40px; max-width: 1400px; margin: 0 auto; }
+  .drop { display: block; border: 3px dashed var(--ink); border-radius: 16px; background: var(--paper); padding: 26px; text-align: center; cursor: pointer; }
+  .drop.over { background: #fff1c2; }
+  .drop b { font: 800 20px Poppins, sans-serif; display: block; margin-bottom: 6px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+  .bar label { display: flex; gap: 6px; align-items: center; }
+  select, button { font: 700 15px Nunito, sans-serif; border: 2px solid var(--ink); border-radius: 999px; padding: 7px 16px; background: #fff; color: var(--ink); }
+  button { cursor: pointer; }
+  button.go { background: var(--green); color: #fff; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .views { display: flex; gap: 8px; }
+  .views button.on { background: var(--ink); color: var(--parch); }
+  .stage { overflow-x: auto; background: var(--paper); border: 2px solid var(--ink); border-radius: 12px; }
+  .stage canvas { display: block; image-rendering: pixelated; }
+  .warn { margin: 12px 0 0; padding: 0; list-style: none; }
+  .warn li { color: var(--warn); margin: 4px 0; }
+  .warn li.ok { color: var(--green); }
+  .status { margin-left: auto; }
+  .key { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: 14px; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .key i { width: 18px; height: 18px; border: 1px solid #444; display: inline-block; border-radius: 3px; }
+  pre { background: #fff; border: 2px solid var(--ink); border-radius: 12px; padding: 12px; overflow: auto; max-height: 260px; font-size: 13px; }
+  details { margin-top: 16px; }
+  .play { position: fixed; inset: 0; background: rgba(43, 29, 18, 0.92); display: none; flex-direction: column; z-index: 10; }
+  .play.open { display: flex; }
+  .play .top { display: flex; gap: 12px; align-items: center; padding: 10px 16px; color: var(--parch); }
+  .play .top span { margin-right: auto; }
+  .play iframe { flex: 1; border: 0; width: 100%; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Level Designer</h1>
+  <span>Draw it in vector, drop it here, play it.</span>
+  <a href="level-template.svg" download>Get the drawing template</a>
+</header>
+<main>
+  <label class="drop" id="drop">
+    <b>Drop a level drawing (.svg) here</b>
+    or click to choose one. Draw with the template's legend colours; the art set is applied for you.
+    <input type="file" id="file" accept=".svg,image/svg+xml" hidden>
+  </label>
+
+  <div class="bar">
+    <label>Art set <select id="artset"></select></label>
+    <label>Save as level <select id="level"></select></label>
+    <button class="go" id="play" disabled>Play it</button>
+    <button id="save" disabled>Save into the game</button>
+    <button id="download" disabled>Download layout</button>
+    <span class="status" id="status"></span>
+  </div>
+
+  <div class="bar views" id="views">
+    <button data-view="read" class="on">What the game reads</button>
+    <button data-view="drawing">Your drawing</button>
+    <button data-view="both">Both</button>
+  </div>
+  <div class="stage"><canvas id="preview" width="1200" height="225"></canvas></div>
+  <div class="key" id="key"></div>
+  <ul class="warn" id="warnings"></ul>
+
+  <details>
+    <summary>Layout text</summary>
+    <pre id="out"></pre>
+  </details>
+</main>
+
+<div class="play" id="playbox">
+  <div class="top"><span>Test play - R restarts, Esc restarts. Nothing here touches your saved game.</span><button id="close">Close</button></div>
+  <iframe id="game" title="Test play"></iframe>
+</div>
+
+<script type="module" src="designer.js"></script>
+</body>
+</html>

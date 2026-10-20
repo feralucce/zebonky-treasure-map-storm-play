@@ -30,7 +30,11 @@ export const state = {
     if (!LEVELS[this.data.at]) this.data.at = START_NODE;
   },
 
+  // Set while the level designer is test-playing a drawing.
+  noSave: false,
+
   save() {
+    if (this.noSave) return;
     try {
       localStorage.setItem(KEY, JSON.stringify(this.data));
     } catch (e) {

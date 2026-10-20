@@ -1,0 +1,63 @@
+{
+ "name": "Placeholder jungle",
+ "tile": 64,
+ "sets": {
+  "ground": {
+   "top_left": [
+    "ground_top_left.svg"
+   ],
+   "top_mid": [
+    "ground_top_mid_1.svg",
+    "ground_top_mid_2.svg",
+    "ground_top_mid_3.svg"
+   ],
+   "top_right": [
+    "ground_top_right.svg"
+   ],
+   "top_single": [
+    "ground_top_single.svg"
+   ],
+   "side_left": [
+    "ground_side_left.svg"
+   ],
+   "side_right": [
+    "ground_side_right.svg"
+   ],
+   "fill": [
+    "ground_fill_6.svg",
+    "ground_fill_7.svg"
+   ]
+  }
+ },
+ "platform": {
+  "left": [
+   "platform_left.svg"
+  ],
+  "mid": [
+   "platform_mid.svg"
+  ],
+  "right": [
+   "platform_right.svg"
+  ],
+  "single": [
+   "platform_single.svg"
+  ]
+ },
+ "water": {},
+ "scatter": [
+  "scatter_tuft.svg",
+  "scatter_pebble.svg",
+  "scatter_flower.svg"
+ ],
+ "background": [
+  {
+   "file": "bg_jungle.png",
+   "scroll": 0.35,
+   "anchor": "bottom",
+   "offset": 40,
+   "mirror_repeat": true
+  }
+ ],
+ "scatter_chance": 0.3,
+ "sky": "#6fb7a8"
+}
