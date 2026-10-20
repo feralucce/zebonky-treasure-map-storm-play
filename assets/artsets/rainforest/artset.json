@@ -135,5 +135,103 @@
  "platform_decor": [
   "platform_ferns.png"
  ],
- "platform_decor_chance": 0.4
+ "platform_decor_chance": 0.4,
+ "canopy": {
+  "0000": [
+   "canopy_0000_1.png",
+   "canopy_0000_2.png",
+   "canopy_0000_3.png",
+   "canopy_0000_4.png"
+  ],
+  "0001": [
+   "canopy_0001_1.png",
+   "canopy_0001_2.png",
+   "canopy_0001_3.png",
+   "canopy_0001_4.png"
+  ],
+  "0010": [
+   "canopy_0010_1.png",
+   "canopy_0010_2.png",
+   "canopy_0010_3.png",
+   "canopy_0010_4.png"
+  ],
+  "0011": [
+   "canopy_0011_1.png",
+   "canopy_0011_2.png",
+   "canopy_0011_3.png",
+   "canopy_0011_4.png"
+  ],
+  "0100": [
+   "canopy_0100_1.png",
+   "canopy_0100_2.png",
+   "canopy_0100_3.png",
+   "canopy_0100_4.png"
+  ],
+  "0101": [
+   "canopy_0101_1.png",
+   "canopy_0101_2.png",
+   "canopy_0101_3.png",
+   "canopy_0101_4.png"
+  ],
+  "0110": [
+   "canopy_0110_1.png",
+   "canopy_0110_2.png",
+   "canopy_0110_3.png",
+   "canopy_0110_4.png"
+  ],
+  "0111": [
+   "canopy_0111_1.png",
+   "canopy_0111_2.png",
+   "canopy_0111_3.png",
+   "canopy_0111_4.png"
+  ],
+  "1000": [
+   "canopy_1000_1.png",
+   "canopy_1000_2.png",
+   "canopy_1000_3.png",
+   "canopy_1000_4.png"
+  ],
+  "1001": [
+   "canopy_1001_1.png",
+   "canopy_1001_2.png",
+   "canopy_1001_3.png",
+   "canopy_1001_4.png"
+  ],
+  "1010": [
+   "canopy_1010_1.png",
+   "canopy_1010_2.png",
+   "canopy_1010_3.png",
+   "canopy_1010_4.png"
+  ],
+  "1011": [
+   "canopy_1011_1.png",
+   "canopy_1011_2.png",
+   "canopy_1011_3.png",
+   "canopy_1011_4.png"
+  ],
+  "1100": [
+   "canopy_1100_1.png",
+   "canopy_1100_2.png",
+   "canopy_1100_3.png",
+   "canopy_1100_4.png"
+  ],
+  "1101": [
+   "canopy_1101_1.png",
+   "canopy_1101_2.png",
+   "canopy_1101_3.png",
+   "canopy_1101_4.png"
+  ],
+  "1110": [
+   "canopy_1110_1.png",
+   "canopy_1110_2.png",
+   "canopy_1110_3.png",
+   "canopy_1110_4.png"
+  ],
+  "1111": [
+   "canopy_1111_1.png",
+   "canopy_1111_2.png",
+   "canopy_1111_3.png",
+   "canopy_1111_4.png"
+  ]
+ }
 }

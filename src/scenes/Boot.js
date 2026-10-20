@@ -53,6 +53,7 @@ export class BootScene extends Phaser.Scene {
         });
         add(data.food);
         (data.platform_decor || []).forEach(add);
+        Object.values(data.canopy || {}).flat().forEach(add);
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;
         if (z) {

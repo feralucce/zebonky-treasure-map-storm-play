@@ -109,6 +109,7 @@ export class PlatformerScene extends Phaser.Scene {
     const atWall = (r, c) => at(r, Math.min(cols - 1, Math.max(0, c)));
     const isSolid = (r, c) => !!SOLID_TEXTURES[atWall(r, c)];
     const isPlatform = (r, c) => atWall(r, c) === '=';
+    this.grounded = this.findGrounded(rows, cols);
     // Hidden doors: digit -> the cells carrying it.
     const doorCells = {};
     // Pickups and Zebonkies, placed once the level is built.
@@ -474,7 +475,41 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   // Auto-tiled solid ground. Returns false when the set has no art for it.
+  // Solid tiles joined (through other solid tiles) to the bottom row of the
+  // level. Anything else is floating in the air.
+  findGrounded(rows, cols) {
+    const solid = (r, c) => !!SOLID_TEXTURES[(rows[r] && rows[r][c]) || '.'];
+    const seen = new Set();
+    const queue = [];
+    const last = rows.length - 1;
+    for (let c = 0; c < cols; c++) if (solid(last, c)) { seen.add(`${c},${last}`); queue.push([last, c]); }
+    while (queue.length) {
+      const [r, c] = queue.pop();
+      [[r - 1, c], [r + 1, c], [r, c - 1], [r, c + 1]].forEach(([nr, nc]) => {
+        const k = `${nc},${nr}`;
+        if (nr >= 0 && nr <= last && nc >= 0 && nc < cols && !seen.has(k) && solid(nr, nc)) {
+          seen.add(k);
+          queue.push([nr, nc]);
+        }
+      });
+    }
+    return seen;
+  }
+
   drawArtSolid(ch, isSolid, r, c, x, y, at) {
+    // Ground floating in the air is treetops, if the art set has them.
+    const canopy = this.art && this.art.canopy;
+    if (ch === '#' && canopy && !this.grounded.has(`${c},${r}`)) {
+      const open = [!isSolid(r - 1, c), !isSolid(r + 1, c), !isSolid(r, c - 1), !isSolid(r, c + 1)];
+      const files = canopy[open.map((o) => (o ? 1 : 0)).join('')];
+      // Each tile's leaves are the slice for its spot on a 2 x 2 grid, so
+      // neighbours join without a seam.
+      const key = files && texKey(this.artName, files[(r % 2) * 2 + (c % 2)]);
+      if (key && this.textures.exists(key)) {
+        this.add.image(x, y, key);
+        return true;
+      }
+    }
     const set = this.art && this.art.sets && this.art.sets[TERRAIN_SETS[ch]];
     if (!set) return false;
     let role = solidRole(isSolid, r, c);

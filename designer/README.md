@@ -87,6 +87,11 @@ The art lives in `assets/artsets/<name>/`, described by `artset.json`:
   repeats up and down, as many times as the level is tall) and `bottom`
   (ferns, then ground). `ground_line` is how far down the bottom picture the
   ground starts; that line sits on the level's floor.
+- `canopy`: treetop tiles. Ground that isn't joined to the bottom of the
+  level (a floating island, a high ledge) is drawn as treetops instead of
+  dirt; it's still solid ground. Keyed by which sides are open (top,
+  bottom, left, right as 1s and 0s), four files each for a 2 x 2 grid so
+  neighbouring leaves join without a seam.
 - `sky`: the colour behind everything.
 - `food`: the food picture for the region (bananas in the rainforest).
 - `zebonky`: the region's Zebonky as strips of frames (`idle`, `walk`, `run`,
