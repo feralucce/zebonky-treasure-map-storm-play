@@ -8,6 +8,7 @@ import { state } from '../state.js';
 import { COLORS, heading, text } from '../theme.js';
 import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js';
 import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole } from '../data/artsets.js';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -24,6 +25,15 @@ const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto lan
 const CURRENT_LIFT = 660;
 // Hidden doors: a short fade while you slip through.
 const DOOR_FADE_MS = 160;
+
+// Energy is the row of Z-bolts on the HUD. A wild Zebonky's bump or a fall
+// into a pit costs one; a Z-bolt paw print gives one back. Run out and you
+// start the level over.
+const MAX_ENERGY = 6;
+const HURT_SAFE_MS = 1300;     // blinking, can't be bumped again
+const TOSS_VX = 480;
+const TOSS_VY = -260;          // a low lob, so it reaches a Zebonky on the ground
+const PICKUP_DELAY_MS = 700;   // tossed food can't be picked straight back up
 
 // Solid tile characters -> [texture on top of a stack, texture underneath].
 const SOLID_TEXTURES = {
@@ -44,11 +54,14 @@ export class PlatformerScene extends Phaser.Scene {
     state.noSave = this.test;
     this.inDoor = false;
     this.touchDoor = false;
+    this.touchToss = false;
+    this.energy = MAX_ENERGY;
+    this.food = 0;
+    this.safeUntil = 0;
     this.done = false;
     this.lastGrounded = 0;
     this.jumpPressedAt = -1000;
     this.touch = { left: false, right: false, jump: false };
-    this.walkClock = 0;
   }
 
   create() {
@@ -88,6 +101,12 @@ export class PlatformerScene extends Phaser.Scene {
     const isPlatform = (r, c) => at(r, c) === '=';
     // Hidden doors: digit -> the cells carrying it.
     const doorCells = {};
+    // Pickups and Zebonkies, placed once the level is built.
+    const foodSpots = [];
+    const pawSpots = [];
+    const wildSpots = [];
+    let guideSpot = null;
+    let goalSpot = null;
     const isWater = (r, c) => at(r, c) === '~' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
 
     rows.forEach((row, r) => {
@@ -103,6 +122,14 @@ export class PlatformerScene extends Phaser.Scene {
           }
         } else if (ch >= '1' && ch <= '9') {
           (doorCells[ch] = doorCells[ch] || []).push({ c, r });
+        } else if (ch === 'f') {
+          foodSpots.push({ x, y });
+        } else if (ch === 'Z') {
+          pawSpots.push({ x, y });
+        } else if (ch === 'E') {
+          wildSpots.push({ x, y: (r + 1) * TILE });
+        } else if (ch === 'B') {
+          guideSpot = { x, y: (r + 1) * TILE };
         } else if (isWater(r, c)) {
           const surface = !isWater(r - 1, c);
           this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
@@ -125,6 +152,7 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ch === 'T') {
           treasureSpots.push({ x, y });
         } else if (ch === 'G') {
+          goalSpot = { x, y: (r + 1) * TILE };
           this.goal = this.physics.add.staticImage(x, (r + 1) * TILE - 96, 'goal');
           this.goal.body.setSize(40, 192);
         } else if (ch === 'S' && lvl.hasSecret) {
@@ -134,6 +162,7 @@ export class PlatformerScene extends Phaser.Scene {
         }
       });
     });
+    this.rows = rows;
     this.buildSolidBoxes(rows);
     this.buildDoors(doorCells);
 
@@ -149,14 +178,19 @@ export class PlatformerScene extends Phaser.Scene {
     this.start = start;
     this.safe = { ...start };
 
-    // Player: a rounded box with legs.
-    this.player = this.physics.add.sprite(start.x, start.y, 'player-idle');
-    this.player.body.setSize(38, 58).setOffset(5, 4);
+    // Player: the explorer. Her body box is narrower than the picture so
+    // hat brims and hair don't snag on ledges.
+    this.makeExplorerAnims();
+    this.player = this.physics.add.sprite(start.x, start.y - 16, 'explorer-idle', 0);
+    const ex = this.cache.json.get('explorer');
+    this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
     this.player.setMaxVelocity(RUN_SPEED, 1400);
     this.player.setDragX(ACCEL * 1.4);
 
     this.physics.add.collider(this.player, this.solids);
     this.physics.add.collider(this.player, this.platforms);
+    this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
+    this.buildPickups(foodSpots, pawSpots);
     this.physics.add.overlap(this.player, this.treasures, (_, t) => this.touchTreasure(t));
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
     if (this.secret) this.physics.add.overlap(this.player, this.secret, () => this.exit('secret'));
@@ -164,7 +198,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
 
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,ESC,R');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,ESC,R,X,F');
     if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
 
@@ -178,6 +212,223 @@ export class PlatformerScene extends Phaser.Scene {
     });
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
+  }
+
+  makeExplorerAnims() {
+    const rates = { idle: 3, walk: 15 };
+    Object.entries(rates).forEach(([name, rate]) => {
+      if (this.anims.exists(`explorer-${name}`)) return;
+      this.anims.create({
+        key: `explorer-${name}`,
+        frames: this.anims.generateFrameNumbers(`explorer-${name}`),
+        frameRate: rate,
+        repeat: -1,
+      });
+    });
+  }
+
+  // ---------- Zebonkies ----------
+
+  buildZebonkies(layout, wildSpots, guideSpot, goalSpot) {
+    this.wild = [];
+    this.guide = null;
+    const art = zebonkyArt(this, this.artName);
+    this.foodTex = art && art.food ? texKey(art.name, art.food) : 'treasure';
+    if (!art) return;
+    ensureAnims(this, art);
+
+    this.wildGroup = this.physics.add.group({ allowGravity: true });
+    wildSpots.forEach((sp) => {
+      const z = new WildZebonky(this, art, sp.x, sp.y);
+      this.wildGroup.add(z.sprite);
+      this.wild.push(z);
+    });
+    this.physics.add.collider(this.wildGroup, this.solids);
+    this.physics.add.collider(this.wildGroup, this.platforms);
+    this.physics.add.overlap(this.player, this.wildGroup, (_, zs) => this.touchWild(zs.zebonky));
+
+    // The guide leads from its start through the waiting points in order;
+    // the exit stays hidden until it reaches the last one.
+    if (guideSpot) {
+      const points = [guideSpot, ...(layout.waits || []).map((w) => ({ x: w.c * TILE + TILE / 2, y: (w.r + 1) * TILE }))];
+      this.guide = new GuideZebonky(this, art, points, (g) => this.revealGoal(g));
+      if (this.goal) {
+        this.goal.setAlpha(0);
+        this.goal.body.enable = false;
+      }
+    }
+  }
+
+  revealGoal(guide) {
+    if (!this.goal) return;
+    this.floatText(guide.sprite.x, guide.sprite.y - 120, 'This way!', 30);
+    this.goal.body.enable = true;
+    this.tweens.add({ targets: this.goal, alpha: 1, duration: 700 });
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * Math.PI * 2;
+      const st = this.add.star(this.goal.x, this.goal.y, 5, 4, 10, 0xfff6b0).setDepth(6);
+      this.tweens.add({
+        targets: st, x: st.x + Math.cos(a) * 110, y: st.y + Math.sin(a) * 110, alpha: 0, angle: 180,
+        duration: 900, ease: 'Cubic.Out', onComplete: () => st.destroy(),
+      });
+    }
+  }
+
+  touchWild(z) {
+    if (!z || z.fed || this.inDoor) return;
+    const p = this.player;
+    const s = z.sprite;
+    // Landing on its back is a friendly boost, not a bump.
+    if (p.body.velocity.y > 0 && p.body.bottom <= s.body.top + 14) {
+      p.setVelocityY(-560);
+      return;
+    }
+    const now = this.time.now;
+    if (now < this.safeUntil) return;
+    z.bumped(now);
+    const away = Math.sign(p.x - s.x) || 1;
+    p.setVelocity(away * 340, -380);
+    this.hurt();
+  }
+
+  hurt() {
+    this.energy = Math.max(0, this.energy - 1);
+    this.safeUntil = this.time.now + HURT_SAFE_MS;
+    this.tweens.add({ targets: this.player, alpha: 0.3, duration: 110, yoyo: true, repeat: 5,
+      onComplete: () => this.player.setAlpha(1) });
+    this.cameras.main.shake(140, 0.005);
+    this.refreshHud();
+    if (this.energy === 0) this.outOfEnergy();
+  }
+
+  heal() {
+    if (this.energy >= MAX_ENERGY) return false;
+    this.energy += 1;
+    this.refreshHud();
+    return true;
+  }
+
+  // No game over: back to the start with full energy. Crates already
+  // answered stay answered; food carried is kept.
+  outOfEnergy() {
+    this.inDoor = true;
+    const p = this.player;
+    p.body.enable = false;
+    this.cameras.main.fadeOut(350, 43, 29, 18);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      p.setPosition(this.start.x, this.start.y);
+      p.setVelocity(0, 0);
+      this.safe = { ...this.start };
+      this.energy = MAX_ENERGY;
+      this.refreshHud();
+      this.cameras.main.fadeIn(350, 43, 29, 18);
+      p.body.enable = true;
+      this.inDoor = false;
+    });
+  }
+
+  // ---------- food and paw prints ----------
+
+  buildPickups(foodSpots, pawSpots) {
+    this.pickups = this.physics.add.staticGroup();
+    foodSpots.forEach(({ x, y }) => {
+      const f = this.pickups.create(x, y, this.foodTex);
+      f.kind = 'food';
+      this.tweens.add({ targets: f, y: y - 6, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    });
+    pawSpots.forEach(({ x, y }) => {
+      const z = this.pickups.create(x, y, 'zpaw');
+      z.kind = 'paw';
+      this.tweens.add({ targets: z, scale: 1.12, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    });
+    this.physics.add.overlap(this.player, this.pickups, (_, it) => this.collect(it));
+
+    // Food that has been thrown.
+    this.tossed = this.physics.add.group();
+    this.physics.add.collider(this.tossed, this.solids);
+    this.physics.add.collider(this.tossed, this.platforms);
+    if (this.wildGroup) {
+      this.physics.add.overlap(this.tossed, this.wildGroup, (f, zs) => {
+        const z = zs.zebonky;
+        if (z.fed || !f.active) return;
+        this.eatFood(f);
+        z.feed();
+      });
+    }
+    this.physics.add.overlap(this.player, this.tossed, (_, f) => {
+      if (f.landed && this.time.now > f.pickupAt && !this.wild.some((z) => z.target === f)) {
+        this.eatFood(f);
+        this.food += 1;
+        this.refreshHud();
+      }
+    });
+  }
+
+  collect(it) {
+    if (it.kind === 'paw') {
+      if (!this.heal()) return; // full energy: leave it for later
+      this.floatText(it.x, it.y - 30, '+1 \u26A1', 24);
+    } else {
+      this.food += 1;
+      this.refreshHud();
+    }
+    this.tweens.killTweensOf(it);
+    it.destroy();
+  }
+
+  tossFood() {
+    if (this.food <= 0) {
+      this.floatText(this.player.x, this.player.y - 70, 'No food!', 22);
+      return;
+    }
+    this.food -= 1;
+    this.refreshHud();
+    const dir = this.player.flipX ? -1 : 1;
+    const f = this.tossed.create(this.player.x + dir * 20, this.player.y - 20, this.foodTex);
+    f.setVelocity(dir * TOSS_VX, TOSS_VY).setBounce(0.25).setDragX(500).setAngularVelocity(dir * 540);
+    f.landed = false;
+    f.pickupAt = this.time.now + PICKUP_DELAY_MS;
+  }
+
+  eatFood(f) {
+    if (f && f.active) f.destroy();
+  }
+
+  // ---------- level geometry helpers (used by the Zebonkies) ----------
+
+  cellAt(r, c) {
+    return (this.rows[r] && this.rows[r][c]) || '.';
+  }
+
+  isFloor(r, c) {
+    const ch = this.cellAt(r, c);
+    return !!SOLID_TEXTURES[ch] || ch === '=';
+  }
+
+  // The top of the floor in this column nearest to height y, or y itself
+  // when there's nothing to stand on (the guide bounds over gaps).
+  floorNear(x, y) {
+    const c = Math.floor(x / TILE);
+    let best = null;
+    for (let r = 0; r < this.rows.length; r++) {
+      if (this.isFloor(r, c) && !this.isFloor(r - 1, c)) {
+        const top = r * TILE;
+        if (best === null || Math.abs(top - y) < Math.abs(best - y)) best = top;
+      }
+    }
+    return best === null ? y : best;
+  }
+
+  // Solid floor or a platform right below a point at the player's middle?
+  floorUnder(x, y) {
+    return this.isFloor(Math.floor((y + 40) / TILE), Math.floor(x / TILE));
+  }
+
+  floatText(x, y, msg, size = 26) {
+    const t = this.add.text(x, y, msg, heading(size, COLORS.yellowCss, {
+      stroke: COLORS.inkCss, strokeThickness: 7,
+    })).setOrigin(0.5).setDepth(9);
+    this.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 900, ease: 'Cubic.Out', onComplete: () => t.destroy() });
   }
 
   // ---------- art set ----------
@@ -216,13 +467,18 @@ export class PlatformerScene extends Phaser.Scene {
       const key = texKey(this.artName, layer.file);
       if (!this.textures.exists(key)) return;
       const sf = layer.scroll ?? 0.35;
-      const w = this.textures.get(key).getSourceImage().width;
-      const span = (worldW - MAP_W) * sf + MAP_W + w;
+      const src = this.textures.get(key).getSourceImage();
       const top = layer.anchor === 'top';
-      const y = top ? (layer.offset || 0) : worldH - (layer.offset || 0);
+      // Tall (vertical) levels: the backdrop is pinned to the screen top to
+      // bottom, so climbing never runs off the end of it.
+      const tall = worldH > MAP_H + TILE;
+      const scale = tall ? MAP_H / src.height : 1;
+      const w = src.width * scale;
+      const span = (worldW - MAP_W) * sf + MAP_W + w;
+      const y = tall ? MAP_H : top ? (layer.offset || 0) : worldH - (layer.offset || 0);
       for (let n = 0, x = 0; x < span; n++, x += w) {
-        this.add.image(x, y, key).setOrigin(0, top ? 0 : 1)
-          .setScrollFactor(sf, 1).setDepth(-10 + i)
+        this.add.image(x, y, key).setOrigin(0, tall || !top ? 1 : 0).setScale(scale)
+          .setScrollFactor(sf, tall ? 0 : 1).setDepth(-10 + i)
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
@@ -326,10 +582,9 @@ export class PlatformerScene extends Phaser.Scene {
   spawnTreasure(x, y, index) {
     const item = LEVELS[this.levelId].items[index];
     if (!item || (!this.test && state.hasTreasure(this.levelId, item.id))) return;
-    const t = this.treasures.create(x, y, 'treasure');
+    // Mystery crates sit on the tile's floor.
+    const t = this.treasures.create(x, y + TILE / 2 - 30, 'crate');
     t.itemIndex = index;
-    t.baseY = y;
-    this.tweens.add({ targets: t, y: y - 8, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
   }
 
   touchTreasure(t) {
@@ -408,29 +663,46 @@ export class PlatformerScene extends Phaser.Scene {
   // ---------- HUD ----------
 
   buildHud(lvl) {
-    const g = this.add.graphics().setScrollFactor(0);
+    // Energy: the Z-bolt bar. Spent bolts are the grey copy laid on top.
+    const bar = this.cache.json.get('zbar');
+    this.add.image(12, 8, 'zbar-full').setOrigin(0).setScrollFactor(0).setDepth(20);
+    this.spentBolts = bar.bolts.map((b) => this.add.image(12, 8, 'zbar-spent').setOrigin(0)
+      .setCrop(b.x - 2, 0, b.w + 4, bar.height).setScrollFactor(0).setDepth(21).setVisible(false));
+
+    // Level name and the five crates.
+    const g = this.add.graphics().setScrollFactor(0).setDepth(20);
+    const px = MAP_W / 2 - 170;
     g.fillStyle(COLORS.ink, 0.9);
-    g.fillRoundedRect(20, 25, 360, 64, 16);
+    g.fillRoundedRect(px, 22, 340, 52, 14);
     g.fillStyle(COLORS.parchment, 1);
-    g.fillRoundedRect(20, 20, 360, 64, 16);
+    g.fillRoundedRect(px, 18, 340, 52, 14);
     g.lineStyle(3, COLORS.ink, 1);
-    g.strokeRoundedRect(20, 20, 360, 64, 16);
-    this.add.text(38, 52, lvl.name, heading(24)).setOrigin(0, 0.5).setScrollFactor(0);
-    this.hudPips = this.add.graphics().setScrollFactor(0);
+    g.strokeRoundedRect(px, 18, 340, 52, 14);
+    this.add.text(px + 16, 44, lvl.name, heading(20)).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    this.hudPips = this.add.graphics().setScrollFactor(0).setDepth(21);
+
+    // Food carried.
+    this.add.image(MAP_W - 190, 44, this.foodTex).setScrollFactor(0).setDepth(21);
+    this.foodText = this.add.text(MAP_W - 162, 44, 'x0', heading(26, COLORS.parchmentCss, {
+      stroke: COLORS.inkCss, strokeThickness: 7,
+    })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
     this.refreshHud();
 
-    const map = this.add.text(MAP_W - 24, 24, 'Map', text(20, COLORS.inkCss, {
+    const map = this.add.text(MAP_W - 24, 26, 'Map', text(20, COLORS.inkCss, {
       backgroundColor: COLORS.parchmentCss, padding: { x: 16, y: 8 },
-    })).setOrigin(1, 0).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    })).setOrigin(1, 0).setScrollFactor(0).setDepth(21).setInteractive({ useHandCursor: true });
     map.on('pointerup', () => this.leave());
   }
 
   refreshHud() {
+    if (this.spentBolts) this.spentBolts.forEach((img, i) => img.setVisible(i >= this.energy));
+    if (this.foodText) this.foodText.setText(`x${this.food}`);
     const g = this.hudPips;
     g.clear();
-    LEVELS[this.levelId].items.forEach((it, i) => {
-      const x = 300 + i * 26;
-      const y = 52;
+    const items = LEVELS[this.levelId].items;
+    items.forEach((it, i) => {
+      const x = MAP_W / 2 + 158 - (items.length - i) * 26;
+      const y = 44;
       const have = state.hasTreasure(this.levelId, it.id);
       g.fillStyle(COLORS.ink, 1);
       g.fillRoundedRect(x - 11, y - 11, 22, 22, 6);
@@ -452,8 +724,15 @@ export class PlatformerScene extends Phaser.Scene {
     hold(this.add.image(80, y, 'btn-left'), 'left');
     hold(this.add.image(190, y, 'btn-right'), 'right');
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
+    // Toss food.
+    const toss = this.add.circle(MAP_W - 210, y, 44, COLORS.parchment).setStrokeStyle(4, COLORS.ink)
+      .setScrollFactor(0).setAlpha(0.8).setInteractive();
+    this.add.image(MAP_W - 210, y, this.foodTex).setScale(1.2).setScrollFactor(0);
+    toss.on('pointerdown', () => { this.touchToss = true; toss.setAlpha(1); });
+    toss.on('pointerup', () => toss.setAlpha(0.8));
+    toss.on('pointerout', () => toss.setAlpha(0.8));
     // Shown only while standing in a hidden door.
-    this.btnDoor = this.add.image(MAP_W - 210, y - 8, 'btn-jump').setScale(0.8).setTint(0xffc93c)
+    this.btnDoor = this.add.image(MAP_W - 90, y - 120, 'btn-jump').setScale(0.8).setTint(0xffc93c)
       .setScrollFactor(0).setAlpha(0.85).setVisible(false).setInteractive();
     this.btnDoor.on('pointerdown', () => { this.touchDoor = true; });
     this.input.addPointer(2);
@@ -466,6 +745,20 @@ export class PlatformerScene extends Phaser.Scene {
     const p = this.player;
     const k = this.keys;
     const onFloor = p.body.blocked.down || p.body.touching.down;
+
+    // Zebonkies and food.
+    this.wild.forEach((z) => z.update(time, p));
+    if (this.guide) this.guide.update(time, p);
+    this.tossed.getChildren().forEach((f) => {
+      if (!f.landed && f.body.blocked.down) {
+        f.landed = true;
+        f.setAngularVelocity(0).setAngle(0);
+        this.wild.some((z) => z.smell(f));
+      }
+      if (f.y > this.worldH + 200) f.destroy();
+    });
+    if (Phaser.Input.Keyboard.JustDown(k.X) || Phaser.Input.Keyboard.JustDown(k.F) || this.touchToss) this.tossFood();
+    this.touchToss = false;
 
     // Hidden door underfoot: Up (or the door button) goes through instead of jumping.
     const door = onFloor ? this.doorUnder(p) : null;
@@ -530,7 +823,9 @@ export class PlatformerScene extends Phaser.Scene {
 
     if (onFloor) {
       this.lastGrounded = time;
-      if (p.body.blocked.down && !inWater) this.safe = { x: p.x, y: p.y - 4 };
+      // Only remember spots with floor under the middle of the player, not
+      // a toe on a ledge edge, so a pit respawn never lands over the pit.
+      if (p.body.blocked.down && !inWater && this.floorUnder(p.x, p.y)) this.safe = { x: p.x, y: p.y - 4 };
     }
 
     const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
@@ -545,23 +840,28 @@ export class PlatformerScene extends Phaser.Scene {
 
     this.falls.forEach((f) => { f.tilePositionY += delta * 0.35; });
 
-    // Picture: jump pose in the air, step between two leg poses while running.
+    // Picture: in the air the jump frame follows her speed (rising, top of
+    // the arc, falling); on the ground she walks or stands.
     if (!onFloor) {
-      p.setTexture('player-jump');
+      const vy = p.body.velocity.y;
+      const f = vy < -450 ? 1 : vy < -150 ? 2 : vy < 150 ? 3 : vy < 450 ? 4 : 5;
+      p.anims.stop();
+      p.setTexture('explorer-jump', f);
     } else if (Math.abs(p.body.velocity.x) > 30) {
-      this.walkClock += delta;
-      p.setTexture(Math.floor(this.walkClock / 120) % 2 ? 'player-walk' : 'player-idle');
-    } else {
-      this.walkClock = 0;
-      p.setTexture('player-idle');
+      if (p.anims.currentAnim?.key !== 'explorer-walk' || !p.anims.isPlaying) p.play('explorer-walk');
+    } else if (p.anims.currentAnim?.key !== 'explorer-idle' || !p.anims.isPlaying) {
+      p.play('explorer-idle');
     }
 
-    // Fell in a pit: pop back to the last solid ground. No lives to lose.
+    // Fell in a pit: pop back to the last solid ground, one Z-bolt down.
     if (p.y > this.worldH + 120) {
       p.setVelocity(0, 0);
       p.setAcceleration(0, 0);
-      p.setPosition(this.safe.x - (p.flipX ? -40 : 40), this.safe.y - 20);
+      const back = this.safe.x - (p.flipX ? -40 : 40);
+      const x = this.floorUnder(back, this.safe.y) ? back : this.safe.x;
+      p.setPosition(x, this.safe.y - 20);
       this.cameras.main.flash(200, 255, 255, 255);
+      this.hurt();
     }
   }
 }

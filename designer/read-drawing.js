@@ -6,7 +6,7 @@
 // 3. What's left is painted to a canvas and each 64 px square is sampled to
 //    see which legend colour covers most of it.
 
-import { TILE_PX, TERRAIN, MARKERS, DOOR, rgb } from './legend.js';
+import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES, rgb } from './legend.js';
 
 const INKSCAPE = 'http://www.inkscape.org/namespaces/inkscape';
 const SHAPES = 'rect,circle,ellipse,path,polygon,polyline,line';
@@ -82,17 +82,19 @@ export async function readDrawing(svgText) {
       return { x: (r.left - origin.left) / scale, y: (r.top - origin.top) / scale, w: r.width / scale, h: r.height / scale };
     };
 
-    // Numbers written on doors.
+    // Numbers written on doors and waiting points.
     const labels = [];
     live.querySelectorAll('text').forEach((t) => {
       const b = box(t);
       const n = parseInt(t.textContent.trim(), 10);
-      if (n >= 1 && n <= 9) labels.push({ n, x: b.x + b.w / 2, y: b.y + b.h / 2 });
+      if (n >= 1 && n <= 99) labels.push({ n, x: b.x + b.w / 2, y: b.y + b.h / 2 });
       t.remove();
     });
+    const labelIn = (b, pad) => labels.find((l) => l.x >= b.x - pad && l.x <= b.x + b.w + pad && l.y >= b.y - pad && l.y <= b.y + b.h + pad);
 
     const markers = [];
     const doors = [];
+    const waits = [];
     const strangers = new Map();
     live.querySelectorAll(SHAPES).forEach((el) => {
       if (el.closest('defs, clipPath, mask, pattern, symbol, marker')) return;
@@ -103,6 +105,12 @@ export async function readDrawing(svgText) {
         return;
       }
       const b = box(el);
+      if (dist(fill, rgb(WAIT.hex)) < MATCH) {
+        const label = labelIn(b, 24);
+        waits.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, n: label ? label.n : null });
+        el.remove();
+        return;
+      }
       if (dist(fill, rgb(DOOR.hex)) < MATCH) {
         doors.push(b);
         el.remove();
@@ -203,7 +211,8 @@ export async function readDrawing(svgText) {
     const numbered = {};
     const loose = [];
     doors.sort((a, b) => a.x - b.x).forEach((d) => {
-      const label = labels.find((l) => l.x >= d.x - 16 && l.x <= d.x + d.w + 16 && l.y >= d.y - 16 && l.y <= d.y + d.h + 16);
+      const found = labelIn(d, 16);
+      const label = found && found.n <= 9 ? found : null;
       const cell = settle(clampCell(d.x + d.w / 2, d.y + d.h - 8), true);
       if (label) (numbered[label.n] = numbered[label.n] || []).push(cell);
       else loose.push(cell);
@@ -224,14 +233,27 @@ export async function readDrawing(svgText) {
       doorPairs.push({ n: Number(n), cells });
     });
 
+    // The guide's waiting points: numbered first, in number order, then the
+    // rest left to right. Each one stands on the ground below it.
+    const ordered = [
+      ...waits.filter((w) => w.n !== null).sort((a, b) => a.n - b.n),
+      ...waits.filter((w) => w.n === null).sort((a, b) => a.x - b.x),
+    ];
+    const waitCells = ordered.map((w) => settle(clampCell(w.x, w.y), true));
+
     const count = (ch) => grid.flat().filter((x) => x === ch).length;
     if (count('P') === 0) warnings.push('No start marker (green). The player will start near the left edge.');
     if (count('P') > 1) warnings.push('More than one start marker: the last one wins.');
     if (count('G') === 0) warnings.push("No goal marker (red), so the level can't be finished.");
-    if (count('T') !== 3) warnings.push(`${count('T')} quiz crate${count('T') === 1 ? '' : 's'} drawn; each level has 3 questions.`);
+    if (count('T') !== CRATES) warnings.push(`${count('T')} mystery crate${count('T') === 1 ? '' : 's'} drawn; each level has ${CRATES} questions.`);
+    if (count('B') > 1) warnings.push('More than one guide Zebonky: only the last one is used.');
+    if (count('B') && !waitCells.length) warnings.push('The guide Zebonky has no waiting points, so it reveals the exit where it stands.');
+    if (!count('B') && waitCells.length) warnings.push('Waiting points were drawn but there is no guide Zebonky (purple) to use them.');
+    if (count('E') && !count('f')) warnings.push('There are wild Zebonkies but no food to toss. Jumping over still works.');
 
     return {
       rows: grid.map((line) => line.join('')),
+      waits: waitCells,
       cols,
       rowsCount: rows,
       doorPairs,

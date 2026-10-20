@@ -7,7 +7,7 @@
 // A layout chooses its set with `artset: 'name'`. Layouts without one keep
 // the concept-box look.
 
-export const ARTSETS = ['placeholder'];
+export const ARTSETS = ['rainforest'];
 
 // Terrain characters -> the set in the manifest that draws them.
 export const TERRAIN_SETS = { '#': 'ground', s: 'sand', R: 'rock' };

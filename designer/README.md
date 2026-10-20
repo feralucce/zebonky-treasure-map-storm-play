@@ -6,7 +6,8 @@ art set applied. Nothing to type.
 ## The loop
 
 1. `node server.js`, then open http://localhost:5214/designer/
-2. Click **Get the drawing template** (`level-template.svg`) and open it in
+2. Click **Wide template** (`level-template.svg`, a side-scrolling run) or
+   **Tall template** (`level-template-tall.svg`, a climb) and open it in
    Inkscape (or Illustrator, Affinity, Figma: any app that saves SVG).
 3. Draw on the **Level** layer with the legend colours.
 4. Save the SVG and drop it on the designer. It shows what the game read and
@@ -19,8 +20,8 @@ art set applied. Nothing to type.
 
 ## Drawing rules
 
-- One 64 px square is one tile. The page is 12 tiles high; make it as wide as
-  you like in 64 px steps.
+- One 64 px square is one tile. The page can be any size in 64 px steps:
+  wide for a run, tall for a climb, or both. The camera follows either way.
 - Any shape works: rectangles, polygons, curves. A shape fills a tile when it
   covers at least half of it. Platforms only need a strip across the tile.
 - Colours (the legend is printed under the page in the template):
@@ -34,11 +35,22 @@ art set applied. Nothing to type.
   | `#0050FF` | Water (swim) |
   | `#00E5FF` | Uphill waterfall current |
   | `#00B050` circle | Player start (drops to the ground below it) |
-  | `#FFC000` circle | Quiz crate: draw 3, they stay where drawn |
-  | `#FF0000` circle | Goal (drops to the ground) |
+  | `#FFC000` circle | Mystery crate: draw 5, each asks one question |
+  | `#FF0000` circle | Exit door (hidden until the guide reveals it) |
   | `#FF00FF` circle | Secret exit (only in levels that have one) |
+  | `#9BFF00` circle | Food pickup (stays where drawn) |
+  | `#FFFF80` circle | Z-bolt paw: gives back one energy (stays where drawn) |
+  | `#FF6600` circle | Wild Zebonky |
+  | `#8000FF` circle | Guide Zebonky (where it starts) |
+  | `#006060` circle | Guide waiting point, with a number inside: 1, 2, 3... |
   | `#7030A0` 1 x 2 tile box | Hidden door, with a number written inside |
 
+- **Zebonkies.** A wild Zebonky wanders near where it's drawn and charges
+  when the player gets close; a bump costs one Z-bolt. Jump over it, or toss
+  food (X or F, or the banana button): once it has eaten it stays friendly.
+  The guide Zebonky is bigger and sparkles. It waits until the player is
+  close, then bounds to the next waiting point. At the last one it reveals
+  the exit door. Without a guide the exit is visible from the start.
 - **Hidden doors.** The two doors with the same number are a pair: stand in
   one and press Up (or the gold button on touch screens) to come out of the
   other. They're invisible in the game; only a small arrow appears while
@@ -64,7 +76,11 @@ The art lives in `assets/artsets/<name>/`, described by `artset.json`:
 - `background`: layers with a `scroll` speed; `mirror_repeat` flips every
   other copy so a backdrop that isn't seamless still joins cleanly.
 - `sky`: the colour behind everything.
+- `food`: the food picture for the region (bananas in the rainforest).
+- `zebonky`: the region's Zebonky as strips of frames (`idle`, `walk`, `run`,
+  `jump`), all the same frame size, art facing left. The guide uses the same
+  art at a larger size.
 
-`placeholder` is a stand-in set with the jungle backdrop from the reference
-kit. Replace its files one for one (same names) and every drawn level picks up
-the new art.
+`rainforest` is Charlie's region: the jungle backdrop, bananas and Charlie
+cut from the reference kit, with stand-in ground tiles. Replace its files one
+for one (same names) and every drawn level picks up the new art.

@@ -20,6 +20,22 @@ export class BootScene extends Phaser.Scene {
       'btn-left', 'btn-right', 'btn-jump',
     ].forEach((key) => this.load.svg(key, `assets/svg/${key}.svg`));
 
+    // Shared game sprites cut from the Zebonky reference kit.
+    this.load.image('crate', 'assets/sprites/crate.png');
+    this.load.image('zpaw', 'assets/sprites/zpaw.png');
+    this.load.image('zbar-full', 'assets/hud/zbar_full.png');
+    this.load.image('zbar-spent', 'assets/hud/zbar_spent.png');
+    this.load.json('zbar', 'assets/hud/zbar.json');
+
+    // The explorer (player): one strip of frames per animation.
+    this.load.json('explorer', 'assets/player/explorer.json');
+    this.load.once('filecomplete-json-explorer', (key, type, data) => {
+      Object.entries(data.anims).forEach(([name, a]) => {
+        this.load.spritesheet(`explorer-${name}`, `assets/player/${a.file}`,
+          { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
+      });
+    });
+
     // Art sets: read each manifest, then queue every picture it names.
     ARTSETS.forEach((name) => {
       const base = `assets/artsets/${name}/`;
@@ -31,6 +47,15 @@ export class BootScene extends Phaser.Scene {
         Object.values(data.platform || {}).flat().forEach(add);
         (data.scatter || []).forEach(add);
         (data.background || []).forEach((b) => add(b.file));
+        add(data.food);
+        // The region's Zebonky: one strip of frames per animation.
+        const z = data.zebonky;
+        if (z) {
+          Object.values(z.anims).forEach((a) => {
+            files.delete(a.file);
+            this.load.spritesheet(texKey(name, a.file), base + a.file, { frameWidth: z.frameWidth, frameHeight: z.frameHeight });
+          });
+        }
         files.forEach((f) => {
           const k = texKey(name, f);
           if (f.endsWith('.svg')) this.load.svg(k, base + f);

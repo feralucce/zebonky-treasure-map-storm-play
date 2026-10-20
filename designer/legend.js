@@ -17,14 +17,25 @@ export const TERRAIN = [
   { key: 'current',  char: 'W', hex: '#00E5FF', label: 'Uphill waterfall current' },
 ];
 
-// Markers: small circles, one tile each. Start, goal and secret door drop
-// down onto the ground beneath them; quiz crates stay where they're drawn.
+// Markers: small circles, one tile each. `snap` ones drop down onto the
+// ground beneath them; the rest stay where they're drawn.
 export const MARKERS = [
   { key: 'start',  char: 'P', hex: '#00B050', label: 'Player start', snap: true },
-  { key: 'quiz',   char: 'T', hex: '#FFC000', label: 'Quiz crate (draw 3)', snap: false },
-  { key: 'goal',   char: 'G', hex: '#FF0000', label: 'Goal', snap: true },
+  { key: 'quiz',   char: 'T', hex: '#FFC000', label: 'Mystery crate (draw 5)', snap: true },
+  { key: 'goal',   char: 'G', hex: '#FF0000', label: 'Exit door', snap: true },
   { key: 'secret', char: 'S', hex: '#FF00FF', label: 'Secret exit', snap: true },
+  { key: 'food',   char: 'f', hex: '#9BFF00', label: 'Food pickup', snap: false },
+  { key: 'paw',    char: 'Z', hex: '#FFFF80', label: 'Z-bolt paw (energy)', snap: false },
+  { key: 'wild',   char: 'E', hex: '#FF6600', label: 'Wild Zebonky', snap: true },
+  { key: 'guide',  char: 'B', hex: '#8000FF', label: 'Guide Zebonky start', snap: true },
 ];
+
+// Waiting points: where the guide Zebonky stops and waits for the player.
+// Numbered in order (1, 2, 3...); unnumbered ones go left to right after
+// the numbered ones. At the last one the guide reveals the exit door.
+export const WAIT = { key: 'wait', hex: '#006060', label: 'Guide waiting point (number them)' };
+
+export const CRATES = 5;
 
 // Hidden doors: a tall box (1 tile wide, 2 high) standing on the ground,
 // with a number written inside it. The two doors with the same number are a

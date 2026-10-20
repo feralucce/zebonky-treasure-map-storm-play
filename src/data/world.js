@@ -19,6 +19,8 @@ export const LEVELS = {
       { id: 'pearl', name: 'Fin-Rock Pearl' },
       { id: 'shell', name: 'Waterfall Shell' },
       { id: 'basket', name: 'Grubberry Basket' },
+      { id: 'tooth', name: 'Shark Tooth' },
+      { id: 'starfish', name: 'Sandy Starfish' },
     ],
   },
   cumulus: {
@@ -32,6 +34,8 @@ export const LEVELS = {
       { id: 'feather', name: 'Cloud Feather' },
       { id: 'spark', name: 'Static Spark' },
       { id: 'leaf', name: 'Canopy Leaf' },
+      { id: 'blossom', name: 'Cloud Blossom' },
+      { id: 'raindrop', name: 'Raindrop Gem' },
     ],
   },
   seafoam: {
@@ -45,6 +49,8 @@ export const LEVELS = {
       { id: 'bubble', name: 'Foam Bubble' },
       { id: 'glowstone', name: 'Tide Glowstone' },
       { id: 'pawprint', name: 'Mystery Paw Print' },
+      { id: 'otterstone', name: 'Otter Stone' },
+      { id: 'kelp', name: 'Kelp Ribbon' },
     ],
   },
   bamboo: {
@@ -58,6 +64,8 @@ export const LEVELS = {
       { id: 'flask', name: 'Oasis Flask' },
       { id: 'diamond', name: 'Diamond Sand' },
       { id: 'starchart', name: 'Star Chart' },
+      { id: 'flute', name: 'Bamboo Flute' },
+      { id: 'sunstone', name: 'Sunstone' },
     ],
   },
   squvannahs: {
@@ -71,6 +79,8 @@ export const LEVELS = {
       { id: 'haycorn', name: 'Golden Haycorn' },
       { id: 'seed', name: 'Loosestrife Seed' },
       { id: 'riverstone', name: 'Royal River Stone' },
+      { id: 'acorn', name: 'Acorn Cap' },
+      { id: 'prairiefeather', name: 'Prairie Feather' },
     ],
   },
   magenta: {
@@ -84,6 +94,8 @@ export const LEVELS = {
       { id: 'tanzanite', name: 'Tanzanite Shard' },
       { id: 'moonflower', name: 'Moonflower' },
       { id: 'healing', name: 'Healing Crystal' },
+      { id: 'glowpebble', name: 'Glow Pebble' },
+      { id: 'mountainmap', name: 'Mountain Map' },
     ],
   },
   volcano: {
@@ -97,6 +109,8 @@ export const LEVELS = {
       { id: 'zstone1', name: 'Z-Stone Piece' },
       { id: 'zstone2', name: 'Z-Stone Piece' },
       { id: 'zstone3', name: 'Z-Stone Piece' },
+      { id: 'zstone4', name: 'Z-Stone Piece' },
+      { id: 'zstone5', name: 'Z-Stone Piece' },
     ],
   },
   unchartedW: {
@@ -110,6 +124,8 @@ export const LEVELS = {
       { id: 'scrapW1', name: 'Map Scrap' },
       { id: 'scrapW2', name: 'Map Scrap' },
       { id: 'scrapW3', name: 'Map Scrap' },
+      { id: 'scrapW4', name: 'Map Scrap' },
+      { id: 'scrapW5', name: 'Map Scrap' },
     ],
   },
   unchartedE: {
@@ -123,6 +139,8 @@ export const LEVELS = {
       { id: 'scrapE1', name: 'Map Scrap' },
       { id: 'scrapE2', name: 'Map Scrap' },
       { id: 'scrapE3', name: 'Map Scrap' },
+      { id: 'scrapE4', name: 'Map Scrap' },
+      { id: 'scrapE5', name: 'Map Scrap' },
     ],
   },
 };

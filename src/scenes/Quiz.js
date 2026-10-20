@@ -50,7 +50,8 @@ export class QuizScene extends Phaser.Scene {
     const lvl = LEVELS[this.levelId];
     const item = lvl.items[this.itemIndex];
     const bank = QUESTIONS[this.levelId] || [];
-    const q = bank[this.itemIndex % bank.length];
+    let q = bank[this.itemIndex % bank.length];
+    if (Array.isArray(q)) q = q[Math.floor(Math.random() * q.length)];
     this.item = item;
     this.q = q;
     this.correct = q.answers[0];

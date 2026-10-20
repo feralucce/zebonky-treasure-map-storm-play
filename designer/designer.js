@@ -1,4 +1,4 @@
-import { TILE_PX, TERRAIN, MARKERS, DOOR } from './legend.js';
+import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js';
 import { readDrawing } from './read-drawing.js';
 import { ARTSETS } from '../src/data/artsets.js';
 import { LEVELS } from '../src/data/world.js';
@@ -21,6 +21,7 @@ Object.entries(LEVELS).forEach(([id, l]) => {
 $('key').innerHTML = [
   ...TERRAIN.map((t) => `<span><i style="background:${t.hex}"></i>${t.label}</span>`),
   ...MARKERS.map((m) => `<span><i style="background:${m.hex};border-radius:50%"></i>${m.label}</span>`),
+  `<span><i style="background:${WAIT.hex};border-radius:50%"></i>${WAIT.label}</span>`,
   `<span><i style="background:${DOOR.hex}"></i>${DOOR.label}</span>`,
 ].join('');
 
@@ -51,13 +52,15 @@ async function open(file) {
 }
 
 function layout() {
-  return { rows: result.rows, artset: $('artset').value };
+  const out = { rows: result.rows, artset: $('artset').value };
+  if (result.waits.length) out.waits = result.waits;
+  return out;
 }
 
 function showWarnings(list) {
   $('warnings').innerHTML = list.length
     ? list.map((w) => `<li>${w}</li>`).join('')
-    : '<li class="ok">Looks good: start, goal and 3 quiz crates found.</li>';
+    : `<li class="ok">Looks good: start, exit and ${CRATES} mystery crates found.</li>`;
 }
 
 // ---------- preview ----------
@@ -95,20 +98,41 @@ function draw() {
           g.font = `800 ${Math.round(s * 0.8)}px Nunito, sans-serif`;
           g.textAlign = 'center';
           g.fillText(ch, x + s / 2, y + s * 0.2);
-        } else if ('PTGS'.includes(ch)) {
+        } else if ('PTGSfZEB'.includes(ch)) {
           g.fillStyle = COLOR[ch];
           g.beginPath();
-          g.arc(x + s / 2, y + s / 2, s * 0.42, 0, Math.PI * 2);
+          g.arc(x + s / 2, y + s / 2, s * (ch === 'B' ? 0.5 : 0.42), 0, Math.PI * 2);
           g.fill();
-          g.fillStyle = '#fff';
+          g.fillStyle = 'fZ'.includes(ch) ? '#2b1d12' : '#fff';
           g.font = `800 ${Math.round(s * 0.55)}px Nunito, sans-serif`;
           g.textAlign = 'center';
-          g.fillText({ P: 'P', T: '?', G: 'G', S: 'S' }[ch], x + s / 2, y + s * 0.7);
+          g.fillText({ P: 'P', T: '?', G: 'G', S: 'S', f: 'f', Z: '⚡', E: 'E', B: 'B' }[ch], x + s / 2, y + s * 0.7);
         } else if (COLOR[ch]) {
           g.fillStyle = COLOR[ch];
           g.fillRect(x, y, s, s);
         }
       });
+    });
+    // The guide's route: waiting points joined in order.
+    const guide = [];
+    result.rows.forEach((row, r) => [...row].forEach((ch, c) => { if (ch === 'B') guide.push({ c, r }); }));
+    const route = [...guide.slice(-1), ...result.waits];
+    g.strokeStyle = WAIT.hex;
+    g.lineWidth = 2;
+    g.setLineDash([6, 5]);
+    g.beginPath();
+    route.forEach((p, i) => g[i ? 'lineTo' : 'moveTo'](p.c * s + s / 2, p.r * s + s / 2));
+    g.stroke();
+    g.setLineDash([]);
+    result.waits.forEach((p, i) => {
+      g.fillStyle = WAIT.hex;
+      g.beginPath();
+      g.arc(p.c * s + s / 2, p.r * s + s / 2, s * 0.4, 0, Math.PI * 2);
+      g.fill();
+      g.fillStyle = '#fff';
+      g.font = `800 ${Math.round(s * 0.5)}px Nunito, sans-serif`;
+      g.textAlign = 'center';
+      g.fillText(String(i + 1), p.c * s + s / 2, p.r * s + s * 0.68);
     });
     g.globalAlpha = 1;
   }
