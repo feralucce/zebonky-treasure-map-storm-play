@@ -12,7 +12,8 @@
     "ground_top_mid_3.png",
     "ground_top_mid_4.png",
     "ground_top_mid_5.png",
-    "ground_top_mid_6.png"
+    "ground_top_mid_6.png",
+    "ground_top_mid_7.png"
    ],
    "top_right": [
     "ground_top_right.png"
@@ -87,9 +88,11 @@
  },
  "water": {},
  "scatter": [
-  "scatter_tuft.svg",
-  "scatter_pebble.svg",
-  "scatter_flower.svg"
+  "scatter_bush_small_1.png",
+  "scatter_bush_small_2.png",
+  "scatter_fern_medium.png",
+  "scatter_fern_small_1.png",
+  "scatter_fern_small_2.png"
  ],
  "background": [
   {

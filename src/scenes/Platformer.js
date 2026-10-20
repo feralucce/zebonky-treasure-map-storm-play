@@ -74,6 +74,7 @@ export class PlatformerScene extends Phaser.Scene {
     const worldW = cols * TILE;
     const worldH = rows.length * TILE;
     this.worldH = worldH;
+    this.worldW = worldW;
 
     this.physics.world.setBounds(0, 0, worldW, worldH + 400);
     // Earth below the bottom row, for screens taller than the level.
@@ -100,8 +101,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.current = new Set();
     this.surfaceRow = {};
     this.falls = [];
-    const isSolid = (r, c) => !!SOLID_TEXTURES[at(r, c)];
-    const isPlatform = (r, c) => at(r, c) === '=';
+    // For picking tile art, ground runs on past the left and right walls, so
+    // it doesn't get a grassy side at the page edge.
+    const atWall = (r, c) => at(r, Math.min(cols - 1, Math.max(0, c)));
+    const isSolid = (r, c) => !!SOLID_TEXTURES[atWall(r, c)];
+    const isPlatform = (r, c) => atWall(r, c) === '=';
     // Hidden doors: digit -> the cells carrying it.
     const doorCells = {};
     // Pickups and Zebonkies, placed once the level is built.
@@ -193,7 +197,9 @@ export class PlatformerScene extends Phaser.Scene {
     this.player.setCollideWorldBounds(true);
 
     this.physics.add.collider(this.player, this.solids);
-    this.physics.add.collider(this.player, this.platforms);
+    // Platforms hold the player except for a moment after Down + Jump.
+    this.dropUntil = 0;
+    this.physics.add.collider(this.player, this.platforms, null, () => this.time.now >= this.dropUntil);
     this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
     this.buildPickups(foodSpots, pawSpots);
     this.physics.add.overlap(this.player, this.treasures, (_, t) => this.touchTreasure(t));
@@ -203,7 +209,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
 
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,ESC,R,X,F');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,ESC,R,X,F');
     if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
 
@@ -411,8 +417,8 @@ export class PlatformerScene extends Phaser.Scene {
     return !!SOLID_TEXTURES[ch] || ch === '=';
   }
 
-  // The top of the floor in this column nearest to height y, or y itself
-  // when there's nothing to stand on (the guide bounds over gaps).
+  // The top of the floor in this column nearest to height y, or null when
+  // there's nothing to stand on within a few tiles of it.
   floorNear(x, y) {
     const c = Math.floor(x / TILE);
     let best = null;
@@ -422,7 +428,7 @@ export class PlatformerScene extends Phaser.Scene {
         if (best === null || Math.abs(top - y) < Math.abs(best - y)) best = top;
       }
     }
-    return best === null ? y : best;
+    return best === null || Math.abs(best - y) > TILE * 3 ? null : best;
   }
 
   // Solid floor or a platform right below a point at the player's middle?
@@ -829,6 +835,7 @@ export class PlatformerScene extends Phaser.Scene {
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
+    const down = k.DOWN.isDown || k.S.isDown;
     const jumpHeld = k.UP.isDown || k.W.isDown || k.SPACE.isDown || k.Z.isDown || this.touch.jump;
     const jumpPressed = [k.UP, k.W, k.SPACE, k.Z].some((key) => Phaser.Input.Keyboard.JustDown(key));
 
@@ -844,6 +851,17 @@ export class PlatformerScene extends Phaser.Scene {
 
     if (jumpPressed) this.jumpPressedAt = time;
     const wantsJump = time - this.jumpPressedAt <= JUMP_BUFFER_MS;
+
+    // Down + Jump on a platform drops through it instead of jumping.
+    const onPlatform = onFloor && this.cellAt(Math.floor((p.body.bottom + 2) / TILE), Math.floor(p.x / TILE)) === '=';
+    let dropped = false;
+    if (down && wantsJump && onPlatform) {
+      this.dropUntil = time + 260;
+      p.setVelocityY(150);
+      this.jumpPressedAt = -1000;
+      this.lastGrounded = -1000;
+      dropped = true;
+    }
 
     const c = Math.floor(p.x / TILE);
     const r = Math.floor(p.y / TILE);
@@ -884,7 +902,7 @@ export class PlatformerScene extends Phaser.Scene {
     }
 
     const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
-    if (canJump && wantsJump) {
+    if (canJump && wantsJump && !dropped) {
       p.setVelocityY(-JUMP_SPEED);
       this.lastGrounded = -1000;
       this.jumpPressedAt = -1000;
@@ -902,6 +920,9 @@ export class PlatformerScene extends Phaser.Scene {
       const f = vy < -450 ? 1 : vy < -150 ? 2 : vy < 150 ? 3 : vy < 450 ? 4 : 5;
       p.anims.stop();
       p.setTexture('explorer-jump', f);
+    } else if (down && Math.abs(p.body.velocity.x) <= 30) {
+      p.anims.stop();
+      p.setTexture('explorer-crouch', 2);
     } else if (Math.abs(p.body.velocity.x) > 30) {
       if (p.anims.currentAnim?.key !== 'explorer-walk' || !p.anims.isPlaying) p.play('explorer-walk');
     } else if (p.anims.currentAnim?.key !== 'explorer-idle' || !p.anims.isPlaying) {

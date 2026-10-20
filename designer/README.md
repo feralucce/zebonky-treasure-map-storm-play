@@ -93,8 +93,9 @@ The art lives in `assets/artsets/<name>/`, described by `artset.json`:
 (`reference/rainforest_tileset_guide.jpg`): the backdrop column (with the
 extra ground strips between its repeats taken out), grass-over-dirt tops,
 edge caps, dirt under the grass, stone deeper down (`deep`, from
-`deep_from` tiles below the surface) and for cliff rock, and fern patches on
-platforms (`platform_decor`). Bananas and Charlie come from the reference kit.
+`deep_from` tiles below the surface) and for cliff rock, fern patches on
+platforms (`platform_decor`), and the sheet's small bushes and ferns dotted
+on open grass (`scatter`). Bananas and Charlie come from the reference kit.
 `tools/cut_rainforest_tiles.py` cuts the tiles from the guide at any
 resolution, so a sharper copy of the same sheet is one command away. Replace its files one
 for one (same names) and every drawn level picks up the new art.

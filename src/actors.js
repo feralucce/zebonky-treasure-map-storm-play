@@ -220,13 +220,16 @@ export class GuideZebonky {
     this.travelling = true;
     const s = this.sprite;
     const to = this.points[i];
+    // Bound along the floor where there is some; where there isn't (a gap,
+    // a cliff to climb) the hops join up into one leap.
     const hops = [];
     const steps = Math.max(1, Math.ceil(Math.abs(to.x - s.x) / GUIDE_HOP));
     let { x, y } = s;
     for (let k = 1; k <= steps; k++) {
-      const hx = k === steps ? to.x : s.x + ((to.x - s.x) * k) / steps;
-      const guessY = s.y + ((to.y - s.y) * k) / steps;
-      const hy = k === steps ? to.y : this.scene.floorNear(hx, guessY);
+      const last = k === steps;
+      const hx = Phaser.Math.Clamp(last ? to.x : s.x + ((to.x - s.x) * k) / steps, 40, this.scene.worldW - 40);
+      const hy = last ? to.y : this.scene.floorNear(hx, s.y + ((to.y - s.y) * k) / steps);
+      if (hy === null) continue;
       hops.push({ x0: x, y0: y, x1: hx, y1: hy });
       x = hx;
       y = hy;
@@ -241,12 +244,14 @@ export class GuideZebonky {
         play(s, this.art, 'idle');
         return;
       }
-      const lift = 36 + Math.max(0, h.y0 - h.y1);
+      // Arc a little above the higher end of the hop, not the whole climb
+      // again on top of it.
+      const lift = 40 + Math.max(0, h.y0 - h.y1) / 2;
       const p = { t: 0 };
       this.scene.tweens.add({
         targets: p,
         t: 1,
-        duration: Math.max(240, (Math.abs(h.x1 - h.x0) / GUIDE_SPEED) * 1000),
+        duration: Math.max(240, (Math.hypot(h.x1 - h.x0, h.y1 - h.y0) / GUIDE_SPEED) * 1000),
         onUpdate: () => {
           s.x = h.x0 + (h.x1 - h.x0) * p.t;
           s.y = h.y0 + (h.y1 - h.y0) * p.t - lift * 4 * p.t * (1 - p.t);
