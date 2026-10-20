@@ -68,7 +68,7 @@ export class QuizScene extends Phaser.Scene {
     tornCard(g, x, y, w, h, COLORS.card);
     card.add(g);
 
-    card.add(this.add.text(x + 40, y + 30, `${lvl.guide} asks:`, text(20, '#6b3a1a')));
+    card.add(this.add.text(x + 40, y + 30, 'Mystery crate', text(20, '#6b3a1a')));
     card.add(this.add.text(x + 40, y + 62, q.q, heading(32, COLORS.inkCss, {
       wordWrap: { width: w - 80 },
       lineSpacing: 6,

@@ -671,13 +671,14 @@ export class PlatformerScene extends Phaser.Scene {
 
     // Level name and the five crates.
     const g = this.add.graphics().setScrollFactor(0).setDepth(20);
-    const px = MAP_W / 2 - 170;
+    const pw = 440;
+    const px = MAP_W / 2 - pw / 2;
     g.fillStyle(COLORS.ink, 0.9);
-    g.fillRoundedRect(px, 22, 340, 52, 14);
+    g.fillRoundedRect(px, 22, pw, 52, 14);
     g.fillStyle(COLORS.parchment, 1);
-    g.fillRoundedRect(px, 18, 340, 52, 14);
+    g.fillRoundedRect(px, 18, pw, 52, 14);
     g.lineStyle(3, COLORS.ink, 1);
-    g.strokeRoundedRect(px, 18, 340, 52, 14);
+    g.strokeRoundedRect(px, 18, pw, 52, 14);
     this.add.text(px + 16, 44, lvl.name, heading(20)).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
     this.hudPips = this.add.graphics().setScrollFactor(0).setDepth(21);
 
@@ -701,7 +702,7 @@ export class PlatformerScene extends Phaser.Scene {
     g.clear();
     const items = LEVELS[this.levelId].items;
     items.forEach((it, i) => {
-      const x = MAP_W / 2 + 158 - (items.length - i) * 26;
+      const x = MAP_W / 2 + 208 - (items.length - i) * 26;
       const y = 44;
       const have = state.hasTreasure(this.levelId, it.id);
       g.fillStyle(COLORS.ink, 1);

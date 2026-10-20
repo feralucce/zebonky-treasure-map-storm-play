@@ -10,7 +10,6 @@ export const START_NODE = 'dorsal';
 export const LEVELS = {
   dorsal: {
     name: 'Dorsal Cove',
-    guide: 'Shaan Sharmadillo',
     x: 232, y: 545,
     kind: 'level',
     hasSecret: false,
@@ -25,7 +24,6 @@ export const LEVELS = {
   },
   cumulus: {
     name: 'Cumulus Rainforest',
-    guide: 'Ricky Raccatoo',
     x: 612, y: 432,
     kind: 'level',
     hasSecret: false,
@@ -40,7 +38,6 @@ export const LEVELS = {
   },
   seafoam: {
     name: 'Seafoam Shores',
-    guide: 'Axel Axolotter',
     x: 950, y: 455,
     kind: 'level',
     hasSecret: false,
@@ -55,7 +52,6 @@ export const LEVELS = {
   },
   bamboo: {
     name: 'Bamboo Dunes',
-    guide: 'Charlie Chimpanzeetah',
     x: 945, y: 236,
     kind: 'level',
     hasSecret: true,
@@ -70,7 +66,6 @@ export const LEVELS = {
   },
   squvannahs: {
     name: 'Squvannahs',
-    guide: 'Sofia Squffalo',
     x: 528, y: 340,
     kind: 'level',
     hasSecret: false,
@@ -85,7 +80,6 @@ export const LEVELS = {
   },
   magenta: {
     name: 'Magenta Mountains',
-    guide: 'Unity Unicorpion',
     x: 272, y: 240,
     kind: 'level',
     hasSecret: true,
@@ -100,7 +94,6 @@ export const LEVELS = {
   },
   volcano: {
     name: 'Z-Cave Volcano',
-    guide: 'The whole Cuddleherd',
     x: 668, y: 232,
     kind: 'final',
     hasSecret: false,
@@ -115,7 +108,6 @@ export const LEVELS = {
   },
   unchartedW: {
     name: 'Uncharted West',
-    guide: 'Unity Unicorpion',
     x: 150, y: 420,
     kind: 'bonus',
     hasSecret: false,
@@ -130,7 +122,6 @@ export const LEVELS = {
   },
   unchartedE: {
     name: 'Uncharted East',
-    guide: 'Charlie Chimpanzeetah',
     x: 1100, y: 215,
     kind: 'bonus',
     hasSecret: false,

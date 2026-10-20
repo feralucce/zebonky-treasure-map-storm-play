@@ -283,13 +283,12 @@ export class OverworldScene extends Phaser.Scene {
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(0, 0, w, h, 18);
     this.panelTitle = this.add.text(20, 14, '', heading(26));
-    this.panelGuide = this.add.text(20, 52, '', text(17, '#6b4a2e'));
-    this.panelStatus = this.add.text(20, 80, '', text(17));
-    this.panelHint = this.add.text(20, 112, '', text(15, '#6b4a2e'));
+    this.panelStatus = this.add.text(20, 56, '', text(17));
+    this.panelHint = this.add.text(20, 90, '', text(15, '#6b4a2e'));
     this.playBtn = makeButton(this, w - 70, h - 36, 'Play', () => this.enterLevel(), {
       width: 110, height: 48, size: 22,
     });
-    panel.add([g, this.panelTitle, this.panelGuide, this.panelStatus, this.panelHint, this.playBtn]);
+    panel.add([g, this.panelTitle, this.panelStatus, this.panelHint, this.playBtn]);
     this.panel = panel;
   }
 
@@ -298,7 +297,6 @@ export class OverworldScene extends Phaser.Scene {
     const lvl = LEVELS[id];
     const have = state.treasureFor(id).length;
     this.panelTitle.setText(lvl.name);
-    this.panelGuide.setText(`Guide: ${lvl.guide}`);
 
     let status = `Treasure ${have}/${lvl.items.length}`;
     if (state.isChecked(id)) status += '   ✓ Complete!';
