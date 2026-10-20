@@ -72,15 +72,34 @@ export async function readDrawing(svgText) {
   document.body.appendChild(host);
 
   try {
-    live.querySelectorAll('g').forEach((g) => { if (isIgnoredLayer(g)) g.remove(); });
-    live.querySelectorAll('metadata, title, desc').forEach((n) => n.remove());
-
     const origin = live.getBoundingClientRect();
     const scale = origin.width / size.w || 1;
     const box = (el) => {
       const r = el.getBoundingClientRect();
       return { x: (r.left - origin.left) / scale, y: (r.top - origin.top) / scale, w: r.width / scale, h: r.height / scale };
     };
+    const onPage = (x, y) => x >= 0 && y >= 0 && x <= size.w && y <= size.h;
+    const legendColours = [...TERRAIN, ...MARKERS, WAIT, DOOR].map((t) => rgb(t.hex));
+
+    // Skipped layers (grid, key, guides, notes...). If something in a legend
+    // colour sits on the page in one of them, it was probably drawn on the
+    // wrong layer: say so, since it won't be in the level.
+    live.querySelectorAll('g').forEach((g) => {
+      if (!isIgnoredLayer(g) || !g.isConnected) return;
+      let stray = 0;
+      g.querySelectorAll(SHAPES).forEach((el) => {
+        const fill = parseColor(getComputedStyle(el).fill);
+        if (!fill || !legendColours.some((c) => dist(fill, c) < MATCH / 2)) return;
+        const b = box(el);
+        if (onPage(b.x + b.w / 2, b.y + b.h / 2)) stray++;
+      });
+      if (stray) {
+        const name = g.getAttributeNS(INKSCAPE, 'label') || g.id || 'a skipped layer';
+        warnings.push(`${stray} shape${stray > 1 ? 's' : ''} in legend colours ${stray > 1 ? 'are' : 'is'} on the page but on the layer "${name}", which the designer skips. Move ${stray > 1 ? 'them' : 'it'} to the Level layer.`);
+      }
+    });
+    live.querySelectorAll('g').forEach((g) => { if (isIgnoredLayer(g)) g.remove(); });
+    live.querySelectorAll('metadata, title, desc').forEach((n) => n.remove());
 
     // Numbers written on doors and waiting points.
     const labels = [];
@@ -96,6 +115,7 @@ export async function readDrawing(svgText) {
     const doors = [];
     const waits = [];
     const strangers = new Map();
+    let offPage = 0;
     live.querySelectorAll(SHAPES).forEach((el) => {
       if (el.closest('defs, clipPath, mask, pattern, symbol, marker')) return;
       const style = getComputedStyle(el);
@@ -105,6 +125,13 @@ export async function readDrawing(svgText) {
         return;
       }
       const b = box(el);
+      // Markers, doors and waiting points off the page aren't part of the level.
+      const pointLike = [WAIT, DOOR].some((t) => dist(fill, rgb(t.hex)) < MATCH) || nearest(fill, MARKERS);
+      if (pointLike && !onPage(b.x + b.w / 2, b.y + b.h / 2)) {
+        offPage++;
+        el.remove();
+        return;
+      }
       if (dist(fill, rgb(WAIT.hex)) < MATCH) {
         const label = labelIn(b, 24);
         waits.push({ x: b.x + b.w / 2, y: b.y + b.h / 2, n: label ? label.n : null });
@@ -128,6 +155,7 @@ export async function readDrawing(svgText) {
         el.remove();
       }
     });
+    if (offPage) warnings.push(`${offPage} marker${offPage > 1 ? 's are' : ' is'} outside the page and ${offPage > 1 ? 'were' : 'was'} skipped. Make the page bigger to include ${offPage > 1 ? 'them' : 'it'}.`);
     strangers.forEach((n, h) => warnings.push(`${n} shape${n > 1 ? 's' : ''} filled ${h} ${n > 1 ? "aren't" : "isn't"} a legend colour and ${n > 1 ? 'were' : 'was'} skipped.`));
 
     // Paint what's left (terrain only) and sample it.

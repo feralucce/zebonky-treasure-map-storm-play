@@ -505,7 +505,9 @@ export class PlatformerScene extends Phaser.Scene {
     const decor = this.art && this.art.platform_decor;
     if (!decor || !decor.length || tileHash(c + 31, r + 5) >= (this.art.platform_decor_chance || 0)) return;
     const key = texKey(this.artName, pick(decor, c, r));
-    if (this.textures.exists(key)) this.add.image(x, r * TILE + 6, key).setOrigin(0.5, 1).setDepth(1);
+    // Set low enough that the patch's solid part rests on the plank and
+    // its frond tips hang over the front.
+    if (this.textures.exists(key)) this.add.image(x, r * TILE + 13, key).setOrigin(0.5, 1).setDepth(1);
   }
 
   // A background built as a column: canopy on top, a trunk slice repeated
