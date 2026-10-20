@@ -449,9 +449,9 @@ export class PlatformerScene extends Phaser.Scene {
     return best === null || Math.abs(best - y) > TILE * 3 ? null : best;
   }
 
-  // Solid floor or a platform right below a point at the player's middle?
-  floorUnder(x, y) {
-    return this.isFloor(Math.floor((y + 40) / TILE), Math.floor(x / TILE));
+  // Solid floor or a platform right under these feet?
+  floorUnder(x, feetY) {
+    return this.isFloor(Math.floor((feetY + 4) / TILE), Math.floor(x / TILE));
   }
 
   floatText(x, y, msg, size = 26) {
@@ -944,7 +944,9 @@ export class PlatformerScene extends Phaser.Scene {
       this.lastGrounded = time;
       // Only remember spots with floor under the middle of the player, not
       // a toe on a ledge edge, so a pit respawn never lands over the pit.
-      if (p.body.blocked.down && !inWater && this.floorUnder(p.x, p.y)) this.safe = { x: p.x, y: p.y - 4 };
+      if (p.body.blocked.down && !inWater && this.floorUnder(p.x, p.body.bottom)) {
+        this.safe = { x: p.x, y: p.y - 4, feet: p.body.bottom };
+      }
     }
 
     const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
@@ -979,8 +981,10 @@ export class PlatformerScene extends Phaser.Scene {
     if (p.y > this.worldH + 120) {
       p.setVelocity(0, 0);
       p.setAcceleration(0, 0);
+      // A step back from the edge if there's floor there, else the spot itself.
       const back = this.safe.x - (p.flipX ? -40 : 40);
-      const x = this.floorUnder(back, this.safe.y) ? back : this.safe.x;
+      const feet = this.safe.feet ?? this.safe.y + 52;
+      const x = this.floorUnder(back, feet) ? back : this.safe.x;
       p.setPosition(x, this.safe.y - 20);
       this.cameras.main.flash(200, 255, 255, 255);
       this.hurt();
