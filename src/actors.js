@@ -8,8 +8,8 @@
 // behind the player.
 //
 // Guide Zebonky (B): bigger and sparkly. It waits; when the player comes
-// close it bounds off to the next waiting point, leading the way through the
-// level. At the last waiting point it waits for the player once more and
+// close it heads off to the next waiting point by a route the player could
+// take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
 import { TILE } from './data/levels.js';
@@ -29,7 +29,6 @@ const STUN_MS = 900;            // pause after bumping the player
 const FOOD_SMELL = TILE * 4;    // food landing this close gets eaten
 const GUIDE_NEAR = TILE * 3.5;  // the guide moves on when the player is this close
 const GUIDE_SPEED = 340;        // px per second while bounding ahead
-const GUIDE_HOP = TILE * 3;     // longest single bound
 
 const ANIM_RATES = { idle: 2, walk: 10, run: 14, jump: 10 };
 
@@ -69,6 +68,8 @@ const DAZE_MS = 1500;           // confused after being landed on
 const FOLLOW_NEAR = TILE * 2.5; // a fed Zebonky stops this close behind you
 const FOLLOW_FAR = TILE * 4;    // and starts walking again past this
 const FOLLOW_LOST = TILE * 16;  // further than this it catches up in a blink
+const SWIM_SPEED = 120;         // paddling along the surface
+const FLOAT_RISE = 170;         // water carries a Zebonky up at this speed
 
 export class WildZebonky {
   constructor(scene, art, x, feetY) {
@@ -84,6 +85,7 @@ export class WildZebonky {
     this.chaseSide = 0;
     this.walking = false;
     this.target = null;
+    this.safe = { x, y: feetY };    // last spot with floor under its middle
     const idle = texKey(art.name, art.z.anims.idle.file);
     const s = scene.physics.add.sprite(x, feetY, idle).setOrigin(0.5, 1).setScale(WILD_SCALE).setDepth(4);
     // Body: the cub, not the empty edges of its frame.
@@ -247,16 +249,27 @@ export class WildZebonky {
 
   update(time, player) {
     const s = this.sprite;
-    // Fell out of the level: back home (or, when fed, back beside the player).
+    // Fell out of the level: back on the edge it fell from (or, when fed,
+    // back beside the player), like the explorer.
     if (s.y > this.scene.worldH + 200) {
       if (this.isFed) this.catchUp(player);
-      else {
-        s.setPosition(this.home.x, this.home.y);
-        s.setVelocity(0, 0);
-      }
+      else this.reappear(this.safe.x, this.safe.y);
       return;
     }
+    // Leaping out of the water: keep pushing toward the bank (touching the
+    // bank stops it sideways) until it's up and over.
+    if (time < (this.leapingUntil || 0)) {
+      s.setVelocityX(this.dir * 180);
+      return;
+    }
+    // In water: float up and paddle for the shore.
+    if (this.scene.isWaterAt(s.x, s.y - 30)) {
+      this.swim(player);
+      return;
+    }
+    s.body.setGravityY(0);
     if (!s.body.blocked.down && !s.body.touching.down) return;  // mid-leap: keep going
+    if (this.scene.floorUnder(s.x, s.y)) this.safe = { x: s.x, y: s.y };
 
     if (this.isFed) {
       this.follow(player);
@@ -343,15 +356,62 @@ export class WildZebonky {
     }
   }
 
-  // Left far behind (a door, a long fall): pop up just behind the player.
-  catchUp(player) {
+  // Water holds a Zebonky up too: it rises to the surface and paddles. Fed,
+  // it heads for the player; otherwise it keeps going the way it faces. At
+  // the bank it leaps out.
+  swim(player) {
     const s = this.sprite;
+    const scene = this.scene;
+    s.body.setGravityY(-scene.physics.world.gravity.y);
+    const c = Math.floor(s.x / TILE);
+    const surface = scene.surfaceRow[c] !== undefined ? scene.surfaceRow[c] * TILE : null;
+    const floatFeet = surface === null ? s.y : surface + 30;
+    const vy = s.body.velocity.y;
+    s.setVelocityY(s.y > floatFeet + 4 ? Phaser.Math.Linear(vy, -FLOAT_RISE, 0.1) : Phaser.Math.Linear(vy, (floatFeet - s.y) * 4, 0.25));
+    if (this.isFed || this.state === 'charge') this.dir = Math.sign(player.x - s.x) || this.dir;
+    const atBank = this.dir < 0 ? s.body.blocked.left : s.body.blocked.right;
+    if (atBank) {
+      if (surface !== null && s.y <= floatFeet + 10) {
+        s.body.setGravityY(0);
+        s.setVelocity(this.dir * 180, -LEAP_SPEED - 80);
+        this.leapingUntil = scene.time.now + 700;
+        play(s, this.art, 'jump');
+      } else {
+        this.dir = -this.dir;            // can't get out here: try the other bank
+      }
+      return;
+    }
+    s.setVelocityX(this.dir * SWIM_SPEED);
+    s.setFlipX(this.dir > 0);
+    play(s, this.art, 'walk');
+  }
+
+  // Pop back into view at a spot, after a fall.
+  reappear(x, feetY) {
+    const s = this.sprite;
+    s.setPosition(x, feetY - 2);
+    s.body.reset(s.x, s.y);          // move the body with it, not just the picture
+    s.body.setGravityY(0);
+    this.overshootUntil = 0;
+    this.scene.tweens.add({ targets: s, alpha: { from: 0, to: 1 }, duration: 300 });
+  }
+
+  // Left far behind (a door, a long fall): pop up just behind the player,
+  // on floor. If there's none behind, in front; failing that, where the
+  // player last stood safely.
+  catchUp(player) {
+    const scene = this.scene;
+    const feet = player.body.bottom;
     const back = player.flipX ? 1 : -1;
-    const x = player.x + back * FOLLOW_NEAR;
-    const y = this.scene.floorNear(x, player.y + 32);
-    s.setPosition(x, y === null ? player.y + 30 : y);
-    s.setVelocity(0, 0);
-    this.scene.tweens.add({ targets: s, alpha: { from: 0, to: 1 }, duration: 250 });
+    for (const x of [player.x + back * FOLLOW_NEAR, player.x - back * FOLLOW_NEAR, player.x]) {
+      const y = scene.floorNear(x, feet);
+      if (y !== null && scene.floorUnder(x, y)) {
+        this.reappear(x, y);
+        return;
+      }
+    }
+    const safe = scene.safe;
+    this.reappear(safe.x, safe.feet ?? feet);
   }
 }
 
@@ -408,26 +468,14 @@ export class GuideZebonky {
     }
   }
 
+  // Head for waiting point i along a route the player could take: running
+  // along floors, jumping, dropping, swimming, using doors (src/pathing.js).
   travelTo(i) {
     this.travelling = true;
     const s = this.sprite;
     const to = this.points[i];
-    // Bound along the floor where there is some; where there isn't (a gap,
-    // a cliff to climb) the hops join up into one leap.
-    const hops = [];
-    const steps = Math.max(1, Math.ceil(Math.abs(to.x - s.x) / GUIDE_HOP));
-    let { x, y } = s;
-    for (let k = 1; k <= steps; k++) {
-      const last = k === steps;
-      const hx = Phaser.Math.Clamp(last ? to.x : s.x + ((to.x - s.x) * k) / steps, 40, this.scene.worldW - 40);
-      const hy = last ? to.y : this.scene.floorNear(hx, s.y + ((to.y - s.y) * k) / steps);
-      if (hy === null) continue;
-      hops.push({ x0: x, y0: y, x1: hx, y1: hy });
-      x = hx;
-      y = hy;
-    }
-    s.setFlipX(to.x > s.x);
-    play(s, this.art, 'run');
+    const route = this.scene.routeBetween(s.x, s.y, to.x, to.y);
+    const hops = route ? this.hopsAlong(route) : this.straightHops(to);
     const next = () => {
       const h = hops.shift();
       if (!h) {
@@ -436,21 +484,65 @@ export class GuideZebonky {
         play(s, this.art, 'idle');
         return;
       }
-      // Arc a little above the higher end of the hop, not the whole climb
-      // again on top of it.
-      const lift = 40 + Math.max(0, h.y0 - h.y1) / 2;
+      if (h.x1 !== h.x0) s.setFlipX(h.x1 > h.x0);
+      if (h.type === 'door') {
+        this.scene.tweens.add({
+          targets: s, alpha: 0, duration: 180,
+          onComplete: () => {
+            s.setPosition(h.x1, h.y1);
+            this.scene.tweens.add({ targets: s, alpha: 1, duration: 180, onComplete: next });
+          },
+        });
+        return;
+      }
+      play(s, this.art, h.type === 'run' ? 'run' : h.type === 'swim' ? 'walk' : 'jump');
       const p = { t: 0 };
+      const speed = h.type === 'swim' ? GUIDE_SPEED * 0.55 : GUIDE_SPEED;
       this.scene.tweens.add({
         targets: p,
         t: 1,
-        duration: Math.max(240, (Math.hypot(h.x1 - h.x0, h.y1 - h.y0) / GUIDE_SPEED) * 1000),
+        duration: Math.max(h.lift ? 260 : 120, (Math.hypot(h.x1 - h.x0, h.y1 - h.y0) / speed) * 1000),
         onUpdate: () => {
           s.x = h.x0 + (h.x1 - h.x0) * p.t;
-          s.y = h.y0 + (h.y1 - h.y0) * p.t - lift * 4 * p.t * (1 - p.t);
+          s.y = h.y0 + (h.y1 - h.y0) * p.t - h.lift * 4 * p.t * (1 - p.t);
         },
         onComplete: next,
       });
     };
     next();
+  }
+
+  // Turn a route of tile steps into moves: runs along level ground (and
+  // swims along the surface) joined into one stretch; jumps and drops as arcs.
+  hopsAlong(route) {
+    const hops = [];
+    for (let k = 1; k < route.length; k++) {
+      const a = route[k - 1];
+      const b = route[k];
+      const type = b.type === 'walk' ? 'run' : b.type;
+      const last = hops[hops.length - 1];
+      if ((type === 'run' || type === 'swim') && last && last.type === type && last.y1 === b.y) {
+        last.x1 = b.x;
+        continue;
+      }
+      let lift = 0;
+      if (type === 'jump') {
+        const up = b.y < a.y;
+        const peak = Math.min(a.y, b.y) - (up ? 0.55 : 0.35) * TILE;
+        lift = (a.y + b.y) / 2 - peak;
+      } else if (type === 'drop') {
+        lift = 16;
+      }
+      hops.push({ type, x0: a.x, y0: a.y, x1: b.x, y1: b.y, lift });
+    }
+    return hops;
+  }
+
+  // No route the player could take (shouldn't happen in a level that can be
+  // finished): bound straight there rather than get stuck.
+  straightHops(to) {
+    const s = this.sprite;
+    const lift = 40 + Math.max(0, s.y - to.y) / 2;
+    return [{ type: 'jump', x0: s.x, y0: s.y, x1: to.x, y1: to.y, lift }];
   }
 }

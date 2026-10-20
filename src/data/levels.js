@@ -7,6 +7,7 @@
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
 //   G  goal flag       S  secret exit (only appears in levels with a secret)
 //   P  player start    .  empty
+//   <  >  ^  [  ]  arrow signposts: left, right, up, up-left, up-right (scenery)
 //   1-9  hidden door: the two cells with the same digit are a pair. Stand in
 //        one and press Up to come out at the other. Nothing is drawn there.
 // Rows shorter than the widest row are padded with empty space.

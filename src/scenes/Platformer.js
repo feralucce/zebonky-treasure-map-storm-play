@@ -9,6 +9,7 @@ import { COLORS, heading, text } from '../theme.js';
 import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js';
 import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole } from '../data/artsets.js';
 import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
+import { makeNav } from '../pathing.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -34,6 +35,9 @@ const MAX_ENERGY = 6;
 const HURT_SAFE_MS = 1300;     // blinking, can't be bumped again
 const TOSS_VX = 480;
 const TOSS_VY = -260;          // a low lob, so it reaches a Zebonky on the ground
+
+// Arrow signpost characters -> their pictures.
+const ARROW_SIGNS = { '<': 'sign-left', '>': 'sign-right', '^': 'sign-up', '[': 'sign-upleft', ']': 'sign-upright' };
 
 // Solid tile characters -> [texture on top of a stack, texture underneath].
 const SOLID_TEXTURES = {
@@ -133,6 +137,9 @@ export class PlatformerScene extends Phaser.Scene {
           }
         } else if (ch >= '1' && ch <= '9') {
           (doorCells[ch] = doorCells[ch] || []).push({ c, r });
+        } else if (ARROW_SIGNS[ch]) {
+          // Arrow signposts: scenery, standing on the floor of their tile.
+          this.add.image(x, (r + 1) * TILE, ARROW_SIGNS[ch]).setOrigin(0.5, 1).setDepth(2);
         } else if (ch === 'f') {
           foodSpots.push({ x, y });
         } else if (ch === 'Z') {
@@ -175,6 +182,7 @@ export class PlatformerScene extends Phaser.Scene {
       });
     });
     this.rows = rows;
+    this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
     this.buildDoors(doorCells);
 
@@ -449,6 +457,24 @@ export class PlatformerScene extends Phaser.Scene {
       }
     }
     return best === null || Math.abs(best - y) > TILE * 3 ? null : best;
+  }
+
+  // A route between two feet positions that the player could take, as
+  // points [{x, y, type}] (feet), or null if there's none.
+  routeBetween(x0, y0, x1, y1) {
+    const cell = (x, y) => ({ c: Math.floor(x / TILE), r: Math.floor((y - 4) / TILE) });
+    const path = this.nav.find(cell(x0, y0), cell(x1, y1));
+    if (!path) return null;
+    return path.map((p, k) => ({
+      type: p.type,
+      x: k === path.length - 1 ? x1 : p.c * TILE + TILE / 2,
+      y: this.nav.surface(p.r, p.c) ? p.r * TILE + 30 : (p.r + 1) * TILE,
+    }));
+  }
+
+  // Is this point in water?
+  isWaterAt(x, y) {
+    return this.water.has(`${Math.floor(x / TILE)},${Math.floor(y / TILE)}`);
   }
 
   // Solid floor or a platform right under these feet?

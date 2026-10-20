@@ -98,6 +98,13 @@ function draw() {
           g.font = `800 ${Math.round(s * 0.8)}px Nunito, sans-serif`;
           g.textAlign = 'center';
           g.fillText(ch, x + s / 2, y + s * 0.2);
+        } else if ('<>^[]'.includes(ch)) {
+          g.fillStyle = COLOR[ch];
+          g.fillRect(x + s * 0.12, y + s * 0.12, s * 0.76, s * 0.76);
+          g.fillStyle = '#2b1d12';
+          g.font = `800 ${Math.round(s * 0.6)}px Nunito, sans-serif`;
+          g.textAlign = 'center';
+          g.fillText({ '<': '\u2190', '>': '\u2192', '^': '\u2191', '[': '\u2196', ']': '\u2197' }[ch], x + s / 2, y + s * 0.72);
         } else if ('PTGSfZEB'.includes(ch)) {
           g.fillStyle = COLOR[ch];
           g.beginPath();

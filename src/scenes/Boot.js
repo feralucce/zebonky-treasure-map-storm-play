@@ -23,6 +23,7 @@ export class BootScene extends Phaser.Scene {
     // Shared game sprites cut from the Zebonky reference kit.
     this.load.image('crate', 'assets/sprites/crate.png');
     this.load.image('zpaw', 'assets/sprites/zpaw.png');
+    ['left', 'right', 'up', 'upleft', 'upright'].forEach((d) => this.load.svg(`sign-${d}`, `assets/sprites/sign_${d}.svg`));
     this.load.image('zbar-full', 'assets/hud/zbar_full.png');
     this.load.image('zbar-spent', 'assets/hud/zbar_spent.png');
     this.load.json('zbar', 'assets/hud/zbar.json');

@@ -46,6 +46,11 @@ art set applied. Nothing to type.
   | `#8000FF` circle | Guide Zebonky (where it starts) |
   | `#006060` circle | Guide waiting point, with a number inside: 1, 2, 3... |
   | `#7030A0` 1 x 2 tile box | Hidden door, with a number written inside |
+  | `#80C0FF` circle | Arrow sign pointing left (stands on the ground below it) |
+  | `#00FF00` circle | Arrow sign pointing right |
+  | `#0000A0` circle | Arrow sign pointing up |
+  | `#A0A000` circle | Arrow sign pointing up and left |
+  | `#80FFC0` circle | Arrow sign pointing up and right |
 
 - **Zebonkies.** A wild Zebonky wanders near where it's drawn and charges
   when the player gets close; a bump costs one Z-bolt. Jump over it and it

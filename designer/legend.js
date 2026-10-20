@@ -28,6 +28,11 @@ export const MARKERS = [
   { key: 'paw',    char: 'Z', hex: '#FFFF80', label: 'Z-bolt paw (energy)', snap: false },
   { key: 'wild',   char: 'E', hex: '#FF6600', label: 'Wild Zebonky', snap: true },
   { key: 'guide',  char: 'B', hex: '#8000FF', label: 'Guide Zebonky start', snap: true },
+  { key: 'signL',  char: '<', hex: '#80C0FF', label: 'Arrow sign: left', snap: true },
+  { key: 'signR',  char: '>', hex: '#00FF00', label: 'Arrow sign: right', snap: true },
+  { key: 'signU',  char: '^', hex: '#0000A0', label: 'Arrow sign: up', snap: true },
+  { key: 'signUL', char: '[', hex: '#A0A000', label: 'Arrow sign: up and left', snap: true },
+  { key: 'signUR', char: ']', hex: '#80FFC0', label: 'Arrow sign: up and right', snap: true },
 ];
 
 // Waiting points: where the guide Zebonky stops and waits for the player.

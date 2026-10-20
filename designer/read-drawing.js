@@ -7,6 +7,7 @@
 //    see which legend colour covers most of it.
 
 import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES, rgb } from './legend.js';
+import { makeNav } from '../src/pathing.js';
 
 const INKSCAPE = 'http://www.inkscape.org/namespaces/inkscape';
 const SHAPES = 'rect,circle,ellipse,path,polygon,polyline,line';
@@ -278,6 +279,20 @@ export async function readDrawing(svgText) {
     if (count('B') && !waitCells.length) warnings.push('The guide Zebonky has no waiting points, so it reveals the exit where it stands.');
     if (!count('B') && waitCells.length) warnings.push('Waiting points were drawn but there is no guide Zebonky (purple) to use them.');
     if (count('E') && !count('f')) warnings.push('There are wild Zebonkies but no food to toss. Jumping over still works.');
+
+    // The guide only goes where the player could: check each leg of its route.
+    const guideAt = [];
+    grid.forEach((line, r) => line.forEach((ch, c) => { if (ch === 'B') guideAt.push({ r, c }); }));
+    if (guideAt.length && waitCells.length) {
+      const nav = makeNav(grid.map((line) => line.join('')));
+      let from = guideAt[guideAt.length - 1];
+      waitCells.forEach((w, i) => {
+        if (!nav.find(from, w)) {
+          warnings.push(`The guide can't get ${i ? `from waiting point ${i}` : 'from its start'} to waiting point ${i + 1} on a route the player could take (a jump too high or too far?). It will leap straight there instead.`);
+        }
+        from = w;
+      });
+    }
 
     return {
       rows: grid.map((line) => line.join('')),
