@@ -146,6 +146,7 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ch === '=') {
           const tex = this.artTexture(this.art && this.art.platform, platformRole(isPlatform, r, c), r, c) || 'platform';
           const p = this.platforms.create(x, r * TILE + 14, tex);
+          this.decoratePlatform(x, r, c);
           p.body.checkCollision.down = false;
           p.body.checkCollision.left = false;
           p.body.checkCollision.right = false;
@@ -446,7 +447,13 @@ export class PlatformerScene extends Phaser.Scene {
   drawArtSolid(ch, isSolid, r, c, x, y, at) {
     const set = this.art && this.art.sets && this.art.sets[TERRAIN_SETS[ch]];
     if (!set) return false;
-    const role = solidRole(isSolid, r, c);
+    let role = solidRole(isSolid, r, c);
+    // Deep ground: a few tiles under the surface the dirt turns to stone.
+    if (role === 'fill' && set.deep) {
+      let depth = 0;
+      while (depth < (set.deep_from || 3) && isSolid(r - depth - 1, c)) depth++;
+      if (depth >= (set.deep_from || 3)) role = 'deep';
+    }
     const key = this.artTexture(set, role, r, c);
     if (!key) return false;
     this.add.image(x, y, key);
@@ -464,6 +471,10 @@ export class PlatformerScene extends Phaser.Scene {
   // every other copy mirrored so the join always matches.
   buildArtBackdrop(worldW, worldH) {
     this.art.background.forEach((layer, i) => {
+      if (layer.column) {
+        this.buildBackdropColumn(layer, i, worldW, worldH);
+        return;
+      }
       const key = texKey(this.artName, layer.file);
       if (!this.textures.exists(key)) return;
       const sf = layer.scroll ?? 0.35;
@@ -482,6 +493,42 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // A fern patch now and then along a platform's top. Decoration only.
+  decoratePlatform(x, r, c) {
+    const decor = this.art && this.art.platform_decor;
+    if (!decor || !decor.length || tileHash(c + 31, r + 5) >= (this.art.platform_decor_chance || 0)) return;
+    const key = texKey(this.artName, pick(decor, c, r));
+    if (this.textures.exists(key)) this.add.image(x, r * TILE + 6, key).setOrigin(0.5, 1).setDepth(1);
+  }
+
+  // A background built as a column: canopy on top, a trunk slice repeated
+  // as many times as the level is tall, ferns at the bottom. The ferns stand
+  // on the level's floor line; the column's own ground strip stays below it.
+  buildBackdropColumn(layer, i, worldW, worldH) {
+    const col = layer.column;
+    const k = (name) => texKey(this.artName, col[name]);
+    if (!['top', 'mid', 'bottom'].every((n) => this.textures.exists(k(n)))) return;
+    const size = (n) => this.textures.get(k(n)).getSourceImage();
+    const w = size('bottom').width;
+    const sf = layer.scroll ?? 0.35;
+    const span = (worldW - MAP_W) * sf + MAP_W + w;
+    // Stack upward from the floor until the canopy reaches the top.
+    const bottomY = worldH - (col.ground_line || 0);
+    const pieces = [['bottom', bottomY]];
+    let y = bottomY;
+    while (y - size('top').height > 0) {
+      y -= size('mid').height;
+      pieces.push(['mid', y]);
+    }
+    pieces.push(['top', y - size('top').height]);
+    for (let n = 0, x = 0; x < span; n++, x += w) {
+      pieces.forEach(([name, py]) => {
+        this.add.image(x, py, k(name)).setOrigin(0, 0).setScrollFactor(sf, 1).setDepth(-10 + i)
+          .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+      });
+    }
   }
 
   // ---------- hidden doors ----------

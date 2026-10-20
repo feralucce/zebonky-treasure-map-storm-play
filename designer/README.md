@@ -6,8 +6,10 @@ art set applied. Nothing to type.
 ## The loop
 
 1. `node server.js`, then open http://localhost:5214/designer/
-2. Click **Wide template** (`level-template.svg`, a side-scrolling run) or
-   **Tall template** (`level-template-tall.svg`, a climb) and open it in
+2. Click **Wide template** (`level-template.svg`, 64 x 12 tiles, a
+   side-scrolling run), **Tall template** (`level-template-tall.svg`,
+   30 x 40, a climb) or **Tall and wide template** (`level-template-big.svg`,
+   64 x 40, both) and open it in
    Inkscape (or Illustrator, Affinity, Figma: any app that saves SVG).
 3. Draw on the **Level** layer with the legend colours.
 4. Save the SVG and drop it on the designer. It shows what the game read and
@@ -72,15 +74,27 @@ The art lives in `assets/artsets/<name>/`, described by `artset.json`:
   same spot). `sand` and `rock` sets work the same way; until they exist,
   those tiles use the concept boxes.
 - `platform`: `left`, `mid`, `right`, `single` (64 x 28).
+- `platform_decor`: pictures set on top of platforms now and then
+  (`platform_decor_chance` of the tiles).
 - `scatter`: small extras placed on open grass, `scatter_chance` of the time.
 - `background`: layers with a `scroll` speed; `mirror_repeat` flips every
-  other copy so a backdrop that isn't seamless still joins cleanly.
+  other copy so a backdrop that isn't seamless still joins cleanly. A layer
+  can be a `column` of three pictures: `top` (canopy), `mid` (a slice that
+  repeats up and down, as many times as the level is tall) and `bottom`
+  (ferns, then ground). `ground_line` is how far down the bottom picture the
+  ground starts; that line sits on the level's floor.
 - `sky`: the colour behind everything.
 - `food`: the food picture for the region (bananas in the rainforest).
 - `zebonky`: the region's Zebonky as strips of frames (`idle`, `walk`, `run`,
   `jump`), all the same frame size, art facing left. The guide uses the same
   art at a larger size.
 
-`rainforest` is Charlie's region: the jungle backdrop, bananas and Charlie
-cut from the reference kit, with stand-in ground tiles. Replace its files one
+`rainforest` is Charlie's region, built from the tileset guide
+(`reference/rainforest_tileset_guide.jpg`): the backdrop column (with the
+extra ground strips between its repeats taken out), grass-over-dirt tops,
+edge caps, dirt under the grass, stone deeper down (`deep`, from
+`deep_from` tiles below the surface) and for cliff rock, and fern patches on
+platforms (`platform_decor`). Bananas and Charlie come from the reference kit.
+`tools/cut_rainforest_tiles.py` cuts the tiles from the guide at any
+resolution, so a sharper copy of the same sheet is one command away. Replace its files one
 for one (same names) and every drawn level picks up the new art.

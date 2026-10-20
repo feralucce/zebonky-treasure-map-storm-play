@@ -43,11 +43,16 @@ export class BootScene extends Phaser.Scene {
       this.load.once(`filecomplete-json-artset:${name}`, (key, type, data) => {
         const files = new Set();
         const add = (f) => f && files.add(f);
-        Object.values(data.sets || {}).forEach((set) => Object.values(set).flat().forEach(add));
+        Object.values(data.sets || {}).forEach((set) => Object.values(set)
+          .filter(Array.isArray).flat().forEach(add));
         Object.values(data.platform || {}).flat().forEach(add);
         (data.scatter || []).forEach(add);
-        (data.background || []).forEach((b) => add(b.file));
+        (data.background || []).forEach((b) => {
+          add(b.file);
+          if (b.column) ['top', 'mid', 'bottom'].forEach((k) => add(b.column[k]));
+        });
         add(data.food);
+        (data.platform_decor || []).forEach(add);
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;
         if (z) {

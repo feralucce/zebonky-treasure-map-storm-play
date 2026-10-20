@@ -4,28 +4,70 @@
  "sets": {
   "ground": {
    "top_left": [
-    "ground_top_left.svg"
+    "ground_top_left.png"
    ],
    "top_mid": [
-    "ground_top_mid_1.svg",
-    "ground_top_mid_2.svg",
-    "ground_top_mid_3.svg"
+    "ground_top_mid_1.png",
+    "ground_top_mid_2.png",
+    "ground_top_mid_3.png",
+    "ground_top_mid_4.png",
+    "ground_top_mid_5.png",
+    "ground_top_mid_6.png"
    ],
    "top_right": [
-    "ground_top_right.svg"
+    "ground_top_right.png"
    ],
    "top_single": [
-    "ground_top_single.svg"
+    "ground_top_single.png"
    ],
    "side_left": [
-    "ground_side_left.svg"
+    "ground_side_left.png"
    ],
    "side_right": [
-    "ground_side_right.svg"
+    "ground_side_right.png"
    ],
    "fill": [
-    "ground_fill_6.svg",
-    "ground_fill_7.svg"
+    "ground_dirt_1.png",
+    "ground_dirt_2.png",
+    "ground_dirt_3.png",
+    "ground_dirt_4.png",
+    "ground_dirt_5.png",
+    "ground_dirt_6.png",
+    "ground_dirt_7.png",
+    "ground_dirt_8.png"
+   ],
+   "deep": [
+    "ground_stone_1.png",
+    "ground_stone_2.png",
+    "ground_stone_3.png",
+    "ground_stone_4.png",
+    "ground_stone_5.png",
+    "ground_stone_6.png",
+    "ground_stone_7.png",
+    "ground_stone_8.png"
+   ],
+   "deep_from": 3
+  },
+  "rock": {
+   "top_mid": [
+    "ground_stone_1.png",
+    "ground_stone_2.png",
+    "ground_stone_3.png",
+    "ground_stone_4.png",
+    "ground_stone_5.png",
+    "ground_stone_6.png",
+    "ground_stone_7.png",
+    "ground_stone_8.png"
+   ],
+   "fill": [
+    "ground_stone_1.png",
+    "ground_stone_2.png",
+    "ground_stone_3.png",
+    "ground_stone_4.png",
+    "ground_stone_5.png",
+    "ground_stone_6.png",
+    "ground_stone_7.png",
+    "ground_stone_8.png"
    ]
   }
  },
@@ -51,15 +93,18 @@
  ],
  "background": [
   {
-   "file": "bg_jungle.png",
+   "column": {
+    "top": "bg_rainforest_top.png",
+    "mid": "bg_rainforest_mid.png",
+    "bottom": "bg_rainforest_bottom.png",
+    "ground_line": 176
+   },
    "scroll": 0.35,
-   "anchor": "bottom",
-   "offset": 40,
    "mirror_repeat": true
   }
  ],
  "scatter_chance": 0.3,
- "sky": "#6fb7a8",
+ "sky": "#41aca4",
  "food": "food_bananas.png",
  "zebonky": {
   "name": "Charlie Chimpanzeetah",
@@ -83,5 +128,9 @@
     "frames": 5
    }
   }
- }
+ },
+ "platform_decor": [
+  "platform_ferns.png"
+ ],
+ "platform_decor_chance": 0.4
 }
