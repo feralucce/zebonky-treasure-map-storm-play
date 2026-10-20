@@ -836,8 +836,9 @@ export class PlatformerScene extends Phaser.Scene {
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
     const down = k.DOWN.isDown || k.S.isDown;
-    const jumpHeld = k.UP.isDown || k.W.isDown || k.SPACE.isDown || k.Z.isDown || this.touch.jump;
-    const jumpPressed = [k.UP, k.W, k.SPACE, k.Z].some((key) => Phaser.Input.Keyboard.JustDown(key));
+    // Jump is Space or Z (or the touch button). Up is for hidden doors.
+    const jumpHeld = k.SPACE.isDown || k.Z.isDown || this.touch.jump;
+    const jumpPressed = [k.SPACE, k.Z].some((key) => Phaser.Input.Keyboard.JustDown(key));
 
     if (left && !right) {
       p.setAccelerationX(-ACCEL);
