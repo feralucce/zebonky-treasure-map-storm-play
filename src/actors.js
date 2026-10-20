@@ -2,8 +2,10 @@
 //
 // Wild Zebonky (E in a layout): wanders near home. When the player comes
 // close it charges at them. Bumping into it costs one Z-bolt of energy.
-// The player can jump over it, or toss food: once a Zebonky has eaten it is
-// happy for good (a latch, no timer) and lets the player walk by.
+// Jump over it and it carries on the way it was going, leaping gaps. Land on
+// it and it's dazed for a moment, no harm done. Or toss food: once a Zebonky
+// has eaten it is friendly for good (a latch, no timer) and tags along
+// behind the player.
 //
 // Guide Zebonky (B): bigger and sparkly. It waits; when the player comes
 // close it bounds off to the next waiting point, leading the way through the
@@ -60,14 +62,27 @@ const play = (sprite, art, anim) => {
 
 // ---------- wild Zebonky ----------
 
+const LEAP_SPEED = 720;         // a Zebonky's jump: about 2 tiles high
+const LEAP_REACH = 420;         // fastest sideways speed in a leap (about 5 tiles' reach)
+const OVERSHOOT_MS = 4000;      // keeps running this long after being jumped over (about 13 tiles)
+const DAZE_MS = 1500;           // confused after being landed on
+const FOLLOW_NEAR = TILE * 2.5; // a fed Zebonky stops this close behind you
+const FOLLOW_FAR = TILE * 4;    // and starts walking again past this
+const FOLLOW_LOST = TILE * 16;  // further than this it catches up in a blink
+
 export class WildZebonky {
   constructor(scene, art, x, feetY) {
     this.scene = scene;
     this.art = art;
-    this.home = x;
+    this.home = { x, y: feetY };
     this.state = 'wander';
+    this.isFed = false;
     this.dir = -1;
     this.stunnedUntil = 0;
+    this.dazedUntil = 0;
+    this.overshootUntil = 0;
+    this.chaseSide = 0;
+    this.walking = false;
     this.target = null;
     const idle = texKey(art.name, art.z.anims.idle.file);
     const s = scene.physics.add.sprite(x, feetY, idle).setOrigin(0.5, 1).setScale(WILD_SCALE).setDepth(4);
@@ -75,19 +90,24 @@ export class WildZebonky {
     const fw = art.z.frameWidth;
     const fh = art.z.frameHeight;
     s.body.setSize(fw * 0.5, fh * 0.62).setOffset(fw * 0.25, fh * 0.38);
-    s.setMaxVelocity(400, 1400);
+    s.setMaxVelocity(LEAP_REACH, 1400);
     s.zebonky = this;
     this.sprite = s;
     play(s, art, 'idle');
   }
 
-  get fed() { return this.state === 'fed'; }
+  get fed() { return this.isFed; }
+
+  // Harmless right now: fed for good, or still seeing stars.
+  get harmless() { return this.isFed || this.scene.time.now < this.dazedUntil; }
 
   feed() {
-    if (this.fed) return;
-    this.state = 'fed';
+    if (this.isFed) return;
+    this.isFed = true;
+    this.state = 'follow';
     this.target = null;
     this.sprite.setVelocityX(0);
+    this.sprite.setAngle(0);
     play(this.sprite, this.art, 'idle');
     this.scene.floatText(this.sprite.x, this.sprite.y - 80, 'Yum!');
     // A little heart now and then, so it reads as friendly.
@@ -100,7 +120,7 @@ export class WildZebonky {
 
   // Head for food that landed nearby.
   smell(food) {
-    if (this.fed || this.target) return false;
+    if (this.isFed || this.target) return false;
     const s = this.sprite;
     if (Math.abs(food.x - s.x) > FOOD_SMELL || Math.abs(food.y - s.y) > TILE * 2) return false;
     this.target = food;
@@ -112,38 +132,121 @@ export class WildZebonky {
     this.stunnedUntil = time + STUN_MS;
   }
 
-  // Is the floor still there one step ahead? Wild Zebonkies don't jump into pits.
-  groundAhead(dir) {
-    const s = this.sprite;
-    const c = Math.floor((s.x + dir * 30) / TILE);
-    const r = Math.floor((s.y + 4) / TILE);
-    return this.scene.isFloor(r, c);
+  // Landed on: no harm done, but it's dizzy for a moment.
+  daze(time) {
+    this.dazedUntil = time + DAZE_MS;
+    this.state = 'wander';
+    this.chaseSide = 0;
+    this.sprite.setVelocityX(0);
+    play(this.sprite, this.art, 'idle');
+    this.scene.floatText(this.sprite.x, this.sprite.y - 76, '?', 34);
+    this.scene.tweens.add({
+      targets: this.sprite, angle: { from: -12, to: 12 }, duration: 160, yoyo: true, repeat: 4,
+      onComplete: () => this.sprite.setAngle(0),
+    });
   }
 
-  move(vx, anim) {
+  // ---- reading the ground ----
+
+  feetCell() {
+    const s = this.sprite;
+    return { c: Math.floor(s.x / TILE), r: Math.floor((s.y + 4) / TILE) };
+  }
+
+  groundAhead(dir) {
+    const s = this.sprite;
+    return this.scene.isFloor(Math.floor((s.y + 4) / TILE), Math.floor((s.x + dir * 30) / TILE));
+  }
+
+  // Somewhere to land a few tiles ahead (a gap it can clear)? Returns the
+  // middle of the first tile it could land on, or null.
+  landingAhead(dir) {
+    const { c, r } = this.feetCell();
+    for (let d = 1; d <= 4; d++) {
+      for (let rr = r - 2; rr <= r + 3; rr++) {
+        const col = c + dir * d;
+        if (this.scene.isFloor(rr, col) && !this.scene.isFloor(rr - 1, col)) return col * TILE + TILE / 2;
+      }
+    }
+    return null;
+  }
+
+  // A wall ahead low enough to hop up (two tiles or less)?
+  ledgeAhead(dir) {
+    const { c, r } = this.feetCell();
+    const col = c + dir;
+    for (let up = 1; up <= 2; up++) {
+      if (this.scene.isFloor(r - up, col) && !this.scene.isFloor(r - up - 1, col)) return true;
+    }
+    return false;
+  }
+
+  leap() {
+    this.sprite.setVelocityY(-LEAP_SPEED);
+    play(this.sprite, this.art, 'jump');
+  }
+
+  // Walk or run one way. `canLeap` lets it jump gaps and low ledges; without
+  // it, it stops at edges and walls. Returns false when it had to stop.
+  move(vx, anim, canLeap = false) {
     const s = this.sprite;
     const dir = Math.sign(vx);
-    if (dir && (!this.groundAhead(dir) || (dir < 0 ? s.body.blocked.left : s.body.blocked.right))) {
-      s.setVelocityX(0);
-      play(s, this.art, 'idle');
-      return false;
+    if (dir) {
+      s.setFlipX(dir > 0);  // the art faces left
+      const wall = dir < 0 ? s.body.blocked.left : s.body.blocked.right;
+      if (wall || !this.groundAhead(dir)) {
+        const land = wall ? null : this.landingAhead(dir);
+        if (canLeap && (wall ? this.ledgeAhead(dir) : land !== null)) {
+          // Across a gap, go fast enough to reach the far side.
+          const air = (2 * LEAP_SPEED) / this.scene.physics.world.gravity.y;
+          const need = land === null ? 0 : (Math.abs(land - s.x) + 12) / air;
+          s.setVelocityX(dir * Math.min(LEAP_REACH, Math.max(Math.abs(vx), need)));
+          this.leap();
+          return true;
+        }
+        s.setVelocityX(0);
+        play(s, this.art, 'idle');
+        return false;
+      }
     }
     s.setVelocityX(vx);
-    if (dir) s.setFlipX(dir > 0);  // the art faces left
     play(s, this.art, vx ? anim : 'idle');
     return true;
   }
 
   update(time, player) {
     const s = this.sprite;
-    if (!s.body.blocked.down && !s.body.touching.down) return;
-    if (this.fed) {
-      s.setVelocityX(0);
+    // Fell out of the level: back home (or, when fed, back beside the player).
+    if (s.y > this.scene.worldH + 200) {
+      if (this.isFed) this.catchUp(player);
+      else {
+        s.setPosition(this.home.x, this.home.y);
+        s.setVelocity(0, 0);
+      }
       return;
     }
-    if (time < this.stunnedUntil) {
+    if (!s.body.blocked.down && !s.body.touching.down) return;  // mid-leap: keep going
+
+    if (this.isFed) {
+      this.follow(player);
+      return;
+    }
+    if (time < this.dazedUntil || time < this.stunnedUntil) {
       this.move(0);
       return;
+    }
+    // Jumped over: it carries on the way it was going, leaping gaps.
+    if (time < this.overshootUntil) {
+      if (!this.move(this.dir * CHARGE_SPEED, 'run', true)) this.overshootUntil = 0;
+      return;
+    }
+    // Food on the ground nearby.
+    if (!this.target) {
+      const f = this.scene.foodNear(s.x, s.y, FOOD_SMELL);
+      if (f) {
+        this.target = f;
+        this.state = 'food';
+      }
     }
     if (this.state === 'food') {
       const f = this.target;
@@ -155,21 +258,69 @@ export class WildZebonky {
         this.feed();
         return;
       } else {
-        this.move(Math.sign(f.x - s.x) * 150, 'walk');
+        this.move(Math.sign(f.x - s.x) * 150, 'walk', true);
         return;
       }
     }
     const dx = player.x - s.x;
-    const close = Math.abs(dx) < NOTICE && Math.abs(player.y - s.y) < TILE * 2.5;
+    const airborne = !player.body.blocked.down && !player.body.touching.down;
+    // A player in mid-jump is still being chased, so a jump over the top
+    // is noticed rather than forgotten.
+    const reach = this.state === 'charge' && airborne ? TILE * 4.5 : TILE * 2.5;
+    const close = Math.abs(dx) < NOTICE && Math.abs(player.y - s.y) < reach;
     if (close) {
+      const side = Math.sign(dx) || this.dir;
+      if (this.state === 'charge' && this.chaseSide && side !== this.chaseSide && airborne) {
+        // The player sailed over it.
+        this.dir = this.chaseSide;
+        this.overshootUntil = time + OVERSHOOT_MS;
+        this.chaseSide = 0;
+        this.state = 'wander';
+        this.move(this.dir * CHARGE_SPEED, 'run', true);
+        return;
+      }
       this.state = 'charge';
-      this.move(Math.sign(dx) * CHARGE_SPEED, 'run');
+      this.chaseSide = side;
+      this.dir = side;
+      this.move(side * CHARGE_SPEED, 'run');
       return;
     }
     this.state = 'wander';
-    if (s.x < this.home - WANDER_RANGE) this.dir = 1;
-    if (s.x > this.home + WANDER_RANGE) this.dir = -1;
+    this.chaseSide = 0;
+    if (s.x < this.home.x - WANDER_RANGE) this.dir = 1;
+    if (s.x > this.home.x + WANDER_RANGE) this.dir = -1;
     if (!this.move(this.dir * WANDER_SPEED, 'walk')) this.dir *= -1;
+  }
+
+  // Fed: tags along a little way behind the player.
+  follow(player) {
+    const s = this.sprite;
+    const dx = player.x - s.x;
+    const far = Math.abs(dx);
+    if (far > FOLLOW_LOST || Math.abs(player.y - s.y) > TILE * 8) {
+      this.catchUp(player);
+      return;
+    }
+    if (far > FOLLOW_FAR || (this.walking && far > FOLLOW_NEAR)) {
+      const fast = far > TILE * 6;
+      this.walking = this.move(Math.sign(dx) * (fast ? 280 : 170), fast ? 'run' : 'walk', true);
+    } else {
+      this.walking = false;
+      s.setVelocityX(0);
+      s.setFlipX(dx > 0);
+      play(s, this.art, 'idle');
+    }
+  }
+
+  // Left far behind (a door, a long fall): pop up just behind the player.
+  catchUp(player) {
+    const s = this.sprite;
+    const back = player.flipX ? 1 : -1;
+    const x = player.x + back * FOLLOW_NEAR;
+    const y = this.scene.floorNear(x, player.y + 32);
+    s.setPosition(x, y === null ? player.y + 30 : y);
+    s.setVelocity(0, 0);
+    this.scene.tweens.add({ targets: s, alpha: { from: 0, to: 1 }, duration: 250 });
   }
 }
 

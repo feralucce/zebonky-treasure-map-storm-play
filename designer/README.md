@@ -48,8 +48,12 @@ art set applied. Nothing to type.
   | `#7030A0` 1 x 2 tile box | Hidden door, with a number written inside |
 
 - **Zebonkies.** A wild Zebonky wanders near where it's drawn and charges
-  when the player gets close; a bump costs one Z-bolt. Jump over it, or toss
-  food (X or F, or the banana button): once it has eaten it stays friendly.
+  when the player gets close; a bump costs one Z-bolt. Jump over it and it
+  carries on the way it was going, leaping gaps; land on it and it's dazed
+  for a moment while the player bounces on. Or toss food (X or F, or the
+  banana button): once it has eaten it stays friendly and follows the
+  player. Thrown food can't be picked back up.
+- **Pickups and crates.** Stand at one and press Down to take it or open it.
   The guide Zebonky is bigger and sparkles. It waits until the player is
   close, then bounds to the next waiting point. At the last one it reveals
   the exit door. Without a guide the exit is visible from the start.

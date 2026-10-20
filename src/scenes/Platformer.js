@@ -33,7 +33,6 @@ const MAX_ENERGY = 6;
 const HURT_SAFE_MS = 1300;     // blinking, can't be bumped again
 const TOSS_VX = 480;
 const TOSS_VY = -260;          // a low lob, so it reaches a Zebonky on the ground
-const PICKUP_DELAY_MS = 700;   // tossed food can't be picked straight back up
 
 // Solid tile characters -> [texture on top of a stack, texture underneath].
 const SOLID_TEXTURES = {
@@ -54,6 +53,9 @@ export class PlatformerScene extends Phaser.Scene {
     state.noSave = this.test;
     this.inDoor = false;
     this.touchDoor = false;
+    this.touchGrab = false;
+    this.nearItem = null;      // pickup or crate the player is standing at
+    this.flingUntil = 0;       // flying off a Zebonky's back: no air drag
     this.touchToss = false;
     this.energy = MAX_ENERGY;
     this.food = 0;
@@ -202,7 +204,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.platforms, null, () => this.time.now >= this.dropUntil);
     this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
     this.buildPickups(foodSpots, pawSpots);
-    this.physics.add.overlap(this.player, this.treasures, (_, t) => this.touchTreasure(t));
+    // Standing at a crate or a pickup marks it; Down opens or takes it.
+    this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
     if (this.secret) this.physics.add.overlap(this.player, this.secret, () => this.exit('secret'));
 
@@ -286,15 +289,21 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   touchWild(z) {
-    if (!z || z.fed || this.inDoor) return;
+    if (!z || z.harmless || this.inDoor) return;
     const p = this.player;
     const s = z.sprite;
-    // Landing on its back is a friendly boost, not a bump.
-    if (p.body.velocity.y > 0 && p.body.bottom <= s.body.top + 14) {
-      p.setVelocityY(-560);
+    const now = this.time.now;
+    // Landing on its back: no harm, it's dazed, and the player bounces a
+    // full jump on past it.
+    if (p.body.velocity.y > 0 && p.body.bottom <= s.body.top + 16) {
+      z.daze(now);
+      const dir = Math.sign(p.body.velocity.x) || (p.flipX ? -1 : 1);
+      p.setVelocity(dir * RUN_SPEED, -JUMP_SPEED);
+      this.flingUntil = now + 900;
+      this.boostUntil = now + 450;
+      this.lastGrounded = -1000;
       return;
     }
-    const now = this.time.now;
     if (now < this.safeUntil) return;
     z.bumped(now);
     const away = Math.sign(p.x - s.x) || 1;
@@ -352,7 +361,7 @@ export class PlatformerScene extends Phaser.Scene {
       z.kind = 'paw';
       this.tweens.add({ targets: z, scale: 1.12, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     });
-    this.physics.add.overlap(this.player, this.pickups, (_, it) => this.collect(it));
+    this.physics.add.overlap(this.player, this.pickups, (_, it) => { if (!this.nearItem) this.nearItem = it; });
 
     // Food that has been thrown.
     this.tossed = this.physics.add.group();
@@ -366,18 +375,28 @@ export class PlatformerScene extends Phaser.Scene {
         z.feed();
       });
     }
-    this.physics.add.overlap(this.player, this.tossed, (_, f) => {
-      if (f.landed && this.time.now > f.pickupAt && !this.wild.some((z) => z.target === f)) {
-        this.eatFood(f);
-        this.food += 1;
-        this.refreshHud();
-      }
+  }
+
+  // Thrown food lying on the ground near a point, that no Zebonky is
+  // already heading for. Thrown food is for Zebonkies: the player can't
+  // pick it back up.
+  foodNear(x, y, range) {
+    let best = null;
+    this.tossed.getChildren().forEach((f) => {
+      if (!f.active || !f.landed || Math.abs(f.y - y) > TILE * 2) return;
+      if (this.wild.some((z) => z.target === f)) return;
+      const d = Math.abs(f.x - x);
+      if (d <= range && (!best || d < Math.abs(best.x - x))) best = f;
     });
+    return best;
   }
 
   collect(it) {
     if (it.kind === 'paw') {
-      if (!this.heal()) return; // full energy: leave it for later
+      if (!this.heal()) {
+        this.floatText(it.x, it.y - 30, 'Full energy', 20);
+        return; // leave it for later
+      }
       this.floatText(it.x, it.y - 30, '+1 \u26A1', 24);
     } else {
       this.food += 1;
@@ -399,7 +418,6 @@ export class PlatformerScene extends Phaser.Scene {
     f.setVelocity(dir * TOSS_VX, TOSS_VY).setBounce(0.25).setDragX(500).setAngularVelocity(dir * 540);
     f.setCollideWorldBounds(true);
     f.landed = false;
-    f.pickupAt = this.time.now + PICKUP_DELAY_MS;
   }
 
   eatFood(f) {
@@ -511,9 +529,9 @@ export class PlatformerScene extends Phaser.Scene {
     const decor = this.art && this.art.platform_decor;
     if (!decor || !decor.length || tileHash(c + 31, r + 5) >= (this.art.platform_decor_chance || 0)) return;
     const key = texKey(this.artName, pick(decor, c, r));
-    // Set low enough that the patch's solid part rests on the plank and
-    // its frond tips hang over the front.
-    if (this.textures.exists(key)) this.add.image(x, r * TILE + 13, key).setOrigin(0.5, 1).setDepth(1);
+    // Its top edge sits level with the plank's top, so the moss drapes
+    // over the front of the plank.
+    if (this.textures.exists(key)) this.add.image(x, r * TILE + 1, key).setOrigin(0.5, 0).setDepth(1);
   }
 
   // A background built as a column: canopy on top, a trunk slice repeated
@@ -560,6 +578,10 @@ export class PlatformerScene extends Phaser.Scene {
       stroke: COLORS.inkCss, strokeThickness: 8,
     })).setOrigin(0.5).setDepth(8).setVisible(false);
     this.tweens.add({ targets: this.doorHint, alpha: 0.35, duration: 450, yoyo: true, repeat: -1 });
+    this.grabHint = this.add.text(0, 0, '\u2193', heading(34, COLORS.yellowCss, {
+      stroke: COLORS.inkCss, strokeThickness: 8,
+    })).setOrigin(0.5).setDepth(8).setVisible(false);
+    this.tweens.add({ targets: this.grabHint, alpha: 0.35, duration: 450, yoyo: true, repeat: -1 });
   }
 
   doorUnder(p) {
@@ -796,6 +818,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.btnDoor = this.add.image(MAP_W - 90, y - 120, 'btn-jump').setScale(0.8).setTint(0xffc93c)
       .setScrollFactor(0).setAlpha(0.85).setVisible(false).setInteractive();
     this.btnDoor.on('pointerdown', () => { this.touchDoor = true; });
+    // Shown only while standing at a crate or pickup: the Down action.
+    this.btnGrab = this.add.image(MAP_W - 210, y - 120, 'btn-jump').setScale(0.8).setFlipY(true).setTint(0xffc93c)
+      .setScrollFactor(0).setAlpha(0.85).setVisible(false).setInteractive();
+    this.btnGrab.on('pointerdown', () => { this.touchGrab = true; });
     this.input.addPointer(2);
   }
 
@@ -814,7 +840,6 @@ export class PlatformerScene extends Phaser.Scene {
       if (!f.landed && f.body.blocked.down) {
         f.landed = true;
         f.setAngularVelocity(0).setAngle(0);
-        this.wild.some((z) => z.smell(f));
       }
       if (f.y > this.worldH + 200) f.destroy();
     });
@@ -832,6 +857,26 @@ export class PlatformerScene extends Phaser.Scene {
       if (up) { this.goThroughDoor(door); return; }
     }
     this.touchDoor = false;
+
+    // At a crate or a pickup: Down (or the touch button) opens or takes it.
+    const item = this.nearItem && this.nearItem.active && !this.nearItem.taken ? this.nearItem : null;
+    this.nearItem = null;
+    this.grabHint.setVisible(!!item);
+    this.btnGrab.setVisible(!!item);
+    if (item) {
+      this.grabHint.setPosition(p.x, p.y - 62);
+      const grab = Phaser.Input.Keyboard.JustDown(k.DOWN) || Phaser.Input.Keyboard.JustDown(k.S) || this.touchGrab;
+      if (grab) {
+        this.touchGrab = false;
+        if (item.itemIndex !== undefined) this.touchTreasure(item);
+        else this.collect(item);
+        return;
+      }
+    }
+    this.touchGrab = false;
+
+    // Flying off a Zebonky's back keeps its speed until landing.
+    p.setDragX(time < this.flingUntil && !onFloor ? 0 : ACCEL * 1.4);
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
