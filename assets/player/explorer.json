@@ -8,7 +8,7 @@
   },
   "walk": {
    "file": "explorer_walk.png",
-   "frames": 9
+   "frames": 4
   },
   "jump": {
    "file": "explorer_jump.png",

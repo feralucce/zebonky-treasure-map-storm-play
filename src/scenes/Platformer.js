@@ -231,7 +231,7 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   makeExplorerAnims() {
-    const rates = { idle: 3, walk: 15 };
+    const rates = { idle: 3, walk: 8 };   // walk: four steps, about two strides a second
     Object.entries(rates).forEach(([name, rate]) => {
       if (this.anims.exists(`explorer-${name}`)) return;
       this.anims.create({
