@@ -1,7 +1,7 @@
 // Level layouts as text grids, one character per 64 px tile.
 //   #  ground          s  sand            R  cliff rock
 //   =  one-way platform (jump up through it)
-//   ~  water (swim: Jump to stroke, near the surface it hops you out)
+//   ~  water (you float up to the surface; Jump strokes or hops out, Down dives)
 //   W  upward current (the Dorsal Cove waterfall that flows uphill)
 //   F  dorsal-fin rock (scenery)
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)

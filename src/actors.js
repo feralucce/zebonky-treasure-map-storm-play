@@ -111,11 +111,42 @@ export class WildZebonky {
     play(this.sprite, this.art, 'idle');
     this.scene.floatText(this.sprite.x, this.sprite.y - 80, 'Yum!');
     // A little heart now and then, so it reads as friendly.
-    this.heartTimer = this.scene.time.addEvent({
-      delay: 1600,
-      loop: true,
-      callback: () => this.scene.floatText(this.sprite.x, this.sprite.y - 70, '♥', 26),
-    });
+    // A burst of hearts when it eats, then a few now and then while it
+    // follows along.
+    this.hearts(9);
+    this.heartTimer = this.scene.time.addEvent({ delay: 1400, loop: true, callback: () => this.hearts(3) });
+  }
+
+  // A rising stream of red and pink hearts, staggered and drifting.
+  hearts(count) {
+    const scene = this.scene;
+    for (let i = 0; i < count; i++) {
+      scene.time.delayedCall(i * 90, () => {
+        const s = this.sprite;
+        if (!s.active) return;
+        const x = s.x + Phaser.Math.Between(-18, 18);
+        const y = s.y - 56;
+        const h = scene.add.text(x, y, '\u2665', {
+          fontFamily: 'Arial, sans-serif',
+          fontSize: `${Phaser.Math.Between(20, 32)}px`,
+          color: Phaser.Math.RND.pick(['#e8264b', '#ff4f7a', '#ff86a8', '#d81b60', '#ffb3c8']),
+          stroke: '#5a1020',
+          strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(9).setScale(0.4);
+        const drift = Phaser.Math.Between(-30, 30);
+        scene.tweens.add({ targets: h, scale: 1, duration: 220, ease: 'Back.Out' });
+        scene.tweens.add({
+          targets: h,
+          y: y - Phaser.Math.Between(70, 120),
+          x: x + drift,
+          alpha: 0,
+          duration: Phaser.Math.Between(900, 1300),
+          ease: 'Sine.Out',
+          onComplete: () => h.destroy(),
+        });
+        scene.tweens.add({ targets: h, angle: { from: -12, to: 12 }, duration: 300, yoyo: true, repeat: 2 });
+      });
+    }
   }
 
   // Head for food that landed nearby.
@@ -340,21 +371,31 @@ export class GuideZebonky {
     this.sprite = scene.add.sprite(points[0].x, points[0].y, idle).setOrigin(0.5, 1).setScale(GUIDE_SCALE).setDepth(4);
     play(this.sprite, art, 'idle');
     // Sparkles, for now, so the guide stands out from wild Zebonkies.
-    scene.time.addEvent({ delay: 170, loop: true, callback: () => this.sparkle() });
+    // Sparkles, so the guide stands out from wild Zebonkies: a soft golden
+    // glow behind it and twinkling stars around it.
+    this.glow = scene.add.ellipse(this.sprite.x, this.sprite.y - 48, 150, 130, 0xffe27a, 0.28).setDepth(3);
+    scene.tweens.add({ targets: this.glow, scale: 1.18, alpha: 0.14, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    scene.time.addEvent({ delay: 90, loop: true, callback: () => this.sparkle() });
   }
 
   sparkle() {
     const s = this.sprite;
-    const x = s.x + Phaser.Math.Between(-46, 46);
-    const y = s.y - Phaser.Math.Between(10, 96);
-    const dot = this.scene.add.star(x, y, 4, 2, 7, Phaser.Math.RND.pick([0xfff6b0, 0xffffff, 0x9fe8ff])).setDepth(5);
+    const x = s.x + Phaser.Math.Between(-62, 62);
+    const y = s.y - Phaser.Math.Between(4, 118);
+    const big = Phaser.Math.Between(9, 15);
+    const colour = Phaser.Math.RND.pick([0xfff3a0, 0xffffff, 0xffd84a, 0xaef0ff]);
+    const star = this.scene.add.star(x, y, 4, big * 0.32, big, colour)
+      .setStrokeStyle(2, 0x6b4a10).setDepth(5).setScale(0.2).setAngle(Phaser.Math.Between(0, 45));
+    // Twinkle: pop in, then shrink away as it drifts up.
+    this.scene.tweens.add({ targets: star, scale: 1, duration: 180, ease: 'Back.Out' });
     this.scene.tweens.add({
-      targets: dot, y: y - 22, alpha: 0, angle: 90, scale: 0.4, duration: 650,
-      onComplete: () => dot.destroy(),
+      targets: star, y: y - 30, alpha: 0, angle: star.angle + 90, scale: 0.3, delay: 180, duration: 650,
+      onComplete: () => star.destroy(),
     });
   }
 
   update(time, player) {
+    if (this.glow) this.glow.setPosition(this.sprite.x, this.sprite.y - 48);
     if (this.travelling || this.revealed) return;
     const s = this.sprite;
     s.setFlipX(player.x > s.x);

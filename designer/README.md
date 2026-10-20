@@ -34,7 +34,7 @@ art set applied. Nothing to type.
   | `#D9B36C` | Sand |
   | `#808080` | Cliff rock |
   | `#8B4513` | Jump-through platform |
-  | `#0050FF` | Water (swim) |
+  | `#0050FF` | Water: you float up to the surface; Jump hops out, Down dives |
   | `#00E5FF` | Uphill waterfall current |
   | `#00B050` circle | Player start (drops to the ground below it) |
   | `#FFC000` circle | Mystery crate: draw 5, each asks one question |

@@ -18,8 +18,9 @@ const JUMP_BUFFER_MS = 130;   // a jump pressed just before landing still counts
 
 // Water: you float down slowly and each jump press is a swim stroke.
 const SWIM_SPEED = 220;
-const SWIM_SINK = 160;
 const SWIM_STROKE = 430;
+const FLOAT_RISE = 170;       // water carries you up to the surface at this speed
+const SWIM_DIVE = 200;        // hold Down to swim down
 const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto land
 // The Dorsal Cove waterfall flows uphill and carries you with it.
 const CURRENT_LIFT = 660;
@@ -922,11 +923,23 @@ export class PlatformerScene extends Phaser.Scene {
       this.boostUntil = time + 450;
       this.wasInWater = false;
     } else if (inWater) {
-      p.body.setGravityY(-this.physics.world.gravity.y * 0.8);
+      // Water holds you up: you rise to the surface on your own and float
+      // there, head and shoulders out, bobbing a little. Down dives.
+      p.body.setGravityY(-this.physics.world.gravity.y);
       p.setMaxVelocity(SWIM_SPEED, 1400);
-      if (!this.wasInWater) this.splash(p.x, this.surfaceRow[c] * TILE, p.body.velocity.y);
-      // Slow the plunge, then drift down gently.
-      if (p.body.velocity.y > SWIM_SINK) p.setVelocityY(Math.max(SWIM_SINK, p.body.velocity.y * 0.88));
+      const surfaceY = this.surfaceRow[c] !== undefined ? this.surfaceRow[c] * TILE : null;
+      if (!this.wasInWater) this.splash(p.x, surfaceY ?? p.y, p.body.velocity.y);
+      const vy = p.body.velocity.y;
+      if (down) {
+        p.setVelocityY(Phaser.Math.Linear(vy, SWIM_DIVE, 0.12));
+      } else if (surfaceY !== null) {
+        const floatY = surfaceY + 6 + Math.sin(time / 320) * 3;
+        const below = p.y - floatY;
+        if (below > 6) p.setVelocityY(Phaser.Math.Linear(vy, -FLOAT_RISE, 0.08));
+        else p.setVelocityY(Phaser.Math.Linear(vy, below * -4, 0.25));
+      } else {
+        p.setVelocityY(Phaser.Math.Linear(vy, -FLOAT_RISE, 0.08));
+      }
       if (wantsJump) {
         const nearSurface = this.surfaceRow[c] !== undefined && p.y - this.surfaceRow[c] * TILE < 44;
         p.setVelocityY(nearSurface ? -SWIM_HOP_OUT : -SWIM_STROKE);
