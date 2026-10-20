@@ -54,6 +54,7 @@ export class PlatformerScene extends Phaser.Scene {
   init(data) {
     this.levelId = data.levelId;
     this.test = !!data.test;
+    this.demo = !!data.demo;
     // A designer test run never touches the player's saved progress.
     state.noSave = this.test;
     this.inDoor = false;
@@ -73,7 +74,8 @@ export class PlatformerScene extends Phaser.Scene {
 
   create() {
     const lvl = LEVELS[this.levelId];
-    const layout = layoutFor(this.levelId, this.test);
+    // A demo plays the level's saved drawing; a designer test plays the hand-off.
+    const layout = layoutFor(this.levelId, this.test && !this.demo);
     this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
     this.artName = layout.artset;
     const rows = layout.rows;

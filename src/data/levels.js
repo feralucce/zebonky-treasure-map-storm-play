@@ -67,8 +67,12 @@ export const LAYOUTS = {
 // level id only borrows that level's name and quiz questions.
 export const TEST_LAYOUT_KEY = 'zebonky-tms-test-layout';
 
+// index.html?demo=<level> opens straight into that level's saved drawing
+// (assets/levels/<level>.json), for showing it off. Like a test run it never
+// touches the saved game, and finishing starts it again.
 export function testParams() {
   const q = new URLSearchParams(window.location.search);
+  if (q.has('demo')) return { levelId: q.get('demo') || 'cumulus', test: true, demo: true };
   if (!q.has('test')) return null;
   return { levelId: q.get('level') || 'dorsal', test: true };
 }
