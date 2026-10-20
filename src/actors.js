@@ -28,7 +28,7 @@ const WANDER_RANGE = TILE * 2;
 const STUN_MS = 900;            // pause after bumping the player
 const FOOD_SMELL = NOTICE;      // food this close gets charged at and eaten
 const FOOD_CHARGE = 250;        // a bit faster than charging the player
-const GUIDE_NEAR = TILE * 3.5;  // the guide moves on when the player is this close
+const GUIDE_NEAR = TILE * 3.5;  // the guide moves on when the player is within this radius
 const GUIDE_SPEED = 340;        // px per second while bounding ahead
 
 const ANIM_RATES = { idle: 2, walk: 10, run: 14, jump: 10 };
@@ -490,10 +490,8 @@ export class GuideZebonky {
     if (this.travelling || this.revealed) return;
     const s = this.sprite;
     s.setFlipX(player.x > s.x);
-    // The player has to actually reach it: close, and on its level (not
-    // passing underneath or above).
-    const rise = player.body.bottom - s.y;
-    const near = Math.hypot(player.x - s.x, rise) < GUIDE_NEAR && rise > -TILE && rise < TILE * 1.25;
+    // A circle around it: close in any direction (beside, above, below).
+    const near = Math.hypot(player.x - s.x, player.body.bottom - s.y) < GUIDE_NEAR;
     if (!near) return;
     if (this.index < this.points.length - 1) this.travelTo(this.index + 1);
     else {
