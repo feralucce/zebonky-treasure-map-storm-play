@@ -78,7 +78,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldW, worldH + 400);
     // Earth below the bottom row, for screens taller than the level.
     this.add.rectangle(0, worldH, worldW, 200, 0x6b4a2e).setOrigin(0).setDepth(-1);
-    this.physics.world.checkCollision.down = false; // pits are open
+    // The page's left and right edges are walls; the top and bottom are open
+    // (you can jump above the page, and pits drop out of the bottom).
+    this.physics.world.checkCollision.down = false;
+    this.physics.world.checkCollision.up = false;
     this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH, MAP_H));
     this.cameras.main.setBackgroundColor((this.art && this.art.sky) || lvl.color);
 
@@ -187,6 +190,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
     this.player.setMaxVelocity(RUN_SPEED, 1400);
     this.player.setDragX(ACCEL * 1.4);
+    this.player.setCollideWorldBounds(true);
 
     this.physics.add.collider(this.player, this.solids);
     this.physics.add.collider(this.player, this.platforms);
@@ -387,6 +391,7 @@ export class PlatformerScene extends Phaser.Scene {
     const dir = this.player.flipX ? -1 : 1;
     const f = this.tossed.create(this.player.x + dir * 20, this.player.y - 20, this.foodTex);
     f.setVelocity(dir * TOSS_VX, TOSS_VY).setBounce(0.25).setDragX(500).setAngularVelocity(dir * 540);
+    f.setCollideWorldBounds(true);
     f.landed = false;
     f.pickupAt = this.time.now + PICKUP_DELAY_MS;
   }
