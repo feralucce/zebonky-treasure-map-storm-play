@@ -233,5 +233,13 @@
    "canopy_1111_3.png",
    "canopy_1111_4.png"
   ]
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_pixel.png",
+   "scroll": 1.6,
+   "blur": 6,
+   "mirror_repeat": true
+  }
+ ]
 }

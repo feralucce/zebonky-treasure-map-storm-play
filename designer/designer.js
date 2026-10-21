@@ -16,6 +16,8 @@ let levelName = 'level';  // the drawing's file name, for the guides
 // ---------- set up the pickers ----------
 
 ARTSETS.forEach((name) => $('artset').add(new Option(name, name)));
+// The pixel look is the one being developed, so new drawings start in it.
+if (ARTSETS.includes('rainforest_floor')) $('artset').value = 'rainforest_floor';
 Object.entries(LEVELS).forEach(([id, l]) => {
   if (l.kind === 'level') $('level').add(new Option(`${l.name} (${id})`, id));
 });
