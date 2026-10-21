@@ -385,7 +385,10 @@ export function tileSheet(rows, name = 'level') {
 
 // ---------- files ----------
 
-export function svgToPng(svg, w, h) {
+// The guide as a picture: 'png' (see-through where nothing is drawn) or
+// 'jpg' (on white, as JPG has no transparency).
+export function svgToImage(svg, w, h, type = 'png') {
+  const jpg = type === 'jpg';
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
     const img = new Image();
@@ -393,9 +396,15 @@ export function svgToPng(svg, w, h) {
       const cv = document.createElement('canvas');
       cv.width = w;
       cv.height = h;
-      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      const g = cv.getContext('2d');
+      if (jpg) {
+        g.fillStyle = '#ffffff';
+        g.fillRect(0, 0, w, h);
+      }
+      g.drawImage(img, 0, 0, w, h);
       URL.revokeObjectURL(url);
-      cv.toBlob((b) => (b ? resolve(b) : reject(new Error('PNG failed'))), 'image/png');
+      cv.toBlob((b) => (b ? resolve(b) : reject(new Error(`${jpg ? 'JPG' : 'PNG'} failed`))),
+        jpg ? 'image/jpeg' : 'image/png', jpg ? 0.92 : undefined);
     };
     img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not draw the guide')); };
     img.src = url;

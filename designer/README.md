@@ -20,9 +20,9 @@ art set applied. Nothing to type.
    your real save is untouched). It starts in **Blocks (no dressing)**: the
    layout as flat legend-coloured blocks with no backdrop, foreground or
    plants, and the real explorer, Zebonkies, crates and pickups. Pick an art
-   set to see it dressed; changing it restarts the game. A secret exit only
-   appears when "Save as level" is a level that has one (Bamboo Dunes or
-   Magenta).
+   set to see it dressed; changing it restarts the game. A drawn secret exit
+   always shows in test play; on the map it only works in levels with a
+   secret route (Bamboo Dunes and Magenta).
 6. **Save into the game** and pick the level it belongs to. It's written to
    `assets/levels/<level>.json` and replaces that level's layout on the map.
    (Away from the dev server this downloads the file instead; drop it in
@@ -31,8 +31,9 @@ art set applied. Nothing to type.
 ## Guides for the artist
 
 Under the preview, **Guides for the artist** saves full-size sheets made from
-the dropped level, as an SVG (an empty **Art** layer under a locked **Guide**
-layer) or a PNG. Hide the guide before saving the art. Every guide is
+the dropped level, as a PNG (see-through where nothing is marked) or a JPG
+(on white). Put the sheet on its own layer in a paint app, paint on a layer
+under it, and hide the sheet before saving the art. Every guide is
 **2x game size** (a 64 px tile is a 128 px box), so the art can be scaled
 down cleanly; the sizes below are game sizes.
 
@@ -61,8 +62,8 @@ down cleanly; the sizes below are game sizes.
   air ground (floating ledges, a 2 x 2 block per shape), platforms and
   dressing (ground plants, hangers, scatter, platform toppers). Each box
   says how often this level uses it; dashed boxes aren't used yet. The
-  box positions are stored in the SVG's `<metadata>`, ready for cutting a
-  painted sheet back into an art set.
+  layout comes from `tileSheet()` in `guides.js` (its `slots` list), so a
+  painted sheet can be cut back into an art set with the same positions.
 
 ## Drawing rules
 

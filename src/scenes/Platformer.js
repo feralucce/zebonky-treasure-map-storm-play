@@ -223,7 +223,9 @@ export class PlatformerScene extends Phaser.Scene {
           goalSpot = { x, y: (r + 1) * TILE };
           this.goal = this.physics.add.staticImage(x, (r + 1) * TILE - 96, 'goal');
           this.goal.body.setSize(40, 192);
-        } else if (ch === 'S' && lvl.hasSecret) {
+        } else if (ch === 'S' && (lvl.hasSecret || this.test)) {
+          // On the map only levels with a secret route show it; a test or
+          // demo always shows a drawn one (it just restarts the level).
           this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 48, 'secret-door');
         } else if (ch === 'P') {
           start = { x, y };

@@ -3,7 +3,7 @@ import { readDrawing } from './read-drawing.js';
 import { ARTSETS, BLOCKS } from '../src/data/artsets.js';
 import { LEVELS } from '../src/data/world.js';
 import { TEST_LAYOUT_KEY } from '../src/data/levels.js';
-import { backgroundGuide, tileSheet, svgToPng } from './guides.js';
+import { backgroundGuide, tileSheet, svgToImage } from './guides.js';
 
 const $ = (id) => document.getElementById(id);
 const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen
@@ -216,13 +216,13 @@ function showGuides() {
 }
 
 async function saveGuide(guide, base) {
-  const png = $('gfmt').value === 'png';
+  const type = $('gfmt').value;
   $('gstatus').textContent = 'Making the file...';
   try {
-    const blob = png ? await svgToPng(guide.svg, guide.w, guide.h) : new Blob([guide.svg], { type: 'image/svg+xml' });
+    const blob = await svgToImage(guide.svg, guide.w, guide.h, type);
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `${base}.${png ? 'png' : 'svg'}`;
+    a.download = `${base}.${type}`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     $('gstatus').textContent = `Saved ${a.download} (${guide.w} x ${guide.h} px).`;

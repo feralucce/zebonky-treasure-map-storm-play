@@ -97,7 +97,7 @@
 
   <section class="guides" id="guides" hidden>
     <h2>Guides for the artist</h2>
-    <p>Full-size sheets made from this level, to paint on. Each has an empty <b>Art</b> layer under a locked <b>Guide</b> layer; hide the guide before saving the art.</p>
+    <p>Full-size sheets made from this level, at 2x game size. Put one on its own layer in your paint app, paint on a layer under it, and hide the sheet before saving the art. PNG is see-through where nothing is marked; JPG is on white.</p>
     <div class="bar">
       <label>Background
         <select id="bgmode">
@@ -107,7 +107,7 @@
           <option value="foreground">Foreground: leaves and branches (blurred)</option>
         </select>
       </label>
-      <label>File <select id="gfmt"><option value="svg">SVG with layers</option><option value="png">PNG</option></select></label>
+      <label>File <select id="gfmt"><option value="png">PNG</option><option value="jpg">JPG</option></select></label>
       <button id="bgsave">Save background guide</button>
       <button id="sheetsave">Save tile and dressing sheet</button>
       <span class="status" id="gstatus"></span>
