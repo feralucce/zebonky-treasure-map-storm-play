@@ -47,12 +47,12 @@
 <rect x="8896" y="256" width="896" height="128" fill="#000000"/>
 <rect x="3968" y="512" width="960" height="128" fill="#000000"/>
 <rect x="3584" y="640" width="256" height="64" fill="#8B4513"/>
+<rect x="4992" y="640" width="320" height="64" fill="#8B4513"/>
 <rect x="11072" y="640" width="256" height="128" fill="#000000"/>
-<rect x="5056" y="704" width="192" height="64" fill="#8B4513"/>
 <rect x="3264" y="768" width="256" height="128" fill="#000000"/>
+<rect x="5440" y="768" width="192" height="64" fill="#8B4513"/>
 <rect x="7040" y="768" width="192" height="64" fill="#8B4513"/>
 <rect x="10816" y="768" width="768" height="128" fill="#000000"/>
-<rect x="5376" y="832" width="192" height="64" fill="#8B4513"/>
 <rect x="8576" y="832" width="448" height="64" fill="#000000"/>
 <rect x="1088" y="896" width="192" height="128" fill="#000000"/>
 <rect x="2944" y="896" width="576" height="128" fill="#000000"/>
@@ -79,12 +79,11 @@
 <circle cx="2656" cy="992" r="24" fill="#FF6600"/>
 <circle cx="3168" cy="864" r="24" fill="#0000A0"/>
 <circle cx="4256" cy="480" r="24" fill="#9BFF00"/>
-<circle cx="4512" cy="480" r="24" fill="#FFFF80"/>
+<circle cx="4512" cy="480" r="24" fill="#FFC000"/>
 <circle cx="3936" cy="992" r="24" fill="#FFFF80"/>
 <circle cx="5664" cy="672" r="24" fill="#FFFF80"/>
 <circle cx="6112" cy="992" r="24" fill="#FF6600"/>
 <circle cx="5984" cy="864" r="24" fill="#9BFF00"/>
-<circle cx="6304" cy="992" r="24" fill="#FFC000"/>
 <circle cx="7136" cy="736" r="24" fill="#FFC000"/>
 <circle cx="7456" cy="736" r="24" fill="#FFFF80"/>
 <circle cx="8672" cy="800" r="24" fill="#FF00FF"/>

@@ -102,7 +102,9 @@ down cleanly; the sizes below are game sizes.
   for a moment while the player bounces on. Or toss food (X or F, or the
   banana button): once it has eaten it stays friendly and follows the
   player. Thrown food can't be picked back up.
-- **Pickups and crates.** Stand at one and press Down to take it or open it.
+- **Pickups and crates.** Food and Z-bolt paws are taken by touching them (a
+  paw stays put while energy is full). Stand at a crate and press Down to
+  open it.
   The guide Zebonky is bigger and sparkles. It waits until the player is
   close, then bounds to the next waiting point. At the last one it reveals
   the exit door. Without a guide the exit is visible from the start.

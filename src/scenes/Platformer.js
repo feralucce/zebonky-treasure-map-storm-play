@@ -62,7 +62,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.inDoor = false;
     this.touchDoor = false;
     this.touchGrab = false;
-    this.nearItem = null;      // pickup or crate the player is standing at
+    this.nearItem = null;      // crate the player is standing at
     this.flingUntil = 0;       // flying off a Zebonky's back: no air drag
     this.touchToss = false;
     this.energy = MAX_ENERGY;
@@ -425,7 +425,8 @@ export class PlatformerScene extends Phaser.Scene {
       z.kind = 'paw';
       this.tweens.add({ targets: z, scale: 1.12, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     });
-    this.physics.add.overlap(this.player, this.pickups, (_, it) => { if (!this.nearItem) this.nearItem = it; });
+    // Taken on contact; only crates wait for Down.
+    this.physics.add.overlap(this.player, this.pickups, (_, it) => { if (it.active) this.collect(it); });
 
     // Food that has been thrown.
     this.tossed = this.physics.add.group();
@@ -458,8 +459,10 @@ export class PlatformerScene extends Phaser.Scene {
   collect(it) {
     if (it.kind === 'paw') {
       if (!this.heal()) {
-        this.floatText(it.x, it.y - 30, 'Full energy', 20);
-        return; // leave it for later
+        // Leave it for later; say so once per visit, not every frame.
+        if (this.time.now > (it.fullUntil || 0)) this.floatText(it.x, it.y - 30, 'Full energy', 20);
+        it.fullUntil = this.time.now + 1500;
+        return;
       }
       this.floatText(it.x, it.y - 30, '+1 \u26A1', 24);
     } else {
@@ -1126,7 +1129,7 @@ export class PlatformerScene extends Phaser.Scene {
     }
     this.touchDoor = false;
 
-    // At a crate or a pickup: Down (or the touch button) opens or takes it.
+    // At a crate: Down (or the touch button) opens it.
     const item = this.nearItem && this.nearItem.active && !this.nearItem.taken ? this.nearItem : null;
     this.nearItem = null;
     this.grabHint.setVisible(!!item);
