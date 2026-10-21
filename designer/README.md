@@ -12,13 +12,50 @@ art set applied. Nothing to type.
    64 x 40, both) and open it in
    Inkscape (or Illustrator, Affinity, Figma: any app that saves SVG).
 3. Draw on the **Level** layer with the legend colours.
-4. Save the SVG and drop it on the designer. It shows what the game read and
-   lists anything that looks wrong.
-5. **Play it** to test it right there (R restarts; your real save is untouched).
+4. Save the SVG and drop it on the designer. It starts playing straight away
+   on the page, shows what the game read and lists anything that looks wrong.
+5. Click the game to test it (R restarts, **Full screen** for a bigger view;
+   your real save is untouched). Changing the art set restarts it.
 6. **Save into the game** and pick the level it belongs to. It's written to
    `assets/levels/<level>.json` and replaces that level's layout on the map.
    (Away from the dev server this downloads the file instead; drop it in
    `assets/levels/` and add its name to `assets/levels/index.json`.)
+
+## Guides for the artist
+
+Under the preview, **Guides for the artist** saves full-size sheets made from
+the dropped level, as an SVG (an empty **Art** layer under a locked **Guide**
+layer) or a PNG. Hide the guide before saving the art. Every guide is
+**2x game size** (a 64 px tile is a 128 px box), so the art can be scaled
+down cleanly; the sizes below are game sizes.
+
+- **Background guide**, three ways:
+  - **Whole level, 1:1**: the entire level at full size, with the ground, air
+    ground, platforms and water shown see-through and screen-width marks.
+    The finished picture is locked to the level (an art set layer with
+    `"whole": true`) and never repeats.
+  - **Perfect tiling**: the level's full height, two screens wide (2368 px).
+    It repeats edge to edge, so the two gold edge strips must match.
+  - **Reverse tiling**: the same size, but every other copy is flipped left
+    to right (`mirror_repeat`), so the edges join by themselves.
+  Both tiling guides mark the level's main floor, one screen's size and the
+  tile rows. They scroll at 0.3 of the player's speed. A tiling picture as
+  tall as the level scrolls with it up and down instead of being squashed to
+  the screen.
+- **Foreground guide** (the fourth background choice): one screen tall, two
+  wide, for leaves along the bottom and branches along the top, with the
+  play area, the HUD and the phone buttons marked. Paint it sharp: the game
+  blurs it, slides it past faster than the level and pins it to the screen.
+  It goes in an art set's `foreground` list (`file`, `scroll` 1.6, `blur` 6
+  screen pixels, `mirror_repeat`, optional `alpha`). The jungle sets carry a
+  placeholder from `tools/make_foreground.py` until the real art arrives.
+- **Tile and dressing sheet**: a labelled box for every picture an art set
+  needs, at game size: ground (and sand or rock if the level uses them),
+  air ground (floating ledges, a 2 x 2 block per shape), platforms and
+  dressing (ground plants, hangers, scatter, platform toppers). Each box
+  says how often this level uses it; dashed boxes aren't used yet. The
+  box positions are stored in the SVG's `<metadata>`, ready for cutting a
+  painted sheet back into an art set.
 
 ## Drawing rules
 

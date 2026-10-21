@@ -194,5 +194,13 @@
    "hang_fern.png"
   ],
   "hang_chance": 0.3
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_jungle.png",
+   "scroll": 1.6,
+   "blur": 6,
+   "mirror_repeat": true
+  }
+ ]
 }

@@ -40,6 +40,17 @@
   .play .top { display: flex; gap: 12px; align-items: center; padding: 10px 16px; color: var(--parch); }
   .play .top span { margin-right: auto; }
   .play iframe { flex: 1; border: 0; width: 100%; }
+  h2 { margin: 0; font: 800 20px Poppins, sans-serif; }
+  .demo { margin-top: 16px; }
+  .demo .bar span { font-size: 14px; }
+  .demo .frame { background: var(--ink); border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; aspect-ratio: 1180 / 787; max-height: 70vh; margin: 0 auto; }
+  .demo iframe { display: block; width: 100%; height: 100%; border: 0; }
+  .guides { margin-top: 28px; padding-top: 18px; border-top: 2px solid var(--ink); }
+  .guides p { margin: 6px 0 0; }
+  .thumbs { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; }
+  .thumbs figure { margin: 0; background: repeating-conic-gradient(#eee6d4 0 25%, #fffaf0 0 50%) 0 0 / 20px 20px; border: 2px solid var(--ink); border-radius: 12px; padding: 8px; }
+  .thumbs img { display: block; width: 100%; max-height: 520px; object-fit: contain; }
+  .thumbs figcaption { font-size: 14px; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -57,10 +68,19 @@
     <input type="file" id="file" accept=".svg,image/svg+xml" hidden>
   </label>
 
+  <section class="demo" id="demo" hidden>
+    <div class="bar">
+      <h2>Test play</h2>
+      <span>Click the game, then: arrows run, Space or Z jumps, Down picks up, Up goes through doors, X or F tosses food, R restarts.</span>
+      <button id="restart">Restart</button>
+      <button class="go" id="play">Full screen</button>
+    </div>
+    <div class="frame"><iframe id="inline" title="Test play"></iframe></div>
+  </section>
+
   <div class="bar">
     <label>Art set <select id="artset"></select></label>
     <label>Save as level <select id="level"></select></label>
-    <button class="go" id="play" disabled>Play it</button>
     <button id="save" disabled>Save into the game</button>
     <button id="download" disabled>Download layout</button>
     <span class="status" id="status"></span>
@@ -74,6 +94,29 @@
   <div class="stage"><canvas id="preview" width="1200" height="225"></canvas></div>
   <div class="key" id="key"></div>
   <ul class="warn" id="warnings"></ul>
+
+  <section class="guides" id="guides" hidden>
+    <h2>Guides for the artist</h2>
+    <p>Full-size sheets made from this level, to paint on. Each has an empty <b>Art</b> layer under a locked <b>Guide</b> layer; hide the guide before saving the art.</p>
+    <div class="bar">
+      <label>Background
+        <select id="bgmode">
+          <option value="whole">Whole level, 1:1</option>
+          <option value="tile">Perfect tiling (repeats edge to edge)</option>
+          <option value="mirror">Reverse tiling (every other copy flipped)</option>
+          <option value="foreground">Foreground: leaves and branches (blurred)</option>
+        </select>
+      </label>
+      <label>File <select id="gfmt"><option value="svg">SVG with layers</option><option value="png">PNG</option></select></label>
+      <button id="bgsave">Save background guide</button>
+      <button id="sheetsave">Save tile and dressing sheet</button>
+      <span class="status" id="gstatus"></span>
+    </div>
+    <div class="thumbs">
+      <figure><img id="bgthumb" alt="Background guide"><figcaption id="bgcap"></figcaption></figure>
+      <figure><img id="sheetthumb" alt="Tile and dressing sheet"><figcaption id="sheetcap"></figcaption></figure>
+    </div>
+  </section>
 
   <details>
     <summary>Layout text</summary>

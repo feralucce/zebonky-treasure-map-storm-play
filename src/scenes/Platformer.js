@@ -98,6 +98,7 @@ export class PlatformerScene extends Phaser.Scene {
 
     if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
     else this.buildBackdrop(worldW, worldH);
+    if (this.art && this.art.foreground) this.buildForeground(worldW);
 
     this.solids = this.physics.add.staticGroup();
     this.platforms = this.physics.add.staticGroup();
@@ -231,7 +232,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.keys.ESC.on('down', () => this.leave());
 
     this.buildHud(lvl);
+    // The buttons stay in front of the foreground leaves.
+    const before = this.children.list.length;
     this.buildTouchControls();
+    this.children.list.slice(before).forEach((o) => o.setDepth && o.setDepth(22));
 
     // Held keys can get stuck while the quiz has the level paused.
     this.events.on('resume', () => {
@@ -575,12 +579,19 @@ export class PlatformerScene extends Phaser.Scene {
       }
       const key = texKey(this.artName, layer.file);
       if (!this.textures.exists(key)) return;
+      // A whole-level picture (from the designer's 1:1 guide) is locked to
+      // the level and never repeats.
+      if (layer.whole) {
+        this.add.image(0, 0, key).setOrigin(0, 0).setDepth(-10 + i);
+        return;
+      }
       const sf = layer.scroll ?? 0.35;
       const src = this.textures.get(key).getSourceImage();
       const top = layer.anchor === 'top';
-      // Tall (vertical) levels: the backdrop is pinned to the screen top to
-      // bottom, so climbing never runs off the end of it.
-      const tall = worldH > MAP_H + TILE;
+      // Tall (vertical) levels: a backdrop shorter than the level is pinned
+      // to the screen top to bottom, so climbing never runs off the end of
+      // it. One painted at the level's full height scrolls with it instead.
+      const tall = worldH > MAP_H + TILE && src.height < worldH;
       const scale = tall ? MAP_H / src.height : 1;
       const w = src.width * scale;
       const span = (worldW - MAP_W) * sf + MAP_W + w;
@@ -591,6 +602,77 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // Foreground from the art set: one picture the height of the screen, with
+  // leaves along the bottom and branches along the top. It's pinned to the
+  // screen's edges, slides past faster than the level, sits in front of
+  // everything but the HUD and buttons, and is blurred here so the art can
+  // be painted sharp.
+  buildForeground(worldW) {
+    this.art.foreground.forEach((layer, i) => {
+      const key = texKey(this.artName, layer.file);
+      if (!this.textures.exists(key)) return;
+      const src = this.textures.get(key).getSourceImage();
+      const scale = MAP_H / src.height;
+      // Blur is given in screen pixels; the picture may be painted larger.
+      const tex = this.blurredTexture(key, (layer.blur ?? 6) / scale, !!layer.mirror_repeat);
+      const w = src.width * scale;
+      const sf = layer.scroll ?? 1.6;
+      const span = (worldW - MAP_W) * sf + MAP_W + w;
+      for (let n = 0, x = 0; x < span; n++, x += w) {
+        this.add.image(x, 0, tex).setOrigin(0, 0).setScale(scale)
+          .setScrollFactor(sf, 0).setDepth(15 + i).setAlpha(layer.alpha ?? 1)
+          .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+      }
+    });
+  }
+
+  // A blurred copy of a picture, made once per level load. Its neighbours
+  // (flipped, for a mirrored layer) go either side first and its top and
+  // bottom rows are stretched outward, so the blur doesn't fade the joins
+  // or the screen edges.
+  blurredTexture(key, px, mirror) {
+    const out = `${key}:blur${Math.round(px)}`;
+    if (px < 0.5) return key;
+    if (this.textures.exists(out)) return out;
+    const img = this.textures.get(key).getSourceImage();
+    const w = img.width;
+    const h = img.height;
+    const pad = Math.ceil(px * 3);
+    const canvas = (cw, ch) => Object.assign(document.createElement('canvas'), { width: cw, height: ch });
+    const wide = canvas(w * 3, h + pad * 2);
+    const g = wide.getContext('2d');
+    [0, 1, 2].forEach((n) => {
+      g.save();
+      if (mirror && n !== 1) {
+        g.translate(n * w + w, 0);
+        g.scale(-1, 1);
+        g.drawImage(img, 0, pad);
+      } else {
+        g.drawImage(img, n * w, pad);
+      }
+      g.restore();
+    });
+    g.drawImage(wide, 0, pad, w * 3, 1, 0, 0, w * 3, pad);
+    g.drawImage(wide, 0, pad + h - 1, w * 3, 1, 0, pad + h, w * 3, pad);
+    const soft = canvas(wide.width, wide.height);
+    const sg = soft.getContext('2d');
+    if ('filter' in sg) {
+      sg.filter = `blur(${px}px)`;
+      sg.drawImage(wide, 0, 0);
+    } else {
+      // No canvas filters (older Safari): shrink and grow back instead.
+      const f = Math.max(1, px / 2);
+      const small = canvas(Math.ceil(wide.width / f), Math.ceil(wide.height / f));
+      small.getContext('2d').drawImage(wide, 0, 0, small.width, small.height);
+      sg.imageSmoothingQuality = 'high';
+      sg.drawImage(small, 0, 0, soft.width, soft.height);
+    }
+    const final = canvas(w, h);
+    final.getContext('2d').drawImage(soft, w, pad, w, h, 0, 0, w, h);
+    this.textures.addCanvas(out, final);
+    return out;
   }
 
   // Flat-vector jungle dressing, for art sets with a "dressing" entry:

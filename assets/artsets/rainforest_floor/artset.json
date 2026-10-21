@@ -200,5 +200,13 @@
    "fl_rock_small.png"
   ],
   "ground_chance": 0.25
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_pixel.png",
+   "scroll": 1.6,
+   "blur": 6,
+   "mirror_repeat": true
+  }
+ ]
 }

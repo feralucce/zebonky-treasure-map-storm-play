@@ -52,6 +52,7 @@ export class BootScene extends Phaser.Scene {
           add(b.file);
           if (b.column) ['top', 'mid', 'bottom'].forEach((k) => add(b.column[k]));
         });
+        (data.foreground || []).forEach((f) => add(f.file));
         add(data.food);
         (data.platform_decor || []).forEach(add);
         const dr = data.dressing || {};

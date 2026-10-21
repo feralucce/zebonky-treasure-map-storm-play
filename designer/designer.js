@@ -3,6 +3,7 @@ import { readDrawing } from './read-drawing.js';
 import { ARTSETS } from '../src/data/artsets.js';
 import { LEVELS } from '../src/data/world.js';
 import { TEST_LAYOUT_KEY } from '../src/data/levels.js';
+import { backgroundGuide, tileSheet, svgToPng } from './guides.js';
 
 const $ = (id) => document.getElementById(id);
 const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen
@@ -10,6 +11,7 @@ const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen
 let result = null;      // what readDrawing returned
 let drawingImg = null;  // the drawing itself, for the "Your drawing" view
 let view = 'read';
+let levelName = 'level';  // the drawing's file name, for the guides
 
 // ---------- set up the pickers ----------
 
@@ -49,6 +51,9 @@ async function open(file) {
   showWarnings(result.warnings);
   $('out').textContent = JSON.stringify(layout(), null, 1);
   draw();
+  levelName = file.name.replace(/\.svg$/i, '');
+  startDemo();
+  showGuides();
 }
 
 function layout() {
@@ -152,14 +157,30 @@ function draw() {
 
 // ---------- hand it to the game ----------
 
-function play() {
+// The game reads the test layout from storage when it starts.
+function handOff() {
   try {
     localStorage.setItem(TEST_LAYOUT_KEY, JSON.stringify(layout()));
+    return true;
   } catch (e) {
     showWarnings(['This browser blocked storage, so the test level could not be handed to the game.']);
-    return;
+    return false;
   }
-  $('game').src = `../index.html?test=1&level=${$('level').value}&t=${Date.now()}`;
+}
+const gameUrl = () => `../index.html?test=1&level=${$('level').value}&t=${Date.now()}`;
+
+// Dropping a drawing starts it straight away, on the page.
+function startDemo() {
+  if (!result || !handOff()) return;
+  $('demo').hidden = false;
+  $('inline').src = gameUrl();
+  $('inline').onload = () => $('inline').focus();
+}
+
+function play() {
+  if (!handOff()) return;
+  $('inline').src = 'about:blank';   // one game at a time
+  $('game').src = gameUrl();
   $('playbox').classList.add('open');
   $('game').focus();
 }
@@ -167,6 +188,43 @@ function play() {
 function closePlay() {
   $('playbox').classList.remove('open');
   $('game').src = 'about:blank';
+  startDemo();
+}
+
+// ---------- guides for the artist ----------
+
+const thumbs = {};
+function showThumb(id, svg) {
+  if (thumbs[id]) URL.revokeObjectURL(thumbs[id]);
+  thumbs[id] = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  $(id).src = thumbs[id];
+}
+
+function showGuides() {
+  if (!result) return;
+  $('guides').hidden = false;
+  const bg = backgroundGuide(result.rows, $('bgmode').value, levelName);
+  showThumb('bgthumb', bg.svg);
+  $('bgcap').textContent = `${$('bgmode').selectedOptions[0].text}: ${bg.w} x ${bg.h} px`;
+  const sheet = tileSheet(result.rows, levelName);
+  showThumb('sheetthumb', sheet.svg);
+  $('sheetcap').textContent = `Tile and dressing sheet: ${sheet.w} x ${sheet.h} px`;
+}
+
+async function saveGuide(guide, base) {
+  const png = $('gfmt').value === 'png';
+  $('gstatus').textContent = 'Making the file...';
+  try {
+    const blob = png ? await svgToPng(guide.svg, guide.w, guide.h) : new Blob([guide.svg], { type: 'image/svg+xml' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${base}.${png ? 'png' : 'svg'}`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    $('gstatus').textContent = `Saved ${a.download} (${guide.w} x ${guide.h} px).`;
+  } catch (e) {
+    $('gstatus').textContent = e.message;
+  }
 }
 
 async function save() {
@@ -215,7 +273,15 @@ $('views').addEventListener('click', (e) => {
   document.querySelectorAll('#views button').forEach((x) => x.classList.toggle('on', x === b));
   draw();
 });
-$('artset').addEventListener('change', () => { if (result) $('out').textContent = JSON.stringify(layout(), null, 1); });
+$('artset').addEventListener('change', () => { if (result) { $('out').textContent = JSON.stringify(layout(), null, 1); startDemo(); } });
+$('level').addEventListener('change', startDemo);
+$('restart').addEventListener('click', startDemo);
+$('bgmode').addEventListener('change', showGuides);
+$('bgsave').addEventListener('click', () => {
+  const mode = $('bgmode').value;
+  saveGuide(backgroundGuide(result.rows, mode, levelName), `${levelName}-background-${{ whole: 'whole', tile: 'tiling', mirror: 'reverse-tiling', foreground: 'foreground' }[mode]}`);
+});
+$('sheetsave').addEventListener('click', () => saveGuide(tileSheet(result.rows, levelName), `${levelName}-tile-sheet`));
 $('play').addEventListener('click', play);
 $('save').addEventListener('click', save);
 $('download').addEventListener('click', download);
