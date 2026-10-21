@@ -15,7 +15,9 @@ node server.js
 Then open http://localhost:5214. No install step: Phaser 4.2.1 is in `vendor/`.
 
 Demo: `index.html?demo=cumulus` opens straight into the Cumulus Rainforest
-level drawn in the designer (`assets/levels/cumulus.json`). Online:
+level drawn in the designer (`assets/levels/cumulus.json`), in the pixel art
+of the rainforest floor asset pack (`assets/artsets/rainforest_floor`, built
+by `tools/make_floor_artset.py` from the pack folder). Online:
 https://feralucce.github.io/zebonky-treasure-map-storm-play/?demo=cumulus
 
 Second demo: `index.html?demo=cumulus-jungle` is the same drawing in the

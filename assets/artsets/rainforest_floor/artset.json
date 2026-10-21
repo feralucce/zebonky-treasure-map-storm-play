@@ -1,0 +1,204 @@
+{
+ "name": "Rainforest floor (pixel)",
+ "tile": 64,
+ "sets": {
+  "ground": {
+   "top_mid": [
+    "fl_top_1.png",
+    "fl_top_2.png",
+    "fl_top_3.png",
+    "fl_top_4.png",
+    "fl_top_5.png",
+    "fl_top_6.png",
+    "fl_top_7.png",
+    "fl_top_8.png",
+    "fl_top_9.png",
+    "fl_top_10.png"
+   ],
+   "top_left": [
+    "fl_top_left.png"
+   ],
+   "top_right": [
+    "fl_top_right.png"
+   ],
+   "top_single": [
+    "fl_top_single.png"
+   ],
+   "side_left": [
+    "fl_side_left_1.png",
+    "fl_side_left_2.png"
+   ],
+   "side_right": [
+    "fl_side_right_1.png",
+    "fl_side_right_2.png"
+   ],
+   "fill": [
+    "fl_stone_1.png",
+    "fl_stone_2.png",
+    "fl_stone_3.png",
+    "fl_stone_4.png",
+    "fl_stone_5.png",
+    "fl_stone_6.png"
+   ],
+   "deep": [
+    "fl_deep_1.png",
+    "fl_deep_2.png",
+    "fl_deep_3.png",
+    "fl_deep_4.png",
+    "fl_deep_5.png",
+    "fl_deep_6.png"
+   ],
+   "deep_from": 3
+  },
+  "rock": {
+   "top_mid": [
+    "fl_stone_1.png",
+    "fl_stone_2.png",
+    "fl_stone_3.png",
+    "fl_stone_4.png",
+    "fl_stone_5.png",
+    "fl_stone_6.png"
+   ],
+   "fill": [
+    "fl_stone_1.png",
+    "fl_stone_2.png",
+    "fl_stone_3.png",
+    "fl_stone_4.png",
+    "fl_stone_5.png",
+    "fl_stone_6.png"
+   ]
+  }
+ },
+ "platform": {
+  "left": [
+   "../rainforest/platform_left.svg"
+  ],
+  "mid": [
+   "../rainforest/platform_mid.svg"
+  ],
+  "right": [
+   "../rainforest/platform_right.svg"
+  ],
+  "single": [
+   "../rainforest/platform_single.svg"
+  ]
+ },
+ "water": {},
+ "canopy": {
+  "0000": [
+   "fl_ledge_0000_1.png",
+   "fl_ledge_0000_2.png",
+   "fl_ledge_0000_3.png",
+   "fl_ledge_0000_4.png"
+  ],
+  "0001": [
+   "fl_ledge_0001_1.png",
+   "fl_ledge_0001_2.png",
+   "fl_ledge_0001_3.png",
+   "fl_ledge_0001_4.png"
+  ],
+  "0010": [
+   "fl_ledge_0010_1.png",
+   "fl_ledge_0010_2.png",
+   "fl_ledge_0010_3.png",
+   "fl_ledge_0010_4.png"
+  ],
+  "0011": [
+   "fl_ledge_0011_1.png",
+   "fl_ledge_0011_2.png",
+   "fl_ledge_0011_3.png",
+   "fl_ledge_0011_4.png"
+  ],
+  "0100": [
+   "fl_ledge_0100_1.png",
+   "fl_ledge_0100_2.png",
+   "fl_ledge_0100_3.png",
+   "fl_ledge_0100_4.png"
+  ],
+  "0101": [
+   "fl_ledge_0101_1.png",
+   "fl_ledge_0101_2.png",
+   "fl_ledge_0101_3.png",
+   "fl_ledge_0101_4.png"
+  ],
+  "0110": [
+   "fl_ledge_0110_1.png",
+   "fl_ledge_0110_2.png",
+   "fl_ledge_0110_3.png",
+   "fl_ledge_0110_4.png"
+  ],
+  "0111": [
+   "fl_ledge_0111_1.png",
+   "fl_ledge_0111_2.png",
+   "fl_ledge_0111_3.png",
+   "fl_ledge_0111_4.png"
+  ],
+  "1000": [
+   "fl_ledge_1000_1.png",
+   "fl_ledge_1000_2.png",
+   "fl_ledge_1000_3.png",
+   "fl_ledge_1000_4.png"
+  ],
+  "1001": [
+   "fl_ledge_1001_1.png",
+   "fl_ledge_1001_2.png",
+   "fl_ledge_1001_3.png",
+   "fl_ledge_1001_4.png"
+  ],
+  "1010": [
+   "fl_ledge_1010_1.png",
+   "fl_ledge_1010_2.png",
+   "fl_ledge_1010_3.png",
+   "fl_ledge_1010_4.png"
+  ],
+  "1011": [
+   "fl_ledge_1011_1.png",
+   "fl_ledge_1011_2.png",
+   "fl_ledge_1011_3.png",
+   "fl_ledge_1011_4.png"
+  ],
+  "1100": [
+   "fl_ledge_1100_1.png",
+   "fl_ledge_1100_2.png",
+   "fl_ledge_1100_3.png",
+   "fl_ledge_1100_4.png"
+  ],
+  "1101": [
+   "fl_ledge_1101_1.png",
+   "fl_ledge_1101_2.png",
+   "fl_ledge_1101_3.png",
+   "fl_ledge_1101_4.png"
+  ],
+  "1110": [
+   "fl_ledge_1110_1.png",
+   "fl_ledge_1110_2.png",
+   "fl_ledge_1110_3.png",
+   "fl_ledge_1110_4.png"
+  ],
+  "1111": [
+   "fl_ledge_1111_1.png",
+   "fl_ledge_1111_2.png",
+   "fl_ledge_1111_3.png",
+   "fl_ledge_1111_4.png"
+  ]
+ },
+ "food": "../rainforest/food_bananas.png",
+ "sky": "#1f6b5a",
+ "background": [
+  {
+   "file": "bg_floor_mid.png",
+   "scroll": 0.3,
+   "mirror_repeat": true
+  }
+ ],
+ "dressing": {
+  "ground_plants": [
+   "fl_fern_big.png",
+   "fl_fern_left.png",
+   "fl_fern_small.png",
+   "fl_rock_big.png",
+   "fl_rock_small.png"
+  ],
+  "ground_chance": 0.25
+ }
+}
