@@ -27,6 +27,7 @@ const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto lan
 const CURRENT_LIFT = 660;
 // Hidden doors: a short fade while you slip through.
 const DOOR_FADE_MS = 160;
+const BOTTOM_ROOM = 64;        // the camera can look this far below the level's bottom
 
 // Energy is the row of Z-bolts on the HUD. A wild Zebonky's bump or a fall
 // into a pit costs one; a Z-bolt paw print gives one back. Run out and you
@@ -87,13 +88,41 @@ export class PlatformerScene extends Phaser.Scene {
     this.worldW = worldW;
 
     this.physics.world.setBounds(0, 0, worldW, worldH + 400);
-    // Earth below the bottom row, for screens taller than the level.
-    this.add.rectangle(0, worldH, worldW, 200, 0x6b4a2e).setOrigin(0).setDepth(-1);
+    // Below the bottom row. The camera looks a little past it, so pits near
+    // the bottom sit clear of the foreground leaves. Solid ground carries
+    // on down; in pits the backdrop runs on and fades into the dark, with
+    // no edge that could read as a floor.
+    if (!this.textures.exists('pit-fade')) {
+      const cv = Object.assign(document.createElement('canvas'), { width: 4, height: BOTTOM_ROOM });
+      const g = cv.getContext('2d');
+      const grad = g.createLinearGradient(0, 0, 0, BOTTOM_ROOM);
+      grad.addColorStop(0, 'rgba(8,16,12,0)');
+      grad.addColorStop(1, 'rgba(8,16,12,0.92)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 4, BOTTOM_ROOM);
+      this.textures.addCanvas('pit-fade', cv);
+    }
+    this.add.image(0, worldH, 'pit-fade').setOrigin(0).setDisplaySize(worldW, BOTTOM_ROOM).setDepth(-2);
+    this.add.rectangle(0, worldH + BOTTOM_ROOM, worldW, 400, 0x08100c, 0.92).setOrigin(0).setDepth(-2);
+    const ground = this.art && this.art.sets && this.art.sets.ground;
+    const under = ground && (ground.deep || ground.fill);
+    const underKey = under && under.length && texKey(this.artName, under[0]);
+    const bottom = rows[rows.length - 1] || '';
+    for (let c = 0; c < cols;) {
+      if (!SOLID_TEXTURES[bottom[c]]) { c++; continue; }
+      const from = c;
+      while (c < cols && SOLID_TEXTURES[bottom[c]]) c++;
+      if (underKey && this.textures.exists(underKey)) {
+        this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey).setOrigin(0).setDepth(-1);
+      } else {
+        this.add.rectangle(from * TILE, worldH, (c - from) * TILE, 400, 0x6b4a2e).setOrigin(0).setDepth(-1);
+      }
+    }
     // The page's left and right edges are walls; the top and bottom are open
     // (you can jump above the page, and pits drop out of the bottom).
     this.physics.world.checkCollision.down = false;
     this.physics.world.checkCollision.up = false;
-    this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH, MAP_H));
+    this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH + BOTTOM_ROOM, MAP_H));
     this.cameras.main.setBackgroundColor((this.art && this.art.sky) || lvl.color);
 
     if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
@@ -595,7 +624,9 @@ export class PlatformerScene extends Phaser.Scene {
       const scale = tall ? MAP_H / src.height : 1;
       const w = src.width * scale;
       const span = (worldW - MAP_W) * sf + MAP_W + w;
-      const y = tall ? MAP_H : top ? (layer.offset || 0) : worldH - (layer.offset || 0);
+      // Bottom-anchored layers reach the camera's lowest view, so pits in
+      // the bottom row look down into more jungle.
+      const y = tall ? MAP_H : top ? (layer.offset || 0) : worldH + BOTTOM_ROOM - (layer.offset || 0);
       for (let n = 0, x = 0; x < span; n++, x += w) {
         this.add.image(x, y, key).setOrigin(0, tall || !top ? 1 : 0).setScale(scale)
           .setScrollFactor(sf, tall ? 0 : 1).setDepth(-10 + i)
@@ -620,10 +651,17 @@ export class PlatformerScene extends Phaser.Scene {
       const w = src.width * scale;
       const sf = layer.scroll ?? 1.6;
       const span = (worldW - MAP_W) * sf + MAP_W + w;
+      // bottom_drop (screen pixels) lowers the bottom half only, so the
+      // leaves sit lower without moving the branches at the top.
+      const drop = layer.bottom_drop || 0;
+      const half = src.height / 2;
       for (let n = 0, x = 0; x < span; n++, x += w) {
-        this.add.image(x, 0, tex).setOrigin(0, 0).setScale(scale)
-          .setScrollFactor(sf, 0).setDepth(15 + i).setAlpha(layer.alpha ?? 1)
-          .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+        [[0, 0], [half, drop]].forEach(([cropY, dy]) => {
+          this.add.image(x, dy, tex).setOrigin(0, 0).setScale(scale)
+            .setCrop(0, cropY, src.width, half)
+            .setScrollFactor(sf, 0).setDepth(15 + i).setAlpha(layer.alpha ?? 1)
+            .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+        });
       }
     });
   }

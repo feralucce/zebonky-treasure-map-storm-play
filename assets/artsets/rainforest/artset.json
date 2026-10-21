@@ -239,6 +239,7 @@
    "file": "fg_pixel.png",
    "scroll": 1.6,
    "blur": 6,
+   "bottom_drop": 36,
    "mirror_repeat": true
   }
  ]
