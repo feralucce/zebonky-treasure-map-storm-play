@@ -71,16 +71,28 @@
  },
  "platform": {
   "left": [
-   "../rainforest/platform_left.svg"
+   "pl_left_1.png",
+   "pl_left_2.png",
+   "pl_left_3.png",
+   "pl_left_4.png"
   ],
   "mid": [
-   "../rainforest/platform_mid.svg"
+   "pl_mid_1.png",
+   "pl_mid_2.png",
+   "pl_mid_3.png",
+   "pl_mid_4.png"
   ],
   "right": [
-   "../rainforest/platform_right.svg"
+   "pl_right_1.png",
+   "pl_right_2.png",
+   "pl_right_3.png",
+   "pl_right_4.png"
   ],
   "single": [
-   "../rainforest/platform_single.svg"
+   "pl_single_1.png",
+   "pl_single_2.png",
+   "pl_single_3.png",
+   "pl_single_4.png"
   ]
  },
  "water": {},
