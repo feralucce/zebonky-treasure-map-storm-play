@@ -280,11 +280,32 @@ export async function readDrawing(svgText) {
     if (!count('B') && waitCells.length) warnings.push('Waiting points were drawn but there is no guide Zebonky (purple) to use them.');
     if (count('E') && !count('f')) warnings.push('There are wild Zebonkies but no food to toss. Jumping over still works.');
 
+    const nav = makeNav(grid.map((line) => line.join('')));
+    const cellsOf = (ch) => {
+      const out = [];
+      grid.forEach((line, r) => line.forEach((x, c) => { if (x === ch) out.push({ r, c }); }));
+      return out;
+    };
+
+    // Every crate should be on the way to the exit. If the exit can be
+    // reached without coming within 2 tiles of a crate (a branch the player
+    // may never take), it can be missed. Crates are numbered left to right,
+    // as the game numbers its questions.
+    const startAt = cellsOf('P').pop();
+    const exitAt = cellsOf('G')[0];
+    if (startAt && exitAt && nav.find(startAt, exitAt)) {
+      const near = (a, b) => Math.abs(a.r - b.r) <= 2 && Math.abs(a.c - b.c) <= 2;
+      cellsOf('T').sort((a, b) => a.c - b.c).forEach((t, i) => {
+        if (near(startAt, t) || near(exitAt, t)) return;
+        if (nav.find(startAt, exitAt, false, (r, c) => near({ r, c }, t))) {
+          warnings.push(`Mystery crate ${i + 1} (column ${t.c + 1}, row ${t.r + 1}) can be missed: there's a way to the exit that never passes it. Move it onto the path everyone takes.`);
+        }
+      });
+    }
+
     // The guide only goes where the player could: check each leg of its route.
-    const guideAt = [];
-    grid.forEach((line, r) => line.forEach((ch, c) => { if (ch === 'B') guideAt.push({ r, c }); }));
+    const guideAt = cellsOf('B');
     if (guideAt.length && waitCells.length) {
-      const nav = makeNav(grid.map((line) => line.join('')));
       let from = guideAt[guideAt.length - 1];
       waitCells.forEach((w, i) => {
         if (!nav.find(from, w)) {

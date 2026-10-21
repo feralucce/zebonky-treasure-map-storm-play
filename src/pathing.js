@@ -172,7 +172,8 @@ export function makeNav(rows) {
 
   // Cheapest route between two tiles, as a list of steps [{r, c, type}],
   // the first being the start. Null when there's no way the player could go.
-  function find(from, to, closest = false) {
+  // avoid(r, c), if given, rules out landing on those spots.
+  function find(from, to, closest = false, avoid = null) {
     const a = nearestSpot(from.r, from.c);
     const b = nearestSpot(to.r, to.c);
     if (!a || !b) return null;
@@ -187,6 +188,7 @@ export function makeNav(rows) {
       if (cur.r === b.r && cur.c === b.c) break;
       if (cur.cost > best.get(key(cur))) continue;
       for (const m of moves(cur.r, cur.c)) {
+        if (avoid && avoid(m.r, m.c)) continue;
         const cost = cur.cost + m.cost;
         const k = key(m);
         if (best.has(k) && best.get(k) <= cost) continue;
