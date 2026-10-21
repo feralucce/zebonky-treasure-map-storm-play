@@ -15,7 +15,12 @@ art set applied. Nothing to type.
 4. Save the SVG and drop it on the designer. It starts playing straight away
    on the page, shows what the game read and lists anything that looks wrong.
 5. Click the game to test it (R restarts, **Full screen** for a bigger view;
-   your real save is untouched). Changing the art set restarts it.
+   your real save is untouched). It starts in **Blocks (no dressing)**: the
+   layout as flat legend-coloured blocks with no backdrop, foreground or
+   plants, and the real explorer, Zebonkies, crates and pickups. Pick an art
+   set to see it dressed; changing it restarts the game. A secret exit only
+   appears when "Save as level" is a level that has one (Bamboo Dunes or
+   Magenta).
 6. **Save into the game** and pick the level it belongs to. It's written to
    `assets/levels/<level>.json` and replaces that level's layout on the map.
    (Away from the dev server this downloads the file instead; drop it in

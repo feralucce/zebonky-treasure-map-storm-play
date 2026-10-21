@@ -7,7 +7,7 @@ import { TILE, layoutFor } from '../data/levels.js';
 import { state } from '../state.js';
 import { COLORS, heading, text } from '../theme.js';
 import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole } from '../data/artsets.js';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js';
 import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
 import { makeNav } from '../pathing.js';
 
@@ -80,6 +80,13 @@ export class PlatformerScene extends Phaser.Scene {
     const layout = layoutFor(this.layoutId, this.test && !this.demo);
     this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
     this.artName = layout.artset;
+    // "Blocks": the drawing as flat legend-coloured blocks with no scenery.
+    // Characters, pickups and signs still use their real art.
+    this.blocks = layout.artset === BLOCKS;
+    if (this.blocks) {
+      this.art = null;
+      this.artName = null;
+    }
     const rows = layout.rows;
     const cols = Math.max(...rows.map((r) => r.length));
     const worldW = cols * TILE;
@@ -115,7 +122,7 @@ export class PlatformerScene extends Phaser.Scene {
       if (underKey && this.textures.exists(underKey)) {
         this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey).setOrigin(0).setDepth(-1);
       } else {
-        this.add.rectangle(from * TILE, worldH, (c - from) * TILE, 400, 0x6b4a2e).setOrigin(0).setDepth(-1);
+        this.add.rectangle(from * TILE, worldH, (c - from) * TILE, 400, this.blocks ? BLOCK_COLORS['#'] : 0x6b4a2e).setOrigin(0).setDepth(-1);
       }
     }
     // The page's left and right edges are walls; the top and bottom are open
@@ -123,9 +130,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.physics.world.checkCollision.down = false;
     this.physics.world.checkCollision.up = false;
     this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH + BOTTOM_ROOM, MAP_H));
-    this.cameras.main.setBackgroundColor((this.art && this.art.sky) || lvl.color);
+    this.cameras.main.setBackgroundColor(this.blocks ? BLOCKS_SKY : (this.art && this.art.sky) || lvl.color);
 
-    if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
+    if (this.blocks) {
+      // No backdrop.
+    } else if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
     else this.buildBackdrop(worldW, worldH);
     if (this.art && this.art.foreground) this.buildForeground(worldW);
 
@@ -163,7 +172,9 @@ export class PlatformerScene extends Phaser.Scene {
         const y = r * TILE + TILE / 2;
         if (SOLID_TEXTURES[ch]) {
           // Picture only; collision comes from the merged boxes built below.
-          if (!this.drawArtSolid(ch, isSolid, r, c, x, y, at)) {
+          if (this.blocks) {
+            this.block(x, y, TILE, BLOCK_COLORS[ch]);
+          } else if (!this.drawArtSolid(ch, isSolid, r, c, x, y, at)) {
             const [topTex, fillTex] = SOLID_TEXTURES[ch];
             const top = !SOLID_TEXTURES[at(r - 1, c)];
             this.add.image(x, y, top ? topTex : fillTex);
@@ -183,19 +194,24 @@ export class PlatformerScene extends Phaser.Scene {
           guideSpot = { x, y: (r + 1) * TILE };
         } else if (isWater(r, c)) {
           const surface = !isWater(r - 1, c);
-          this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
+          if (this.blocks) this.block(x, y, TILE, BLOCK_COLORS['~'], 0.45).setDepth(5);
+          else this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
           this.water.add(`${c},${r}`);
           if (surface) this.surfaceRow[c] = r;
           if (ch === 'T') treasureSpots.push({ x, y });
+        } else if (ch === 'W' && this.blocks) {
+          this.block(x, y, TILE, BLOCK_COLORS.W, 0.5).setDepth(5);
+          this.current.add(`${c},${r}`);
         } else if (ch === 'W') {
-          const fall = this.add.tileSprite(x, y, TILE, TILE, 'waterfall').setDepth(5).setAlpha(0.5);
+          const fall =this.add.tileSprite(x, y, TILE, TILE, 'waterfall').setDepth(5).setAlpha(0.5);
           fall.tilePositionX = (c % 2) * TILE;
           this.falls.push(fall);
           this.current.add(`${c},${r}`);
         } else if (ch === 'F') {
           this.add.image(x + 16, (r + 1) * TILE + 6, 'fin').setOrigin(0.5, 1);
         } else if (ch === '=') {
-          const tex = this.artTexture(this.art && this.art.platform, platformRole(isPlatform, r, c), r, c) || 'platform';
+          const tex = this.blocks ? this.blockTexture('block-platform', TILE, 28, BLOCK_COLORS['='])
+            : this.artTexture(this.art && this.art.platform, platformRole(isPlatform, r, c), r, c) || 'platform';
           const p = this.platforms.create(x, r * TILE + 14, tex);
           this.decoratePlatform(x, r, c);
           p.body.checkCollision.down = false;
@@ -633,6 +649,27 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // A flat block for the "blocks" look, with a faint edge so tiles can be
+  // counted.
+  block(x, y, size, color, alpha = 1) {
+    return this.add.rectangle(x, y, size, size, color, alpha).setStrokeStyle(1, 0x000000, 0.18);
+  }
+
+  // A plain coloured texture, made once (the blocks look's platforms need a
+  // texture for their physics image).
+  blockTexture(key, w, h, color) {
+    if (!this.textures.exists(key)) {
+      const cv = Object.assign(document.createElement('canvas'), { width: w, height: h });
+      const g = cv.getContext('2d');
+      g.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
+      g.fillRect(0, 0, w, h);
+      g.strokeStyle = 'rgba(0,0,0,0.25)';
+      g.strokeRect(0.5, 0.5, w - 1, h - 1);
+      this.textures.addCanvas(key, cv);
+    }
+    return key;
   }
 
   // Foreground from the art set: one picture the height of the screen, with

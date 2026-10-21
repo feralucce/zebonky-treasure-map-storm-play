@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Treasure Map Storm: long test level (200 x 20 tiles). Made by tools/make_long_test_level.py. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" width="12800" height="1280" viewBox="0 0 12800 1280">
+<sodipodi:namedview showgrid="true" inkscape:document-units="px" pagecolor="#f6f1e4"><inkscape:grid type="xygrid" spacingx="64" spacingy="64" empspacing="1" visible="true" enabled="true"/></sodipodi:namedview>
+<g inkscape:groupmode="layer" inkscape:label="Grid and key" id="guides" sodipodi:insensitive="true" data-designer="ignore">
+<rect x="0" y="0" width="12800" height="1280" fill="#f6f1e4"/>
+<path d="M0 0V1280M64 0V1280M128 0V1280M192 0V1280M256 0V1280M320 0V1280M384 0V1280M448 0V1280M512 0V1280M576 0V1280M640 0V1280M704 0V1280M768 0V1280M832 0V1280M896 0V1280M960 0V1280M1024 0V1280M1088 0V1280M1152 0V1280M1216 0V1280M1280 0V1280M1344 0V1280M1408 0V1280M1472 0V1280M1536 0V1280M1600 0V1280M1664 0V1280M1728 0V1280M1792 0V1280M1856 0V1280M1920 0V1280M1984 0V1280M2048 0V1280M2112 0V1280M2176 0V1280M2240 0V1280M2304 0V1280M2368 0V1280M2432 0V1280M2496 0V1280M2560 0V1280M2624 0V1280M2688 0V1280M2752 0V1280M2816 0V1280M2880 0V1280M2944 0V1280M3008 0V1280M3072 0V1280M3136 0V1280M3200 0V1280M3264 0V1280M3328 0V1280M3392 0V1280M3456 0V1280M3520 0V1280M3584 0V1280M3648 0V1280M3712 0V1280M3776 0V1280M3840 0V1280M3904 0V1280M3968 0V1280M4032 0V1280M4096 0V1280M4160 0V1280M4224 0V1280M4288 0V1280M4352 0V1280M4416 0V1280M4480 0V1280M4544 0V1280M4608 0V1280M4672 0V1280M4736 0V1280M4800 0V1280M4864 0V1280M4928 0V1280M4992 0V1280M5056 0V1280M5120 0V1280M5184 0V1280M5248 0V1280M5312 0V1280M5376 0V1280M5440 0V1280M5504 0V1280M5568 0V1280M5632 0V1280M5696 0V1280M5760 0V1280M5824 0V1280M5888 0V1280M5952 0V1280M6016 0V1280M6080 0V1280M6144 0V1280M6208 0V1280M6272 0V1280M6336 0V1280M6400 0V1280M6464 0V1280M6528 0V1280M6592 0V1280M6656 0V1280M6720 0V1280M6784 0V1280M6848 0V1280M6912 0V1280M6976 0V1280M7040 0V1280M7104 0V1280M7168 0V1280M7232 0V1280M7296 0V1280M7360 0V1280M7424 0V1280M7488 0V1280M7552 0V1280M7616 0V1280M7680 0V1280M7744 0V1280M7808 0V1280M7872 0V1280M7936 0V1280M8000 0V1280M8064 0V1280M8128 0V1280M8192 0V1280M8256 0V1280M8320 0V1280M8384 0V1280M8448 0V1280M8512 0V1280M8576 0V1280M8640 0V1280M8704 0V1280M8768 0V1280M8832 0V1280M8896 0V1280M8960 0V1280M9024 0V1280M9088 0V1280M9152 0V1280M9216 0V1280M9280 0V1280M9344 0V1280M9408 0V1280M9472 0V1280M9536 0V1280M9600 0V1280M9664 0V1280M9728 0V1280M9792 0V1280M9856 0V1280M9920 0V1280M9984 0V1280M10048 0V1280M10112 0V1280M10176 0V1280M10240 0V1280M10304 0V1280M10368 0V1280M10432 0V1280M10496 0V1280M10560 0V1280M10624 0V1280M10688 0V1280M10752 0V1280M10816 0V1280M10880 0V1280M10944 0V1280M11008 0V1280M11072 0V1280M11136 0V1280M11200 0V1280M11264 0V1280M11328 0V1280M11392 0V1280M11456 0V1280M11520 0V1280M11584 0V1280M11648 0V1280M11712 0V1280M11776 0V1280M11840 0V1280M11904 0V1280M11968 0V1280M12032 0V1280M12096 0V1280M12160 0V1280M12224 0V1280M12288 0V1280M12352 0V1280M12416 0V1280M12480 0V1280M12544 0V1280M12608 0V1280M12672 0V1280M12736 0V1280M12800 0V1280M0 0H12800M0 64H12800M0 128H12800M0 192H12800M0 256H12800M0 320H12800M0 384H12800M0 448H12800M0 512H12800M0 576H12800M0 640H12800M0 704H12800M0 768H12800M0 832H12800M0 896H12800M0 960H12800M0 1024H12800M0 1088H12800M0 1152H12800M0 1216H12800M0 1280H12800" stroke="#ddd2b8" stroke-width="1" fill="none"/>
+<text x="4" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">0</text>
+<text x="644" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">10</text>
+<text x="1284" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">20</text>
+<text x="1924" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">30</text>
+<text x="2564" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">40</text>
+<text x="3204" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">50</text>
+<text x="3844" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">60</text>
+<text x="4484" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">70</text>
+<text x="5124" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">80</text>
+<text x="5764" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">90</text>
+<text x="6404" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">100</text>
+<text x="7044" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">110</text>
+<text x="7684" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">120</text>
+<text x="8324" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">130</text>
+<text x="8964" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">140</text>
+<text x="9604" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">150</text>
+<text x="10244" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">160</text>
+<text x="10884" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">170</text>
+<text x="11524" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">180</text>
+<text x="12164" y="1274" font-size="16" font-weight="700" fill="#9c8a64" font-family="Segoe UI, Arial, sans-serif">190</text>
+</g>
+<g inkscape:groupmode="layer" inkscape:label="Notes" id="notes" data-designer="ignore">
+<path d="M0 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="10" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">1. Start</text>
+<path d="M1600 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="1610" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">2. First pits</text>
+<path d="M2944 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="2954" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">3. Climb / high island / pool</text>
+<path d="M4928 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="4938" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">4. Back down</text>
+<path d="M6464 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="6474" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">5. Platform crossing</text>
+<path d="M8192 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="8202" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">6. Waterfall + secret exit</text>
+<path d="M10304 0V1280" fill="none" stroke="#d6336c" stroke-width="3" stroke-dasharray="14 10"/>
+<text x="10314" y="34" font-size="26" font-weight="800" fill="#d6336c" font-family="Segoe UI, Arial, sans-serif">7. Last hill + exit</text>
+</g>
+<g inkscape:groupmode="layer" inkscape:label="Level" id="level">
+<rect x="8768" y="192" width="128" height="640" fill="#00E5FF"/>
+<rect x="8896" y="256" width="896" height="128" fill="#000000"/>
+<rect x="3968" y="512" width="960" height="128" fill="#000000"/>
+<rect x="3584" y="640" width="256" height="64" fill="#8B4513"/>
+<rect x="11072" y="640" width="256" height="128" fill="#000000"/>
+<rect x="5056" y="704" width="192" height="64" fill="#8B4513"/>
+<rect x="3264" y="768" width="256" height="128" fill="#000000"/>
+<rect x="7040" y="768" width="192" height="64" fill="#8B4513"/>
+<rect x="10816" y="768" width="768" height="128" fill="#000000"/>
+<rect x="5376" y="832" width="192" height="64" fill="#8B4513"/>
+<rect x="8576" y="832" width="448" height="64" fill="#000000"/>
+<rect x="1088" y="896" width="192" height="128" fill="#000000"/>
+<rect x="2944" y="896" width="576" height="128" fill="#000000"/>
+<rect x="5760" y="896" width="128" height="128" fill="#000000"/>
+<rect x="6720" y="896" width="192" height="64" fill="#8B4513"/>
+<rect x="7360" y="896" width="192" height="64" fill="#8B4513"/>
+<rect x="10496" y="896" width="1344" height="128" fill="#000000"/>
+<rect x="8384" y="960" width="128" height="64" fill="#000000"/>
+<rect x="0" y="1024" width="1600" height="256" fill="#000000"/>
+<rect x="1792" y="1024" width="448" height="256" fill="#000000"/>
+<rect x="2368" y="1024" width="1344" height="128" fill="#000000"/>
+<rect x="3712" y="1024" width="512" height="128" fill="#0050FF"/>
+<rect x="4224" y="1024" width="2368" height="128" fill="#000000"/>
+<rect x="7680" y="1024" width="4288" height="256" fill="#000000"/>
+<rect x="12160" y="1024" width="640" height="256" fill="#000000"/>
+<rect x="2368" y="1152" width="4224" height="128" fill="#000000"/>
+<circle cx="224" cy="992" r="24" fill="#00B050"/>
+<circle cx="352" cy="992" r="24" fill="#00FF00"/>
+<circle cx="480" cy="992" r="24" fill="#8000FF"/>
+<circle cx="608" cy="864" r="24" fill="#9BFF00"/>
+<circle cx="800" cy="992" r="24" fill="#FFC000"/>
+<circle cx="1184" cy="736" r="24" fill="#FFFF80"/>
+<circle cx="2016" cy="928" r="24" fill="#9BFF00"/>
+<circle cx="2656" cy="992" r="24" fill="#FF6600"/>
+<circle cx="3168" cy="864" r="24" fill="#0000A0"/>
+<circle cx="4256" cy="480" r="24" fill="#9BFF00"/>
+<circle cx="4512" cy="480" r="24" fill="#FFC000"/>
+<circle cx="3936" cy="992" r="24" fill="#FFFF80"/>
+<circle cx="5664" cy="672" r="24" fill="#FFFF80"/>
+<circle cx="6112" cy="992" r="24" fill="#FF6600"/>
+<circle cx="5984" cy="864" r="24" fill="#9BFF00"/>
+<circle cx="7136" cy="736" r="24" fill="#FFC000"/>
+<circle cx="7456" cy="736" r="24" fill="#FFFF80"/>
+<circle cx="8672" cy="800" r="24" fill="#FF00FF"/>
+<circle cx="9376" cy="224" r="24" fill="#FFFF80"/>
+<circle cx="9568" cy="224" r="24" fill="#9BFF00"/>
+<circle cx="9376" cy="992" r="24" fill="#FFC000"/>
+<circle cx="9952" cy="992" r="24" fill="#FF6600"/>
+<circle cx="10400" cy="992" r="24" fill="#00FF00"/>
+<circle cx="10912" cy="608" r="24" fill="#9BFF00"/>
+<circle cx="11232" cy="608" r="24" fill="#FFC000"/>
+<circle cx="11680" cy="864" r="24" fill="#FF6600"/>
+<circle cx="12576" cy="992" r="24" fill="#FF0000"/>
+<circle cx="1440" cy="992" r="24" fill="#006060"/>
+<text x="1440" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">1</text>
+<circle cx="2848" cy="992" r="24" fill="#006060"/>
+<text x="2848" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">2</text>
+<circle cx="3424" cy="736" r="24" fill="#006060"/>
+<text x="3424" y="745" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">3</text>
+<circle cx="4768" cy="480" r="24" fill="#006060"/>
+<text x="4768" y="489" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">4</text>
+<circle cx="6496" cy="992" r="24" fill="#006060"/>
+<text x="6496" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">5</text>
+<circle cx="7904" cy="992" r="24" fill="#006060"/>
+<text x="7904" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">6</text>
+<circle cx="10144" cy="992" r="24" fill="#006060"/>
+<text x="10144" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">7</text>
+<circle cx="12384" cy="992" r="24" fill="#006060"/>
+<text x="12384" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">8</text>
+<rect x="4104" y="388" width="48" height="124" fill="#7030A0"/>
+<text x="4128" y="458" font-size="30" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">1</text>
+<rect x="4744" y="900" width="48" height="124" fill="#7030A0"/>
+<text x="4768" y="970" font-size="30" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">1</text>
+</g>
+</svg>

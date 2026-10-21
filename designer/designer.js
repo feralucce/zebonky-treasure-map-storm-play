@@ -1,6 +1,6 @@
 import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js';
 import { readDrawing } from './read-drawing.js';
-import { ARTSETS } from '../src/data/artsets.js';
+import { ARTSETS, BLOCKS } from '../src/data/artsets.js';
 import { LEVELS } from '../src/data/world.js';
 import { TEST_LAYOUT_KEY } from '../src/data/levels.js';
 import { backgroundGuide, tileSheet, svgToPng } from './guides.js';
@@ -15,9 +15,11 @@ let levelName = 'level';  // the drawing's file name, for the guides
 
 // ---------- set up the pickers ----------
 
+// Blocks first: a dropped drawing plays as plain coloured blocks, so the
+// layout can be tested before any art is applied.
+$('artset').add(new Option('Blocks (no dressing)', BLOCKS));
 ARTSETS.forEach((name) => $('artset').add(new Option(name, name)));
-// The pixel look is the one being developed, so new drawings start in it.
-if (ARTSETS.includes('rainforest_floor')) $('artset').value = 'rainforest_floor';
+$('artset').value = BLOCKS;
 Object.entries(LEVELS).forEach(([id, l]) => {
   if (l.kind === 'level') $('level').add(new Option(`${l.name} (${id})`, id));
 });

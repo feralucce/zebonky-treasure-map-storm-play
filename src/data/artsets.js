@@ -9,6 +9,14 @@
 
 export const ARTSETS = ['rainforest', 'rainforest_jungle', 'rainforest_floor'];
 
+// Not a folder: the "blocks" look plays a drawing as flat blocks in the
+// designer's legend colours, with no scenery, for testing a layout.
+export const BLOCKS = 'blocks';
+export const BLOCK_COLORS = {
+  '#': 0x000000, s: 0xd9b36c, R: 0x808080, '=': 0x8b4513, '~': 0x0050ff, W: 0x00e5ff,
+};
+export const BLOCKS_SKY = '#e8eef0';
+
 // Terrain characters -> the set in the manifest that draws them.
 export const TERRAIN_SETS = { '#': 'ground', s: 'sand', R: 'rock' };
 
