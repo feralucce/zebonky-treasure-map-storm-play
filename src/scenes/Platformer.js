@@ -269,7 +269,7 @@ export class PlatformerScene extends Phaser.Scene {
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
-    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => this.exit('secret'));
+    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => this.openSecretDoor());
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
@@ -961,6 +961,35 @@ export class PlatformerScene extends Phaser.Scene {
         });
       }
       this.refreshHud();
+    });
+  }
+
+  // Reaching the secret door: it swings open on its left hinge to show a
+  // dark doorway, the explorer steps in and fades, then the level ends.
+  openSecretDoor() {
+    if (this.done) return;
+    this.done = true;                 // no more input while it opens
+    const p = this.player;
+    const foot = p.body.bottom - p.y;
+    p.body.enable = false;
+    p.anims.stop();
+    const d = this.secret;
+    const w = d.displayWidth;
+    const h = d.displayHeight;
+    // Touched it mid-jump (coming up over the falls, say): land at its foot.
+    this.tweens.add({ targets: p, y: d.y + h / 2 - foot, duration: 200, ease: 'Quad.In' });
+    this.add.rectangle(d.x, d.y + 2, w * 0.82, h * 0.9, 0x1b120b).setDepth(3);
+    d.setDepth(4).setOrigin(0, 0.5).setX(d.x - w / 2);
+    p.setDepth(5);
+    this.tweens.add({
+      targets: d, scaleX: 0.12, duration: 420, ease: 'Cubic.Out',
+      onComplete: () => {
+        p.setDepth(3.5);              // in the doorway, behind the open door
+        this.tweens.add({
+          targets: p, x: d.x + w / 2, alpha: 0, scale: 0.85, duration: 380, ease: 'Sine.In',
+          onComplete: () => { this.done = false; this.exit('secret'); },
+        });
+      },
     });
   }
 
