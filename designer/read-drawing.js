@@ -7,7 +7,7 @@
 //    see which legend colour covers most of it.
 
 import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES, rgb } from './legend.js';
-import { makeNav } from '../src/pathing.js';
+import { makeNav, missableCrates } from '../src/pathing.js';
 
 const INKSCAPE = 'http://www.inkscape.org/namespaces/inkscape';
 const SHAPES = 'rect,circle,ellipse,path,polygon,polyline,line';
@@ -287,21 +287,13 @@ export async function readDrawing(svgText) {
       return out;
     };
 
-    // Every crate should be on the way to the exit. If the exit can be
-    // reached without coming within 2 tiles of a crate (a branch the player
-    // may never take), it can be missed. Crates are numbered left to right,
-    // as the game numbers its questions.
-    const startAt = cellsOf('P').pop();
-    const exitAt = cellsOf('G')[0];
-    if (startAt && exitAt && nav.find(startAt, exitAt)) {
-      const near = (a, b) => Math.abs(a.r - b.r) <= 2 && Math.abs(a.c - b.c) <= 2;
-      cellsOf('T').sort((a, b) => a.c - b.c).forEach((t, i) => {
-        if (near(startAt, t) || near(exitAt, t)) return;
-        if (nav.find(startAt, exitAt, false, (r, c) => near({ r, c }, t))) {
-          warnings.push(`Mystery crate ${i + 1} (column ${t.c + 1}, row ${t.r + 1}) can be missed: there's a way to the exit that never passes it. Move it onto the path everyone takes.`);
-        }
-      });
-    }
+    // Every crate should stay within reach: warn when a player can get past
+    // it to somewhere they can still finish from but can't get back to it
+    // (hidden doors don't count as a way back). Crates are numbered left to
+    // right, as the game numbers its questions.
+    missableCrates(grid.map((line) => line.join(''))).forEach((t) => {
+      warnings.push(`Mystery crate ${t.n} (column ${t.c + 1}, row ${t.r + 1}) can be missed: a player can get past it and still finish, with no way back to it. Add a way up to it, or move it onto the path everyone takes.`);
+    });
 
     // The guide only goes where the player could: check each leg of its route.
     const guideAt = cellsOf('B');

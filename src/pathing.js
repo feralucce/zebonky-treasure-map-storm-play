@@ -221,5 +221,78 @@ export function makeNav(rows) {
     return path;
   }
 
-  return { find, isSpot, surface, nearestSpot };
+  // Whole-level reach: every spot reachable from a tile (forward) or that
+  // can reach it (back). Hidden doors are left out on request, as players
+  // can't be counted on to find them.
+  const keyOf = (r, c) => r * 10000 + c;
+  const graphs = {};
+  function graph(doorsToo) {
+    const name = doorsToo ? 'all' : 'open';
+    if (graphs[name]) return graphs[name];
+    const fwd = new Map();
+    const back = new Map();
+    for (let r = 0; r < R; r++) {
+      for (let c = 0; c < C; c++) {
+        if (!isSpot(r, c)) continue;
+        const k = keyOf(r, c);
+        if (!fwd.has(k)) fwd.set(k, []);
+        moves(r, c).forEach((m) => {
+          if (m.type === 'door' && !doorsToo) return;
+          const mk = keyOf(m.r, m.c);
+          fwd.get(k).push(mk);
+          if (!back.has(mk)) back.set(mk, []);
+          back.get(mk).push(k);
+        });
+      }
+    }
+    return (graphs[name] = { fwd, back });
+  }
+  function spread(from, dir, { doorsToo = true, avoid = null } = {}) {
+    const a = nearestSpot(from.r, from.c);
+    const seen = new Set();
+    if (!a) return seen;
+    const edges = graph(doorsToo)[dir];
+    const queue = [keyOf(a.r, a.c)];
+    seen.add(queue[0]);
+    while (queue.length) {
+      const k = queue.pop();
+      (edges.get(k) || []).forEach((n) => {
+        if (seen.has(n) || (avoid && avoid.has(n))) return;
+        seen.add(n);
+        queue.push(n);
+      });
+    }
+    return seen;
+  }
+  const reachableFrom = (from, opts) => spread(from, 'fwd', opts);
+  const canReach = (to, opts) => spread(to, 'back', opts);
+
+  return { find, isSpot, surface, nearestSpot, reachableFrom, canReach, keyOf };
+}
+
+// Crates a player can miss for good: somewhere they can get to without
+// coming within 2 tiles of the crate (too wide to clear in one jump on the
+// flat), from which the exit is still reachable but the crate no longer is.
+// Hidden doors don't count as a way back. Returns the crate cells ({r, c})
+// in left-to-right order, each with its number (1 = first).
+export function missableCrates(rows) {
+  const nav = makeNav(rows);
+  const cells = (ch) => {
+    const out = [];
+    rows.forEach((row, r) => [...row].forEach((x, c) => { if (x === ch) out.push({ r, c }); }));
+    return out;
+  };
+  const start = cells('P').pop();
+  const exit = cells('G')[0];
+  if (!start || !exit) return [];
+  const toExit = nav.canReach(exit, { doorsToo: false });
+  return cells('T').sort((a, b) => a.c - b.c).map((t, i) => ({ ...t, n: i + 1 })).filter((t) => {
+    if (Math.abs(start.r - t.r) <= 2 && Math.abs(start.c - t.c) <= 2) return false;
+    const near = new Set();
+    for (let dr = -2; dr <= 2; dr++) for (let dc = -2; dc <= 2; dc++) near.add(nav.keyOf(t.r + dr, t.c + dc));
+    const toCrate = nav.canReach(t, { doorsToo: false });
+    const before = nav.reachableFrom(start, { doorsToo: false, avoid: near });
+    for (const k of before) if (toExit.has(k) && !toCrate.has(k)) return true;
+    return false;
+  });
 }

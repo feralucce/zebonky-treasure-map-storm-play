@@ -13,7 +13,9 @@ art set applied. Nothing to type.
    Inkscape (or Illustrator, Affinity, Figma: any app that saves SVG).
 3. Draw on the **Level** layer with the legend colours.
 4. Save the SVG and drop it on the designer. It starts playing straight away
-   on the page, shows what the game read and lists anything that looks wrong.
+   on the page, shows what the game read and lists anything that looks wrong,
+   including a mystery crate a player could miss for good (get past it,
+   still finish, and have no way back up to it; hidden doors don't count).
 5. Click the game to test it (R restarts, **Full screen** for a bigger view;
    your real save is untouched). It starts in **Blocks (no dressing)**: the
    layout as flat legend-coloured blocks with no backdrop, foreground or
