@@ -1,0 +1,198 @@
+{
+ "name": "Rainforest (Zebonky jungle)",
+ "tile": 64,
+ "sets": {
+  "ground": {
+   "top_left": [
+    "vt_ground_top_left.svg"
+   ],
+   "top_mid": [
+    "vt_ground_top_mid_1.svg",
+    "vt_ground_top_mid_2.svg",
+    "vt_ground_top_mid_3.svg"
+   ],
+   "top_right": [
+    "vt_ground_top_right.svg"
+   ],
+   "top_single": [
+    "vt_ground_top_single.svg"
+   ],
+   "side_left": [
+    "vt_ground_side_left.svg"
+   ],
+   "side_right": [
+    "vt_ground_side_right.svg"
+   ],
+   "fill": [
+    "vt_ground_dirt_1.svg",
+    "vt_ground_dirt_2.svg",
+    "vt_ground_dirt_3.svg",
+    "vt_ground_dirt_4.svg"
+   ],
+   "deep": [
+    "vt_ground_stone_1.svg",
+    "vt_ground_stone_2.svg",
+    "vt_ground_stone_3.svg",
+    "vt_ground_stone_4.svg"
+   ],
+   "deep_from": 3
+  },
+  "rock": {
+   "top_mid": [
+    "vt_ground_stone_1.svg",
+    "vt_ground_stone_2.svg",
+    "vt_ground_stone_3.svg",
+    "vt_ground_stone_4.svg"
+   ],
+   "fill": [
+    "vt_ground_stone_1.svg",
+    "vt_ground_stone_2.svg",
+    "vt_ground_stone_3.svg",
+    "vt_ground_stone_4.svg"
+   ]
+  }
+ },
+ "platform": {
+  "left": [
+   "vt_platform_left.svg"
+  ],
+  "mid": [
+   "vt_platform_mid.svg"
+  ],
+  "right": [
+   "vt_platform_right.svg"
+  ],
+  "single": [
+   "vt_platform_single.svg"
+  ]
+ },
+ "water": {},
+ "canopy": {
+  "0000": [
+   "vt_canopy_0000_1.svg",
+   "vt_canopy_0000_2.svg",
+   "vt_canopy_0000_3.svg",
+   "vt_canopy_0000_4.svg"
+  ],
+  "0001": [
+   "vt_canopy_0001_1.svg",
+   "vt_canopy_0001_2.svg",
+   "vt_canopy_0001_3.svg",
+   "vt_canopy_0001_4.svg"
+  ],
+  "0010": [
+   "vt_canopy_0010_1.svg",
+   "vt_canopy_0010_2.svg",
+   "vt_canopy_0010_3.svg",
+   "vt_canopy_0010_4.svg"
+  ],
+  "0011": [
+   "vt_canopy_0011_1.svg",
+   "vt_canopy_0011_2.svg",
+   "vt_canopy_0011_3.svg",
+   "vt_canopy_0011_4.svg"
+  ],
+  "0100": [
+   "vt_canopy_0100_1.svg",
+   "vt_canopy_0100_2.svg",
+   "vt_canopy_0100_3.svg",
+   "vt_canopy_0100_4.svg"
+  ],
+  "0101": [
+   "vt_canopy_0101_1.svg",
+   "vt_canopy_0101_2.svg",
+   "vt_canopy_0101_3.svg",
+   "vt_canopy_0101_4.svg"
+  ],
+  "0110": [
+   "vt_canopy_0110_1.svg",
+   "vt_canopy_0110_2.svg",
+   "vt_canopy_0110_3.svg",
+   "vt_canopy_0110_4.svg"
+  ],
+  "0111": [
+   "vt_canopy_0111_1.svg",
+   "vt_canopy_0111_2.svg",
+   "vt_canopy_0111_3.svg",
+   "vt_canopy_0111_4.svg"
+  ],
+  "1000": [
+   "vt_canopy_1000_1.svg",
+   "vt_canopy_1000_2.svg",
+   "vt_canopy_1000_3.svg",
+   "vt_canopy_1000_4.svg"
+  ],
+  "1001": [
+   "vt_canopy_1001_1.svg",
+   "vt_canopy_1001_2.svg",
+   "vt_canopy_1001_3.svg",
+   "vt_canopy_1001_4.svg"
+  ],
+  "1010": [
+   "vt_canopy_1010_1.svg",
+   "vt_canopy_1010_2.svg",
+   "vt_canopy_1010_3.svg",
+   "vt_canopy_1010_4.svg"
+  ],
+  "1011": [
+   "vt_canopy_1011_1.svg",
+   "vt_canopy_1011_2.svg",
+   "vt_canopy_1011_3.svg",
+   "vt_canopy_1011_4.svg"
+  ],
+  "1100": [
+   "vt_canopy_1100_1.svg",
+   "vt_canopy_1100_2.svg",
+   "vt_canopy_1100_3.svg",
+   "vt_canopy_1100_4.svg"
+  ],
+  "1101": [
+   "vt_canopy_1101_1.svg",
+   "vt_canopy_1101_2.svg",
+   "vt_canopy_1101_3.svg",
+   "vt_canopy_1101_4.svg"
+  ],
+  "1110": [
+   "vt_canopy_1110_1.svg",
+   "vt_canopy_1110_2.svg",
+   "vt_canopy_1110_3.svg",
+   "vt_canopy_1110_4.svg"
+  ],
+  "1111": [
+   "vt_canopy_1111_1.svg",
+   "vt_canopy_1111_2.svg",
+   "vt_canopy_1111_3.svg",
+   "vt_canopy_1111_4.svg"
+  ]
+ },
+ "food": "../rainforest/food_bananas.png",
+ "sky": "#2a6b4e",
+ "background": [
+  {
+   "file": "bg_cumulus_jungle.jpg",
+   "scroll": 0.3,
+   "mirror_repeat": true
+  }
+ ],
+ "dressing": {
+  "trunk": "trunk.png",
+  "trunk_scroll": 0.6,
+  "trunk_every": 6,
+  "ground_plants": [
+   "plant_bush.png",
+   "plant_bush_rev.png",
+   "plant_fern.png",
+   "plant_tree.png",
+   "plant_tree_rev.png"
+  ],
+  "ground_chance": 0.2,
+  "hangers": [
+   "vine_1.svg",
+   "vine_2.svg",
+   "vine_3.svg",
+   "vine_1.svg",
+   "hang_fern.png"
+  ],
+  "hang_chance": 0.3
+ }
+}

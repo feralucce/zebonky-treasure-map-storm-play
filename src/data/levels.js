@@ -72,7 +72,10 @@ export const TEST_LAYOUT_KEY = 'zebonky-tms-test-layout';
 // touches the saved game, and finishing starts it again.
 export function testParams() {
   const q = new URLSearchParams(window.location.search);
-  if (q.has('demo')) return { levelId: q.get('demo') || 'cumulus', test: true, demo: true };
+  if (q.has('demo')) {
+    const id = q.get('demo') || 'cumulus';
+    return { levelId: id, layoutId: id, test: true, demo: true };
+  }
   if (!q.has('test')) return null;
   return { levelId: q.get('level') || 'dorsal', test: true };
 }

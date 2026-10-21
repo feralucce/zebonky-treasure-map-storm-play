@@ -54,6 +54,8 @@ export class BootScene extends Phaser.Scene {
         });
         add(data.food);
         (data.platform_decor || []).forEach(add);
+        const dr = data.dressing || {};
+        [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);
         Object.values(data.canopy || {}).flat().forEach(add);
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;
@@ -86,6 +88,11 @@ export class BootScene extends Phaser.Scene {
     });
     // index.html?test=1 plays the drawing the level designer just handed over.
     const test = testParams();
+    // A demo drawing can borrow another level's name and questions
+    // ("level" in its file), e.g. a second look at the same level.
+    if (test && test.demo && DRAWN[test.layoutId] && DRAWN[test.layoutId].level) {
+      test.levelId = DRAWN[test.layoutId].level;
+    }
     if (test) this.scene.start('Level', test);
     else this.scene.start('Overworld');
   }

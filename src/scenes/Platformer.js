@@ -53,6 +53,7 @@ export class PlatformerScene extends Phaser.Scene {
 
   init(data) {
     this.levelId = data.levelId;
+    this.layoutId = data.layoutId || data.levelId;
     this.test = !!data.test;
     this.demo = !!data.demo;
     // A designer test run never touches the player's saved progress.
@@ -75,7 +76,7 @@ export class PlatformerScene extends Phaser.Scene {
   create() {
     const lvl = LEVELS[this.levelId];
     // A demo plays the level's saved drawing; a designer test plays the hand-off.
-    const layout = layoutFor(this.levelId, this.test && !this.demo);
+    const layout = layoutFor(this.layoutId, this.test && !this.demo);
     this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
     this.artName = layout.artset;
     const rows = layout.rows;
@@ -215,6 +216,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.dropUntil = 0;
     this.physics.add.collider(this.player, this.platforms, null, () => this.time.now >= this.dropUntil);
     this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
+    this.buildDressing(rows, at, isSolid, worldW, worldH);
     this.buildPickups(foodSpots, pawSpots);
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
@@ -589,6 +591,48 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // Flat-vector jungle dressing, for art sets with a "dressing" entry:
+  // trunks in a layer between the backdrop and the level, plants growing
+  // from behind the ground's top edge, vines and ferns hanging under ledges
+  // and platforms. Scenery only, all behind the player.
+  buildDressing(rows, at, isSolid, worldW, worldH) {
+    const d = this.art && this.art.dressing;
+    if (!d) return;
+    const k = (f) => texKey(this.artName, f);
+    const has = (f) => !!f && this.textures.exists(k(f));
+    if (has(d.trunk)) {
+      // Spans what this layer shows while the camera crosses the level.
+      const sf = d.trunk_scroll ?? 0.6;
+      const spanW = (worldW - MAP_W) * sf + MAP_W;
+      const spanH = (worldH - MAP_H) * sf + MAP_H;
+      const every = (d.trunk_every || 6) * TILE;
+      const tw = this.textures.get(k(d.trunk)).getSourceImage().width;
+      for (let n = 0, x = every * 0.4; x < spanW; n++, x += every * (0.7 + tileHash(n, 3) * 0.6)) {
+        const w = 70 + tileHash(n, 9) * 50;
+        this.add.tileSprite(x, 0, tw, spanH, k(d.trunk)).setOrigin(0.5, 0)
+          .setScale(w / tw, 1).setScrollFactor(sf).setDepth(-6);
+      }
+    }
+    const plants = (d.ground_plants || []).filter(has);
+    const hangers = (d.hangers || []).filter(has);
+    rows.forEach((row, r) => [...row].forEach((ch, c) => {
+      const x = c * TILE + TILE / 2;
+      const open = (rr) => rr >= 0 && rr < rows.length && at(rr, c) === '.';
+      if (plants.length && isSolid(r, c) && open(r - 1) && this.grounded.has(`${c},${r}`)
+          && tileHash(c + 211, r + 17) < (d.ground_chance || 0)) {
+        const h = tileHash(c + 5, r + 211);
+        this.add.image(x + (h - 0.5) * 24, r * TILE + 10, k(pick(plants, c + 3, r)))
+          .setOrigin(0.5, 1).setScale(0.8 + h * 0.4).setFlipX(h > 0.5).setDepth(-1);
+      }
+      if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1)
+          && tileHash(c + 307, r + 41) < (d.hang_chance || 0)) {
+        const top = ch === '=' ? r * TILE + 22 : (r + 1) * TILE - 6;
+        this.add.image(x + (tileHash(c, r + 9) - 0.5) * 20, top, k(pick(hangers, c + 7, r)))
+          .setOrigin(0.5, 0).setDepth(-1);
+      }
+    }));
   }
 
   // A fern patch now and then along a platform's top. Decoration only.
