@@ -29,7 +29,7 @@ export const LEVELS = {
     kind: 'level',
     // Plays this saved drawing (assets/levels/<layout>.json) from the map.
     layout: 'long-test-level',
-    hasSecret: false,
+    hasSecret: true, // the door at the top of the waterfall
     color: 0x4d9e76,
     items: [
       { id: 'feather', name: 'Cloud Feather' },

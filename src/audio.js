@@ -6,11 +6,13 @@
 // sound locked until the first tap or key press; anything asked for before
 // then starts as soon as it unlocks.
 //
-// The speaker button (soundButton) turns all sound on or off. The choice is
-// kept in this browser, apart from the saved game, so resetting progress
-// doesn't change it.
+// Two buttons: music on/off (musicButton) and sound effects on/off
+// (soundButton). The choices are kept in this browser, apart from the saved
+// game, so resetting progress doesn't change them.
 
-const PREF_KEY = 'zebonky-tms-sound-v1';
+const MUSIC_KEY = 'zebonky-tms-music-v1';
+const SFX_KEY = 'zebonky-tms-sfx-v1';
+const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 
 // Music, by name. Free Fall by TAD (opengameart.org, CC0).
 export const MUSIC = {
@@ -21,9 +23,10 @@ const FADE_MS = 1200;
 
 // Sound effects, by name: { url, volume }. Each comes as OGG with an MP3
 // copy; the browser takes the first it can play. All CC0: footsteps (carpet),
-// jump and toss (cloth) and paw (zap up) from Kenney's packs; splash by rubberduck,
-// food pickup twinkle by Bobjt and eating crunch by StarNinjas, all on
-// OpenGameArt.
+// jump and toss (cloth) and paw (zap up) from Kenney's packs. From
+// OpenGameArt: splash and swim stroke by rubberduck, food pickup twinkle by
+// Bobjt, eating crunch by StarNinjas, secret door and level end chimes by
+// JaggedStone.
 const fx = (name, volume) => ({ url: [`assets/audio/sfx/${name}.ogg`, `assets/audio/sfx/${name}.mp3`], volume });
 export const SFX = {
   'step-0': fx('step-0', 0.16),
@@ -31,20 +34,36 @@ export const SFX = {
   'step-2': fx('step-2', 0.16),
   'step-3': fx('step-3', 0.16),
   'step-4': fx('step-4', 0.16),
-  jump: fx('jump', 0.6),
+  jump: fx('jump', 0.2),
   toss: fx('toss', 0.6),
   splash: fx('splash', 0.7),
+  swim: fx('swim', 0.16),
   food: fx('pickup', 0.6),
   eat: fx('eat', 0.7),
   energy: fx('energy', 0.55),
+  door: fx('door', 0.6),
+  'level-end': fx('level-end', 0.6),
 };
 
-let on = true;
-try {
-  on = localStorage.getItem(PREF_KEY) !== 'off';
-} catch (e) {
-  // Storage blocked: sound stays on for this visit.
+function readPref(key) {
+  try {
+    const v = localStorage.getItem(key) ?? localStorage.getItem(OLD_KEY);
+    return v !== 'off';
+  } catch (e) {
+    return true; // Storage blocked: on for this visit.
+  }
 }
+
+function savePref(key, value) {
+  try {
+    localStorage.setItem(key, value ? 'on' : 'off');
+  } catch (e) {
+    // Not saved; still applies for this visit.
+  }
+}
+
+let musicOn = readPref(MUSIC_KEY);
+let sfxOn = readPref(SFX_KEY);
 
 let current = null; // { key, sound }
 
@@ -83,24 +102,28 @@ function fade(sound, to, ms, then) {
 }
 
 export const audio = {
-  get on() {
-    return on;
+  get musicOn() {
+    return musicOn;
   },
 
-  // Call once the game exists, so the saved choice applies from the start.
-  init(game) {
-    game.sound.mute = !on;
+  get sfxOn() {
+    return sfxOn;
   },
 
-  toggle(game) {
-    on = !on;
-    game.sound.mute = !on;
-    try {
-      localStorage.setItem(PREF_KEY, on ? 'on' : 'off');
-    } catch (e) {
-      // Not saved; still applies for this visit.
-    }
-    return on;
+  // Nothing to set up any more; kept so main.js can call it.
+  init() {},
+
+  toggleMusic() {
+    musicOn = !musicOn;
+    savePref(MUSIC_KEY, musicOn);
+    if (current && current.sound) current.sound.setMute(!musicOn);
+    return musicOn;
+  },
+
+  toggleSfx() {
+    sfxOn = !sfxOn;
+    savePref(SFX_KEY, sfxOn);
+    return sfxOn;
   },
 
   music(scene, name = 'main') {
@@ -115,7 +138,7 @@ export const audio = {
       if (!current || current.key !== key || current.sound) return;
       const start = () => {
         if (!current || current.key !== key || current.sound) return;
-        const sound = scene.sound.add(key, { loop: true, volume: 0 });
+        const sound = scene.sound.add(key, { loop: true, volume: 0, mute: !musicOn });
         current.sound = sound;
         sound.play();
         fade(sound, MUSIC_VOLUME, FADE_MS);
@@ -135,6 +158,7 @@ export const audio = {
     const s = SFX[name];
     if (!s) return;
     const key = cacheKey('sfx', name);
+    if (!sfxOn) return;
     if (scene.cache.audio.exists(key)) {
       scene.sound.play(key, { volume: s.volume ?? 1, ...config });
     } else {
@@ -149,44 +173,70 @@ export const audio = {
   },
 };
 
-// A round speaker button that turns sound on and off. Fixed to the screen.
-export function soundButton(scene, x, y, depth = 21) {
+const INK = 0x2b1d12;
+const OFF = 0x8a6a4a;
+
+// A round parchment button, fixed to the screen. drawIcon(g, on) draws the
+// picture; a soft cross marks it off.
+function roundToggle(scene, x, y, depth, isOn, toggle, drawIcon) {
   const c = scene.add.container(x, y).setScrollFactor(0).setDepth(depth);
   const g = scene.add.graphics();
   c.add(g);
   const draw = () => {
+    const on = isOn();
     g.clear();
-    g.fillStyle(0x2b1d12, 1);
+    g.fillStyle(INK, 1);
     g.fillCircle(0, 3, 24);
     g.fillStyle(0xf3dfb3, 1);
     g.fillCircle(0, 0, 24);
-    g.lineStyle(3, 0x2b1d12, 1);
+    g.lineStyle(3, INK, 1);
     g.strokeCircle(0, 0, 24);
-    // Speaker.
-    g.fillStyle(0x2b1d12, 1);
-    g.fillRect(-12, -5, 6, 10);
-    g.fillTriangle(-7, 0, 2, -11, 2, 11);
-    g.fillRect(-7, -5, 9, 10);
-    if (on) {
-      g.lineStyle(3, 0x2b1d12, 1);
-      g.beginPath();
-      g.arc(4, 0, 6, -0.9, 0.9);
-      g.strokePath();
-      g.beginPath();
-      g.arc(4, 0, 11, -0.9, 0.9);
-      g.strokePath();
-    } else {
-      g.lineStyle(3, 0x8a6a4a, 1);
-      g.lineBetween(7, -6, 15, 6);
-      g.lineBetween(15, -6, 7, 6);
+    drawIcon(g, on);
+    if (!on) {
+      g.lineStyle(3, OFF, 1);
+      g.lineBetween(8, -7, 16, 3);
+      g.lineBetween(16, -7, 8, 3);
     }
   };
   draw();
   c.setSize(52, 52);
   c.setInteractive({ useHandCursor: true });
   c.on('pointerup', () => {
-    audio.toggle(scene.game);
+    toggle();
     draw();
   });
   return c;
+}
+
+// Music on and off: a pair of notes.
+export function musicButton(scene, x, y, depth = 21) {
+  return roundToggle(scene, x, y, depth, () => musicOn, () => audio.toggleMusic(), (g, on) => {
+    const col = on ? INK : OFF;
+    g.fillStyle(col, 1);
+    g.fillEllipse(-9, 8, 9, 7);
+    g.fillEllipse(3, 5, 9, 7);
+    g.fillRect(-6, -10, 3, 18);
+    g.fillRect(6, -13, 3, 18);
+    g.fillRect(-6, -13, 15, 4);
+  });
+}
+
+// Sound effects on and off: a speaker.
+export function soundButton(scene, x, y, depth = 21) {
+  return roundToggle(scene, x, y, depth, () => sfxOn, () => audio.toggleSfx(), (g, on) => {
+    const col = on ? INK : OFF;
+    g.fillStyle(col, 1);
+    g.fillRect(-13, -5, 6, 10);
+    g.fillTriangle(-8, 0, 1, -11, 1, 11);
+    g.fillRect(-8, -5, 9, 10);
+    if (on) {
+      g.lineStyle(3, INK, 1);
+      g.beginPath();
+      g.arc(3, 0, 6, -0.9, 0.9);
+      g.strokePath();
+      g.beginPath();
+      g.arc(3, 0, 11, -0.9, 0.9);
+      g.strokePath();
+    }
+  });
 }

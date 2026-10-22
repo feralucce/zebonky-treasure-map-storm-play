@@ -5,6 +5,7 @@ import { BootScene } from './scenes/Boot.js';
 import { OverworldScene } from './scenes/Overworld.js';
 import { PlatformerScene } from './scenes/Platformer.js';
 import { QuizScene } from './scenes/Quiz.js';
+import { BonusScene } from './scenes/Bonus.js';
 
 state.load();
 
@@ -37,7 +38,7 @@ async function start() {
       default: 'arcade',
       arcade: { gravity: { y: 1900 }, debug: false },
     },
-    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene],
+    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene],
   });
   audio.init(window.game);
 }

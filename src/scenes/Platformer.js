@@ -11,7 +11,7 @@ import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRol
 import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
 import { makeNav } from '../pathing.js';
 import { startQuestionRun } from '../data/questions.js';
-import { audio, soundButton } from '../audio.js';
+import { audio, musicButton, soundButton } from '../audio.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -1240,6 +1240,7 @@ export class PlatformerScene extends Phaser.Scene {
     const h = d.displayHeight;
     // Touched it mid-jump (coming up over the falls, say): land at its foot.
     this.tweens.add({ targets: p, y: d.y + h / 2 - foot, duration: 200, ease: 'Quad.In' });
+    audio.sfx(this, 'door');
     this.add.rectangle(d.x, d.y + 2, w * 0.82, h * 0.9, 0x1b120b).setDepth(3);
     d.setDepth(4).setOrigin(0, 0.5).setX(d.x - w / 2);
     p.setDepth(5);
@@ -1255,18 +1256,47 @@ export class PlatformerScene extends Phaser.Scene {
     });
   }
 
+  // Reaching an exit: a big message, then a tap (or Enter or Space) moves on.
+  // The goal goes back to the map; the secret door goes to the bonus round.
+  // A test run plays its level again instead of touching the map.
   exit(kind) {
     if (this.done) return;
     this.done = true;
     this.player.body.enable = false;
-    const msg = kind === 'secret' ? 'Secret exit found!' : 'Level clear!';
-    this.add.text(MAP_W / 2, MAP_H / 2 - 40, msg, heading(64, COLORS.yellowCss, {
-      stroke: COLORS.inkCss, strokeThickness: 12,
-    })).setOrigin(0.5).setScrollFactor(0);
+    const secret = kind === 'secret';
+    if (!secret) audio.sfx(this, 'level-end');
+    const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0)
+      .setScrollFactor(0).setDepth(50).setAlpha(0);
+    const msg = this.add.text(MAP_W / 2, MAP_H / 2 - 30, secret ? 'You found a secret!' : 'Level completed!',
+      heading(64, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 12 }))
+      .setOrigin(0.5).setScrollFactor(0).setDepth(51).setScale(0.6).setAlpha(0);
+    const tap = this.add.text(MAP_W / 2, MAP_H / 2 + 50, 'Tap to continue', text(24, COLORS.parchmentCss, {
+      stroke: COLORS.inkCss, strokeThickness: 6,
+    })).setOrigin(0.5).setScrollFactor(0).setDepth(51).setAlpha(0);
+    this.tweens.add({ targets: shade, alpha: 1, duration: 250 });
+    this.tweens.add({ targets: msg, scale: 1, alpha: 1, duration: 320, ease: 'Back.Out' });
+    this.tweens.add({ targets: tap, alpha: 1, duration: 300, delay: 600 });
+    this.tweens.add({ targets: tap, alpha: 0.4, duration: 700, delay: 900, yoyo: true, repeat: -1 });
     this.tweens.add({ targets: this.player, y: this.player.y - 30, duration: 250, yoyo: true, repeat: 2 });
-    this.time.delayedCall(1300, () => {
-      if (this.test) this.scene.restart();
+
+    let gone = false;
+    const go = () => {
+      if (gone) return;
+      gone = true;
+      const levelData = this.test ? this.scene.settings.data : null;
+      if (secret) {
+        this.cameras.main.fadeOut(300, 43, 29, 18);
+        this.cameras.main.once('camerafadeoutcomplete', () => {
+          this.scene.start('Bonus', { levelId: this.levelId, levelData });
+        });
+      } else if (this.test) this.scene.restart();
       else finishLevel(this, this.levelId, kind);
+    };
+    // A short wait first, so a held jump doesn't skip the message.
+    this.time.delayedCall(600, () => {
+      shade.setInteractive({ useHandCursor: true });
+      shade.on('pointerup', go);
+      ['ENTER', 'SPACE'].forEach((k) => this.input.keyboard.once(`keydown-${k}`, go));
     });
   }
 
@@ -1340,6 +1370,7 @@ export class PlatformerScene extends Phaser.Scene {
       backgroundColor: COLORS.parchmentCss, padding: { x: 16, y: 8 },
     })).setOrigin(1, 0).setScrollFactor(0).setDepth(21).setInteractive({ useHandCursor: true });
     map.on('pointerup', () => this.leave());
+    musicButton(this, MAP_W - 108, 104);
     soundButton(this, MAP_W - 50, 104);
     audio.music(this);
     audio.preloadSfx(this);
@@ -1510,6 +1541,7 @@ export class PlatformerScene extends Phaser.Scene {
       if (wantsJump) {
         const nearSurface = this.surfaceRow[c] !== undefined && p.y - this.surfaceRow[c] * TILE < 44;
         p.setVelocityY(nearSurface ? -SWIM_HOP_OUT : -SWIM_STROKE);
+        audio.sfx(this, 'swim');
         if (nearSurface) this.boostUntil = time + 400;
         this.jumpPressedAt = -1000;
       }
