@@ -1,5 +1,6 @@
 import { MAP_W, MAP_H } from './data/world.js';
 import { state } from './state.js';
+import { audio } from './audio.js';
 import { BootScene } from './scenes/Boot.js';
 import { OverworldScene } from './scenes/Overworld.js';
 import { PlatformerScene } from './scenes/Platformer.js';
@@ -38,6 +39,7 @@ async function start() {
     },
     scene: [BootScene, OverworldScene, PlatformerScene, QuizScene],
   });
+  audio.init(window.game);
 }
 
 start();

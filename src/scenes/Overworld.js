@@ -5,6 +5,7 @@
 import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js';
 import { state, pathKey } from '../state.js';
 import { COLORS, heading, text, makeButton } from '../theme.js';
+import { audio } from '../audio.js';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 16;     // px between path dots
@@ -325,6 +326,8 @@ export class OverworldScene extends Phaser.Scene {
     g.strokeRoundedRect(x, y, w, 52, 16);
     this.add.text(x + 18, y + 26, `✓ ${t.checks}/${t.levels}`, text(22, COLORS.greenCss)).setOrigin(0, 0.5);
     this.add.text(x + 110, y + 26, `Treasure ${t.items}/${t.maxItems}`, text(22)).setOrigin(0, 0.5);
+    // No music on the map for now; a level's music fades out on the way back.
+    audio.stopMusic();
 
     // Reset needs two taps so a stray click can't wipe progress.
     const reset = this.add.text(MAP_W - 26, y + 70, 'Reset progress', text(14, COLORS.parchmentCss, {

@@ -11,6 +11,7 @@ import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRol
 import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
 import { makeNav } from '../pathing.js';
 import { startQuestionRun } from '../data/questions.js';
+import { audio, soundButton } from '../audio.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -592,9 +593,11 @@ export class PlatformerScene extends Phaser.Scene {
         return;
       }
       this.floatText(it.x, it.y - 30, '+1 \u26A1', 24);
+      audio.sfx(this, 'energy');
     } else {
       this.food += 1;
       this.refreshHud();
+      audio.sfx(this, 'food');
     }
     this.tweens.killTweensOf(it);
     (it.shine || []).forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
@@ -1273,6 +1276,7 @@ export class PlatformerScene extends Phaser.Scene {
   splash(x, surfaceY, speed) {
     if (speed < 150 || Number.isNaN(surfaceY)) return;
     const big = speed > 650;
+    audio.sfx(this, 'splash', { volume: big ? 0.7 : 0.45 });
     const n = big ? 14 : 6;
     for (let i = 0; i < n; i++) {
       const drop = this.add.circle(x, surfaceY, Phaser.Math.Between(4, big ? 10 : 6), 0xffffff).setDepth(6);
@@ -1331,6 +1335,9 @@ export class PlatformerScene extends Phaser.Scene {
       backgroundColor: COLORS.parchmentCss, padding: { x: 16, y: 8 },
     })).setOrigin(1, 0).setScrollFactor(0).setDepth(21).setInteractive({ useHandCursor: true });
     map.on('pointerup', () => this.leave());
+    soundButton(this, MAP_W - 50, 104);
+    audio.music(this);
+    audio.preloadSfx(this);
   }
 
   refreshHud() {
@@ -1515,11 +1522,22 @@ export class PlatformerScene extends Phaser.Scene {
       if (p.body.blocked.down && !inWater && this.floorUnder(p.x, p.body.bottom)) {
         this.safe = { x: p.x, y: p.y - 4, feet: p.body.bottom };
       }
+      // Footsteps while walking, a little faster when running, never the
+      // same step twice in a row.
+      const speed = Math.abs(p.body.velocity.x);
+      if (!inWater && p.body.blocked.down && speed > 60 && time >= (this.nextStepAt || 0)) {
+        let n;
+        do n = Phaser.Math.Between(0, 4); while (n === this.lastStep);
+        this.lastStep = n;
+        audio.sfx(this, `step-${n}`, { detune: Phaser.Math.Between(-80, 80) });
+        this.nextStepAt = time + Phaser.Math.Clamp(78000 / speed, 230, 420);
+      }
     }
 
     const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
     if (canJump && wantsJump && !dropped) {
       p.setVelocityY(-JUMP_SPEED);
+      audio.sfx(this, 'jump');
       this.lastGrounded = -1000;
       this.jumpPressedAt = -1000;
     }
