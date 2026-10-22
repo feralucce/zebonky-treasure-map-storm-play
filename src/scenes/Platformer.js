@@ -202,6 +202,8 @@ export class PlatformerScene extends Phaser.Scene {
     let goalSpot = null;
     const isWater = (r, c) => at(r, c) === '~' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
 
+    this.pitSigns(rows, cols, isSolid, isWater);
+
     rows.forEach((row, r) => {
       [...row].forEach((ch, c) => {
         const x = c * TILE + TILE / 2;
@@ -484,6 +486,45 @@ export class PlatformerScene extends Phaser.Scene {
 
   // A soft glow and sparkles rising from behind a pickup, so it reads as
   // something to grab. Both go when it's taken (collect).
+  // A warning sign on the ground just before each pit (a gap in the bottom
+  // row), so players see the drop coming.
+  pitSigns(rows, cols, isSolid, isWater) {
+    if (!this.textures.exists('pit-sign')) {
+      // Pixel art at 4 game px a pixel: a yellow warning triangle with a "!"
+      // on a wooden post.
+      const W = 14;
+      const H = 21;
+      const px = [];
+      const inTri = (x, y) => y >= 0 && y < 12 && x >= 0 && x < W && Math.abs(x - 6.5) <= (y + 1) * 0.6;
+      for (let y = 0; y < 12; y++) {
+        for (let x = 0; x < W; x++) {
+          if (!inTri(x, y)) continue;
+          const edge = !inTri(x - 1, y) || !inTri(x + 1, y) || !inTri(x, y - 1) || !inTri(x, y + 1);
+          const bang = (x === 6 || x === 7) && ((y >= 4 && y <= 7) || y === 9);
+          px.push([x, y, edge || bang ? '#2b1d12' : (y < 3 || x > 9 ? '#ffe680' : '#ffcf3a')]);
+        }
+      }
+      for (let y = 12; y < H; y++) {
+        px.push([5, y, '#2b1d12'], [8, y, '#2b1d12'], [6, y, '#a8693a'], [7, y, '#7a4a24']);
+      }
+      const S = 4;
+      const cv = Object.assign(document.createElement('canvas'), { width: W * S, height: H * S });
+      const g = cv.getContext('2d');
+      px.forEach(([x, y, col]) => { g.fillStyle = col; g.fillRect(x * S, y * S, S, S); });
+      this.textures.addCanvas('pit-sign', cv);
+    }
+    const bottom = rows.length - 1;
+    const open = (c) => !isSolid(bottom, c) && !isWater(bottom, c);
+    for (let c = 1; c < cols; c++) {
+      if (!open(c) || open(c - 1)) continue;
+      // Stand it on the top of the ground column just before the pit.
+      let r = bottom;
+      while (r > 0 && isSolid(r - 1, c - 1)) r--;
+      if (!isSolid(r, c - 1)) continue;
+      this.add.image((c - 1) * TILE + TILE / 2, r * TILE, 'pit-sign').setOrigin(0.5, 1).setDepth(2);
+    }
+  }
+
   pickupShine(it) {
     if (!this.textures.exists('pickup-glow')) {
       const cv = Object.assign(document.createElement('canvas'), { width: 128, height: 128 });
