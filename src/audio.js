@@ -24,7 +24,7 @@ const FADE_MS = 1200;
 // Sound effects, by name: { url, volume }. Each comes as OGG with an MP3
 // copy; the browser takes the first it can play. All CC0: footsteps (carpet),
 // jump and toss (cloth), paw (zap up), hint and right answer from Kenney's
-// packs. From OpenGameArt: splash and swim stroke by rubberduck, food pickup
+// packs. From OpenGameArt: splash by rubberduck, swimming by jcpmcdonald, food pickup
 // twinkle by Bobjt, eating crunch by StarNinjas, secret door and level end
 // chimes by JaggedStone, crate opening by Oiboo.
 const fx = (name, volume) => ({ url: [`assets/audio/sfx/${name}.ogg`, `assets/audio/sfx/${name}.mp3`], volume });
@@ -37,7 +37,7 @@ export const SFX = {
   jump: fx('jump', 0.2),
   toss: fx('toss', 0.6),
   splash: fx('splash', 0.7),
-  swim: fx('swim', 0.4), // a quieter file: this sounds about as loud as a step
+  swim: fx('swim', 0.22), // a paddling loop, about as loud as the steps
   food: fx('pickup', 0.6),
   eat: fx('eat', 0.7),
   energy: fx('energy', 0.55),
@@ -69,6 +69,7 @@ let musicOn = readPref(MUSIC_KEY);
 let sfxOn = readPref(SFX_KEY);
 
 let current = null; // { key, sound }
+const loops = {};   // looping sound effects playing now, by name
 
 const cacheKey = (kind, name) => `${kind}:${name}`;
 
@@ -126,6 +127,7 @@ export const audio = {
   toggleSfx() {
     sfxOn = !sfxOn;
     savePref(SFX_KEY, sfxOn);
+    if (!sfxOn) Object.values(loops).forEach((snd) => snd.isPlaying && snd.stop());
     return sfxOn;
   },
 
@@ -167,6 +169,23 @@ export const audio = {
     } else {
       // First time: load it now for next time (and play it if it's quick).
       ensure(scene, key, s.url, () => {});
+    }
+  },
+
+  // A sound effect that loops for as long as it's wanted (swimming): call
+  // every frame with on true or false; it starts and stops as that changes.
+  loop(scene, name, on) {
+    const s = SFX[name];
+    if (!s) return;
+    let snd = loops[name];
+    if (on && sfxOn) {
+      if (snd && snd.isPlaying) return;
+      const key = cacheKey('sfx', name);
+      if (!scene.cache.audio.exists(key)) return ensure(scene, key, s.url, () => {});
+      if (!snd || !snd.manager) snd = loops[name] = scene.sound.add(key, { loop: true, volume: s.volume ?? 1 });
+      snd.play();
+    } else if (snd && snd.isPlaying) {
+      snd.stop();
     }
   },
 

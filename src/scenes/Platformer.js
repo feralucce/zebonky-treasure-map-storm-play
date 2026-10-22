@@ -329,6 +329,14 @@ export class PlatformerScene extends Phaser.Scene {
       this.touch = { left: false, right: false, jump: false };
     });
 
+    // Leaving the level (or pausing it for a quiz) stops the paddling.
+    const quiet = () => audio.loop(this, 'swim', false);
+    this.events.on('pause', quiet);
+    this.events.once('shutdown', () => {
+      quiet();
+      this.events.off('pause', quiet);
+    });
+
     this.cameras.main.fadeIn(300, 43, 29, 18);
   }
 
@@ -1541,22 +1549,19 @@ export class PlatformerScene extends Phaser.Scene {
       if (wantsJump) {
         const nearSurface = this.surfaceRow[c] !== undefined && p.y - this.surfaceRow[c] * TILE < 44;
         p.setVelocityY(nearSurface ? -SWIM_HOP_OUT : -SWIM_STROKE);
-        audio.sfx(this, 'swim');
-        this.nextPaddleAt = time + 450;
+        this.strokeUntil = time + 500;
         if (nearSurface) this.boostUntil = time + 400;
         this.jumpPressedAt = -1000;
       }
-      // Paddling: a stroke now and then while moving through the water.
-      if ((Math.abs(p.body.velocity.x) > 40 || down) && time >= (this.nextPaddleAt || 0)) {
-        audio.sfx(this, 'swim', { detune: Phaser.Math.Between(-100, 100) });
-        this.nextPaddleAt = time + 450;
-      }
+      // Paddling sounds for as long as she swims: moving, diving or stroking.
+      audio.loop(this, 'swim', Math.abs(p.body.velocity.x) > 40 || down || time < (this.strokeUntil || 0));
       this.wasInWater = true;
     } else {
       p.body.setGravityY(0);
       p.setMaxVelocity(RUN_SPEED, 1400);
       this.wasInWater = false;
     }
+    if (!inWater) audio.loop(this, 'swim', false);
 
     if (onFloor) {
       this.lastGrounded = time;
