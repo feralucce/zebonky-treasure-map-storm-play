@@ -37,15 +37,15 @@ export const SFX = {
   jump: fx('jump', 0.2),
   toss: fx('toss', 0.6),
   splash: fx('splash', 0.7),
-  swim: fx('swim', 0.16),
+  swim: fx('swim', 0.4), // a quieter file: this sounds about as loud as a step
   food: fx('pickup', 0.6),
   eat: fx('eat', 0.7),
   energy: fx('energy', 0.55),
   door: fx('door', 0.6),
   'level-end': fx('level-end', 0.6),
-  crate: fx('crate', 0.6),
-  hint: fx('hint', 0.6),
-  correct: fx('correct', 0.6),
+  crate: fx('crate', 0.35),
+  hint: fx('hint', 0.15), // loud files: kept soft
+  correct: fx('correct', 0.18),
 };
 
 function readPref(key) {

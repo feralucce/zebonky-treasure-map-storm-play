@@ -1542,8 +1542,14 @@ export class PlatformerScene extends Phaser.Scene {
         const nearSurface = this.surfaceRow[c] !== undefined && p.y - this.surfaceRow[c] * TILE < 44;
         p.setVelocityY(nearSurface ? -SWIM_HOP_OUT : -SWIM_STROKE);
         audio.sfx(this, 'swim');
+        this.nextPaddleAt = time + 450;
         if (nearSurface) this.boostUntil = time + 400;
         this.jumpPressedAt = -1000;
+      }
+      // Paddling: a stroke now and then while moving through the water.
+      if ((Math.abs(p.body.velocity.x) > 40 || down) && time >= (this.nextPaddleAt || 0)) {
+        audio.sfx(this, 'swim', { detune: Phaser.Math.Between(-100, 100) });
+        this.nextPaddleAt = time + 450;
       }
       this.wasInWater = true;
     } else {
