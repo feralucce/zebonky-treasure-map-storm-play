@@ -60,8 +60,61 @@
  "art": {
   "dir": "assets/levels/art/long-test-level/",
   "background": {
-   "file": "background.png",
-   "w": 2141
+   "w": 12800,
+   "pieces": [
+    {
+     "file": "background-0.png",
+     "x": 0
+    },
+    {
+     "file": "background-1.png",
+     "x": 1024
+    },
+    {
+     "file": "background-2.png",
+     "x": 2048
+    },
+    {
+     "file": "background-3.png",
+     "x": 3072
+    },
+    {
+     "file": "background-4.png",
+     "x": 4096
+    },
+    {
+     "file": "background-5.png",
+     "x": 5120
+    },
+    {
+     "file": "background-6.png",
+     "x": 6144
+    },
+    {
+     "file": "background-7.png",
+     "x": 7168
+    },
+    {
+     "file": "background-8.png",
+     "x": 8192
+    },
+    {
+     "file": "background-9.png",
+     "x": 9216
+    },
+    {
+     "file": "background-10.png",
+     "x": 10240
+    },
+    {
+     "file": "background-11.png",
+     "x": 11264
+    },
+    {
+     "file": "background-12.png",
+     "x": 12288
+    }
+   ]
   },
   "dressing": [
    {

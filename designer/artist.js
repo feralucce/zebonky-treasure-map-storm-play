@@ -37,6 +37,47 @@ function toGameSize(src, sx, sy, sw, sh) {
   return cv;
 }
 
+// The pale fringe round the artist's shapes: edge pixels blended with the
+// white paper he painted on. Twice round the edge, drop the pixels that
+// are part see-through, pale grey, or pinkish.
+function cleanFringe(cv, passes = 2) {
+  const g = ctx(cv);
+  const img = g.getImageData(0, 0, cv.width, cv.height);
+  const a = img.data;
+  const w = cv.width;
+  const h = cv.height;
+  for (let pass = 0; pass < passes; pass++) {
+    const drop = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        if (!a[i + 3]) continue;
+        const open = (xx, yy) => xx < 0 || yy < 0 || xx >= w || yy >= h || !a[(yy * w + xx) * 4 + 3];
+        if (!(open(x - 1, y) || open(x + 1, y) || open(x, y - 1) || open(x, y + 1))) continue;
+        const r = a[i];
+        const gr = a[i + 1];
+        const b = a[i + 2];
+        const lum = (r + gr + b) / 3;
+        const sat = Math.max(r, gr, b) - Math.min(r, gr, b);
+        if (a[i + 3] < 250 || (lum > 130 && sat < 70) || (r > gr + 15 && lum > 110)) drop.push(i);
+      }
+    }
+    drop.forEach((i) => { a[i + 3] = 0; });
+  }
+  g.putImageData(img, 0, 0);
+  return cv;
+}
+
+// A picture at game size, in pieces narrow enough for any graphics card.
+function inPieces(src, sw, sh) {
+  const pieces = [];
+  const stripW = PIECE * ART_SCALE;
+  for (let x0 = 0; x0 < sw; x0 += stripW) {
+    pieces.push({ canvas: toGameSize(src, x0, 0, Math.min(stripW, sw - x0), sh), x: x0 / ART_SCALE });
+  }
+  return pieces;
+}
+
 // How wide one copy is when a strip is repeated across, or 0.
 function repeatWidth(bitmap) {
   const W = 1600;
@@ -97,16 +138,19 @@ function repeatWidth(bitmap) {
   return exact;
 }
 
+// The whole picture, 1:1 with the level as painted. The game lays a second
+// copy after the end, so it can scroll at its own (parallax) speed without
+// running out; a picture that tiles joins itself cleanly.
 async function makeBackground(bitmap) {
   const p = repeatWidth(bitmap);
-  const w = p || bitmap.width;
-  const tile = toGameSize(bitmap, 0, 0, w, bitmap.height);
+  const pieces = inPieces(bitmap, bitmap.width, bitmap.height);
+  const w = Math.round(bitmap.width / ART_SCALE);
+  const h = Math.round(bitmap.height / ART_SCALE);
   return {
-    canvas: tile,
-    repeats: !!p,
-    note: p
-      ? `Background: one ${w} px strip, repeated ${Math.round(bitmap.width / p)} times in the file, cut out to repeat in the game (${tile.width} x ${tile.height} game px).`
-      : `Background: no repeat found, so the whole picture is used (${tile.width} x ${tile.height} game px).`,
+    pieces,
+    w,
+    h,
+    note: `Background: the whole picture, 1:1 with the level (${w} x ${h} game px)${p ? `; it tiles (a ${Math.round(p / ART_SCALE)} px strip repeats), so the copy after it joins cleanly` : ''}.`,
   };
 }
 
@@ -177,13 +221,13 @@ async function makeDressing(bitmap, rows, levelName) {
     }
     for (let i = 3; i < a.length; i += 4) if (a[i]) kept++;
     ga.putImageData(A, 0, 0);
-    const piece = toGameSize(art, 0, 0, w, h);
+    const piece = cleanFringe(toGameSize(art, 0, 0, w, h));
     pieces.push({ canvas: piece, x: x0 / ART_SCALE });
   }
   guideImg.close();
   return {
     pieces,
-    note: `Dressing: the guide was taken out, leaving ${Math.round(kept / (ART_SCALE * ART_SCALE)).toLocaleString()} game pixels of the artist's art, placed 1:1 with the level.`,
+    note: `Dressing: the guide was taken out, leaving ${Math.round(kept / (ART_SCALE * ART_SCALE)).toLocaleString()} game pixels of the artist's art (pale fringe round his shapes cleaned off), placed 1:1 with the level.`,
   };
 }
 

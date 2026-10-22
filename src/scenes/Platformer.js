@@ -27,7 +27,8 @@ const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto lan
 const CURRENT_LIFT = 660;
 // Hidden doors: a short fade while you slip through.
 const DOOR_FADE_MS = 160;
-const BOTTOM_ROOM = 64;        // the camera can look this far below the level's bottom
+const ARTIST_BG_SCROLL = 0.3;  // the artist's background's parallax speed
+const BOTTOM_ROOM = 64;       // the camera can look this far below the level's bottom
 
 // Energy is the row of Z-bolts on the HUD. A wild Zebonky's bump or a fall
 // into a pit costs one; a Z-bolt paw print gives one back. Run out and you
@@ -57,7 +58,9 @@ function artistArt() {
 function savedArt(art) {
   if (!art || !art.dir) return null;
   const a = {
-    background: art.background ? { url: art.dir + art.background.file, w: art.background.w } : null,
+    background: art.background && art.background.pieces
+      ? { w: art.background.w, pieces: art.background.pieces.map((p) => ({ url: art.dir + p.file, x: p.x })) }
+      : null,
     dressing: (art.dressing || []).map((d) => ({ url: art.dir + d.file, x: d.x })),
   };
   return a.background || a.dressing.length ? a : null;
@@ -138,14 +141,17 @@ export class PlatformerScene extends Phaser.Scene {
     this.add.rectangle(0, worldH + BOTTOM_ROOM, worldW, 400, 0x08100c, 0.92).setOrigin(0).setDepth(-2);
     const ground = this.art && this.art.sets && this.art.sets.ground;
     const under = ground && (ground.deep || ground.fill);
-    const underKey = under && under.length && texKey(this.artName, under[0]);
+    const skinRock = ground && ground.skin && texKey(this.artName, ground.skin.rock);
+    const underKey = skinRock && this.textures.exists(skinRock) ? skinRock : under && under.length && texKey(this.artName, under[0]);
     const bottom = rows[rows.length - 1] || '';
     for (let c = 0; c < cols;) {
       if (!SOLID_TEXTURES[bottom[c]]) { c++; continue; }
       const from = c;
       while (c < cols && SOLID_TEXTURES[bottom[c]]) c++;
       if (underKey && this.textures.exists(underKey)) {
-        this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey).setOrigin(0).setDepth(-1);
+        const earth = this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey).setOrigin(0).setDepth(-1);
+        // The skin's rock carries on in line with the tiles above it.
+        if (underKey === skinRock) earth.setTilePosition(from * TILE, worldH).setTint(0xe6e6e6);
       } else {
         this.add.rectangle(from * TILE, worldH, (c - from) * TILE, 400, this.blocks ? BLOCK_COLORS['#'] : 0x6b4a2e).setOrigin(0).setDepth(-1);
       }
@@ -611,6 +617,51 @@ export class PlatformerScene extends Phaser.Scene {
     return seen;
   }
 
+  // A tile-sized frame of a bigger picture, made once per spot.
+  skinFrame(key, name, sx, sy, w, h) {
+    const t = this.textures.get(key);
+    if (!t.has(name)) t.add(name, 0, sx, sy, w, h);
+    return name;
+  }
+
+  // Seamless ground (an art set's ground "skin", tools/make_floor_ground.py):
+  // each tile shows the rock wall's slice for its place in the level, so
+  // rocks run across tile edges; moss lies along the top and hangs a little
+  // over the tile below; open sides get a dark edge.
+  drawSkin(skin, isSolid, r, c, x, y) {
+    const k = (f) => texKey(this.artName, f);
+    const parts = ['rock', 'moss', 'moss_left', 'moss_right', 'edge_left', 'edge_right'];
+    if (!parts.every((n) => this.textures.exists(k(skin[n])))) return false;
+    const [rw, rh] = skin.rock_tiles;
+    const rock = k(skin.rock);
+    const img = this.add.image(x, y, rock,
+      this.skinFrame(rock, `s${c % rw}_${r % rh}`, (c % rw) * TILE, (r % rh) * TILE, TILE, TILE));
+    // A little darker each row down from the third, so there's no hard line.
+    let depth = 0;
+    while (depth < 6 && isSolid(r - depth - 1, c)) depth++;
+    const shade = Math.round(255 * Math.max(0.8, 1 - 0.05 * Math.max(0, depth - 2)));
+    if (shade < 255) img.setTint((shade << 16) | (shade << 8) | shade);
+    const openL = !isSolid(r, c - 1);
+    const openR = !isSolid(r, c + 1);
+    if (openL) this.add.image(x, y, k(skin.edge_left));
+    if (openR) this.add.image(x, y, k(skin.edge_right));
+    if (!isSolid(r - 1, c)) {
+      const left = x - TILE / 2;
+      const top = r * TILE - (skin.moss_top || 0);
+      let moss;
+      if (openL) moss = this.add.image(left, top, k(skin.moss_left));
+      else if (openR) moss = this.add.image(left, top, k(skin.moss_right));
+      else {
+        const mk = k(skin.moss);
+        const mh = this.textures.get(mk).getSourceImage().height;
+        const m = c % skin.moss_tiles;
+        moss = this.add.image(left, top, mk, this.skinFrame(mk, `m${m}`, m * TILE, 0, TILE, mh));
+      }
+      moss.setOrigin(0, 0).setDepth(0.5);
+    }
+    return true;
+  }
+
   drawArtSolid(ch, isSolid, r, c, x, y, at) {
     // Ground floating in the air is treetops, if the art set has them.
     const canopy = this.art && this.art.canopy;
@@ -627,6 +678,7 @@ export class PlatformerScene extends Phaser.Scene {
     }
     const set = this.art && this.art.sets && this.art.sets[TERRAIN_SETS[ch]];
     if (!set) return false;
+    if (set.skin && this.drawSkin(set.skin, isSolid, r, c, x, y)) return true;
     let role = solidRole(isSolid, r, c);
     // Deep ground: a few tiles under the surface the dirt turns to stone.
     if (role === 'fill' && set.deep) {
@@ -696,17 +748,24 @@ export class PlatformerScene extends Phaser.Scene {
       this.load.image(key, url);
       keys.push(key);
     };
-    if (a.background) queue('artist-bg', a.background.url);
+    const bgPieces = (a.background && a.background.pieces) || [];
+    bgPieces.forEach((p, i) => queue(`artist-bg-${i}`, p.url));
     (a.dressing || []).forEach((d, i) => queue(`artist-dress-${i}`, d.url));
     if (!keys.length) return;
     this.load.once('complete', () => {
       if (!this.sys.isActive()) return;
-      if (a.background && this.textures.exists('artist-bg')) {
+      // The whole background at 1:1, then copies after it for as far as
+      // the parallax needs.
+      if (bgPieces.length) {
         const w = a.background.w;
-        const sf = 0.3;
-        const span = (worldW - MAP_W) * sf + MAP_W + w;
-        for (let x = 0; x < span; x += w) {
-          this.add.image(x, worldH, 'artist-bg').setOrigin(0, 1).setScrollFactor(sf, 1).setDepth(-10);
+        const sf = ARTIST_BG_SCROLL;
+        const span = (worldW - MAP_W) * sf + MAP_W;
+        for (let x0 = 0; x0 < span; x0 += w) {
+          bgPieces.forEach((p, i) => {
+            if (this.textures.exists(`artist-bg-${i}`)) {
+              this.add.image(x0 + p.x, worldH, `artist-bg-${i}`).setOrigin(0, 1).setScrollFactor(sf, 1).setDepth(-10);
+            }
+          });
         }
       }
       (a.dressing || []).forEach((d, i) => {

@@ -245,7 +245,9 @@ async function uploadArt(id) {
   };
   const art = { dir: `assets/levels/art/${id}/` };
   if (artistReady.background) {
-    art.background = { file: await put('background.png', artistReady.background.url), w: artistReady.background.w };
+    const b = artistReady.background;
+    art.background = { w: b.w, pieces: [] };
+    for (const [i, p] of b.pieces.entries()) art.background.pieces.push({ file: await put(`background-${i}.png`, p.url), x: p.x });
   }
   art.dressing = [];
   for (const [i, d] of artistReady.dressing.entries()) {
@@ -313,10 +315,12 @@ const blobUrl = (cv) => new Promise((resolve, reject) => {
   cv.toBlob((b) => (b ? resolve(URL.createObjectURL(b)) : reject(new Error('Could not keep the picture.'))), 'image/png');
 });
 
+function forgetUrls(ready) {
+  [...((ready.background && ready.background.pieces) || []), ...(ready.dressing || [])].forEach((p) => URL.revokeObjectURL(p.url));
+}
+
 function forgetArtist() {
-  if (artistReady) {
-    [artistReady.background, ...(artistReady.dressing || [])].forEach((p) => p && URL.revokeObjectURL(p.url));
-  }
+  if (artistReady) forgetUrls(artistReady);
   artist = {};
   artistReady = null;
   window.tmsArtistArt = null;
@@ -343,13 +347,12 @@ async function openArtist(files) {
     if (got.dressing) artist.dressing = got.dressing;
     const old = artistReady;
     const bg = artist.background;
+    const asUrls = (pieces) => Promise.all(pieces.map(async (p) => ({ url: await blobUrl(p.canvas), x: p.x, w: p.canvas.width, h: p.canvas.height })));
     artistReady = {
-      background: bg ? { url: await blobUrl(bg.canvas), w: bg.canvas.width, h: bg.canvas.height } : null,
-      dressing: artist.dressing
-        ? await Promise.all(artist.dressing.pieces.map(async (p) => ({ url: await blobUrl(p.canvas), x: p.x, w: p.canvas.width, h: p.canvas.height })))
-        : [],
+      background: bg ? { pieces: await asUrls(bg.pieces), w: bg.w, h: bg.h } : null,
+      dressing: artist.dressing ? await asUrls(artist.dressing.pieces) : [],
     };
-    if (old) [old.background, ...(old.dressing || [])].forEach((p) => p && URL.revokeObjectURL(p.url));
+    if (old) forgetUrls(old);
     $('artnotes').innerHTML = [artist.background, artist.dressing].filter(Boolean).map((x) => `<li>${x.note}</li>`).join('');
     showArtistThumbs();
     $('useart').disabled = false;
@@ -368,13 +371,12 @@ async function openArtist(files) {
 // along the level.
 function showArtistThumbs() {
   $('artthumbs').hidden = false;
-  const bg = artist.background && artist.background.canvas;
+  const bg = artist.background;
   if (bg) {
-    const s = 600 / bg.height;
-    const cv = Object.assign(document.createElement('canvas'), { width: Math.round(bg.width * 2 * s), height: 600 });
+    const s = 0.15;
+    const cv = Object.assign(document.createElement('canvas'), { width: Math.round(bg.w * s), height: Math.round(bg.h * s) });
     const g = cv.getContext('2d');
-    g.drawImage(bg, 0, 0, bg.width * s, 600);
-    g.drawImage(bg, bg.width * s, 0, bg.width * s, 600);
+    bg.pieces.forEach((p) => g.drawImage(p.canvas, p.x * s, 0, p.canvas.width * s, bg.h * s));
     $('artbg').src = cv.toDataURL('image/jpeg', 0.85);
   }
   const d = artist.dressing;

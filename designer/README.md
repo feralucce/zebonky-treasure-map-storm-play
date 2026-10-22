@@ -156,6 +156,15 @@ The art lives in `assets/artsets/<name>/`, described by `artset.json`:
   role and the game picks between them per tile (always the same pick for the
   same spot). `sand` and `rock` sets work the same way; until they exist,
   those tiles use the concept boxes.
+- `skin` (in a ground set, optional): seamless ground instead of tiles by
+  role. `rock` is one big rock-wall picture that wraps both ways
+  (`rock_tiles`: its size in tiles); each ground tile shows the slice for
+  its place in the level, so rocks run across tile edges. `moss` is a
+  wrapping band (`moss_tiles` wide) laid on every top surface, hanging
+  `moss_top` px above the tile; `moss_left` / `moss_right` are its ends at
+  a ledge, `edge_left` / `edge_right` the outline on open sides; tiles
+  `deep_from` rows down are shaded darker. `rainforest_floor` has one,
+  made by `tools/make_floor_ground.py` from the pack's colours and moss.
 - `platform`: `left`, `mid`, `right`, `single` (64 x 28).
 - `platform_decor`: pictures set on top of platforms now and then
   (`platform_decor_chance` of the tiles).

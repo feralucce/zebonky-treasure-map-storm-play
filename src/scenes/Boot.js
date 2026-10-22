@@ -46,6 +46,9 @@ export class BootScene extends Phaser.Scene {
         const add = (f) => f && files.add(f);
         Object.values(data.sets || {}).forEach((set) => Object.values(set)
           .filter(Array.isArray).flat().forEach(add));
+        // Seamless ground: its pictures are the .png entries of the skin.
+        Object.values(data.sets || {}).forEach((set) => set.skin && Object.values(set.skin)
+          .filter((v) => typeof v === 'string' && v.endsWith('.png')).forEach(add));
         Object.values(data.platform || {}).flat().forEach(add);
         (data.scatter || []).forEach(add);
         (data.background || []).forEach((b) => {

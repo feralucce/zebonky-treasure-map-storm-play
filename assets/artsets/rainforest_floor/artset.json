@@ -48,7 +48,22 @@
     "fl_deep_5.png",
     "fl_deep_6.png"
    ],
-   "deep_from": 3
+   "deep_from": 3,
+   "skin": {
+    "rock": "fl_rock.png",
+    "moss": "fl_moss.png",
+    "moss_left": "fl_moss_left.png",
+    "moss_right": "fl_moss_right.png",
+    "edge_left": "fl_edge_left.png",
+    "edge_right": "fl_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 13,
+    "moss_top": 16,
+    "deep_from": 3
+   }
   },
   "rock": {
    "top_mid": [
