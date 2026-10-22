@@ -51,6 +51,9 @@
   .thumbs figure { margin: 0; background: repeating-conic-gradient(#eee6d4 0 25%, #fffaf0 0 50%) 0 0 / 20px 20px; border: 2px solid var(--ink); border-radius: 12px; padding: 8px; }
   .thumbs img { display: block; width: 100%; max-height: 520px; object-fit: contain; }
   .thumbs figcaption { font-size: 14px; margin-top: 6px; }
+  h2.sub { margin-top: 26px; }
+  .drop.small { padding: 16px; margin-top: 10px; }
+  #artnotes li { color: var(--ink); }
 </style>
 </head>
 <body>
@@ -115,6 +118,23 @@
     <div class="thumbs">
       <figure><img id="bgthumb" alt="Background guide"><figcaption id="bgcap"></figcaption></figure>
       <figure><img id="sheetthumb" alt="Tile and dressing sheet"><figcaption id="sheetcap"></figcaption></figure>
+    </div>
+
+    <h2 class="sub">Artist's files</h2>
+    <p>Drop what the artist sends back, as it is: a background, and dressing painted on the whole-level guide. The guide is taken out of the dressing, a repeating background is cut to one copy, and test play shows them with the pixel ground.</p>
+    <label class="drop small" id="artdrop">
+      <b>Drop the artist's pictures here</b>
+      or click to choose them (PNG, JPG or WebP; both at once is fine).
+      <input type="file" id="artfiles" accept="image/png,image/jpeg,image/webp" multiple hidden>
+    </label>
+    <div class="bar">
+      <label><input type="checkbox" id="useart" disabled> Show the artist's art in test play</label>
+      <span class="status" id="artstatus"></span>
+    </div>
+    <ul class="warn" id="artnotes"></ul>
+    <div class="thumbs" id="artthumbs" hidden>
+      <figure><img id="artbg" alt="Artist's background"><figcaption>Background, as it repeats in the game</figcaption></figure>
+      <figure><img id="artdress" alt="Artist's dressing"><figcaption>Dressing, with the guide taken out</figcaption></figure>
     </div>
   </section>
 

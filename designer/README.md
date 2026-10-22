@@ -65,6 +65,26 @@ down cleanly; the sizes below are game sizes.
   layout comes from `tileSheet()` in `guides.js` (its `slots` list), so a
   painted sheet can be cut back into an art set with the same positions.
 
+## The artist's files
+
+Under the guides, **Artist's files** takes what the artist sends back as it
+is, for the level that's loaded (`designer/artist.js`). Drop the pictures
+(PNG, JPG or WebP, together or one at a time):
+
+- A **background** (solid all over). If it's one strip pasted across again
+  and again, one copy is cut out and repeated in the game, with the usual
+  0.3 parallax; otherwise the whole picture is used.
+- **Dressing** painted on the whole-level guide, with the guide still in
+  the picture. The same guide is drawn again and taken out (matched by
+  colour, since paint apps change how see-through it was), along with the
+  artist's own white name labels, leaving just the plants, rocks and vines
+  1:1 with the level.
+
+Both are shrunk to game size and shown in test play (the art set switches
+to the pixel ground) while **Show the artist's art in test play** is ticked.
+They're for test play only: nothing is saved into the game yet, and
+dropping a different level drawing clears them.
+
 ## Drawing rules
 
 - One 64 px square is one tile. The page can be any size in 64 px steps:

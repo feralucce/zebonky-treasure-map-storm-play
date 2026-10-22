@@ -4,6 +4,7 @@ import { ARTSETS, BLOCKS } from '../src/data/artsets.js';
 import { LEVELS } from '../src/data/world.js';
 import { TEST_LAYOUT_KEY } from '../src/data/levels.js';
 import { backgroundGuide, tileSheet, svgToImage } from './guides.js';
+import { readArtistFiles } from './artist.js';
 
 const $ = (id) => document.getElementById(id);
 const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen
@@ -56,6 +57,7 @@ async function open(file) {
   $('out').textContent = JSON.stringify(layout(), null, 1);
   draw();
   levelName = file.name.replace(/\.svg$/i, '');
+  forgetArtist();          // the artist's art belongs to the level it was painted for
   startDemo();
   showGuides();
 }
@@ -259,6 +261,91 @@ function download() {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
+// ---------- the artist's files ----------
+
+let artist = {};           // { background, dressing } as read by artist.js
+let artistReady = null;    // the same, as picture URLs for the game
+
+const blobUrl = (cv) => new Promise((resolve, reject) => {
+  cv.toBlob((b) => (b ? resolve(URL.createObjectURL(b)) : reject(new Error('Could not keep the picture.'))), 'image/png');
+});
+
+function forgetArtist() {
+  if (artistReady) {
+    [artistReady.background, ...(artistReady.dressing || [])].forEach((p) => p && URL.revokeObjectURL(p.url));
+  }
+  artist = {};
+  artistReady = null;
+  window.tmsArtistArt = null;
+  $('useart').checked = false;
+  $('useart').disabled = true;
+  $('artnotes').innerHTML = '';
+  $('artthumbs').hidden = true;
+}
+
+// The game (in the test-play frame) reads window.tmsArtistArt when it starts.
+function publishArtist() {
+  window.tmsArtistArt = $('useart').checked ? artistReady : null;
+}
+
+async function openArtist(files) {
+  if (!result) {
+    $('artstatus').textContent = 'Drop the level drawing first: the dressing is matched to its guide.';
+    return;
+  }
+  $('artstatus').textContent = "Reading the artist's files (big pictures take a few seconds)...";
+  try {
+    const got = await readArtistFiles([...files], result.rows, levelName);
+    if (got.background) artist.background = got.background;
+    if (got.dressing) artist.dressing = got.dressing;
+    const old = artistReady;
+    const bg = artist.background;
+    artistReady = {
+      background: bg ? { url: await blobUrl(bg.canvas), w: bg.canvas.width, h: bg.canvas.height } : null,
+      dressing: artist.dressing
+        ? await Promise.all(artist.dressing.pieces.map(async (p) => ({ url: await blobUrl(p.canvas), x: p.x, w: p.canvas.width, h: p.canvas.height })))
+        : [],
+    };
+    if (old) [old.background, ...(old.dressing || [])].forEach((p) => p && URL.revokeObjectURL(p.url));
+    $('artnotes').innerHTML = [artist.background, artist.dressing].filter(Boolean).map((x) => `<li>${x.note}</li>`).join('');
+    showArtistThumbs();
+    $('useart').disabled = false;
+    $('useart').checked = true;
+    // The artist's art goes with the pixel ground, not the plain blocks.
+    if ($('artset').value === BLOCKS && ARTSETS.includes('rainforest_floor')) $('artset').value = 'rainforest_floor';
+    $('artstatus').textContent = '';
+    publishArtist();
+    startDemo();
+  } catch (e) {
+    $('artstatus').textContent = e.message;
+  }
+}
+
+// Small previews: the background repeated twice, the dressing laid out
+// along the level.
+function showArtistThumbs() {
+  $('artthumbs').hidden = false;
+  const bg = artist.background && artist.background.canvas;
+  if (bg) {
+    const s = 600 / bg.height;
+    const cv = Object.assign(document.createElement('canvas'), { width: Math.round(bg.width * 2 * s), height: 600 });
+    const g = cv.getContext('2d');
+    g.drawImage(bg, 0, 0, bg.width * s, 600);
+    g.drawImage(bg, bg.width * s, 0, bg.width * s, 600);
+    $('artbg').src = cv.toDataURL('image/jpeg', 0.85);
+  }
+  const d = artist.dressing;
+  if (d) {
+    const s = 0.15;
+    const total = d.pieces.reduce((w, p) => Math.max(w, p.x + p.canvas.width), 0);
+    const h = d.pieces[0].canvas.height;
+    const cv = Object.assign(document.createElement('canvas'), { width: Math.round(total * s), height: Math.round(h * s) });
+    const g = cv.getContext('2d');
+    d.pieces.forEach((p) => g.drawImage(p.canvas, p.x * s, 0, p.canvas.width * s, h * s));
+    $('artdress').src = cv.toDataURL('image/png');
+  }
+}
+
 // ---------- wiring ----------
 
 const drop = $('drop');
@@ -280,6 +367,16 @@ $('views').addEventListener('click', (e) => {
 $('artset').addEventListener('change', () => { if (result) { $('out').textContent = JSON.stringify(layout(), null, 1); startDemo(); } });
 $('level').addEventListener('change', startDemo);
 $('restart').addEventListener('click', startDemo);
+const artDrop = $('artdrop');
+$('artfiles').addEventListener('change', (e) => e.target.files.length && openArtist(e.target.files));
+artDrop.addEventListener('dragover', (e) => { e.preventDefault(); artDrop.classList.add('over'); });
+artDrop.addEventListener('dragleave', () => artDrop.classList.remove('over'));
+artDrop.addEventListener('drop', (e) => {
+  e.preventDefault();
+  artDrop.classList.remove('over');
+  if (e.dataTransfer.files.length) openArtist(e.dataTransfer.files);
+});
+$('useart').addEventListener('change', () => { publishArtist(); startDemo(); });
 $('bgmode').addEventListener('change', showGuides);
 $('bgsave').addEventListener('click', () => {
   const mode = $('bgmode').value;

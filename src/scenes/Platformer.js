@@ -41,6 +41,17 @@ const TOSS_VY = -260;          // a low lob, so it reaches a Zebonky on the grou
 const ARROW_SIGNS = { '<': 'sign-left', '>': 'sign-right', '^': 'sign-up', '[': 'sign-upleft', ']': 'sign-upright' };
 
 // Solid tile characters -> [texture on top of a stack, texture underneath].
+// The artist's art for test play, if the designer page around this game
+// has some ready (window.tmsArtistArt, set by designer/designer.js).
+function artistArt() {
+  try {
+    const a = window.parent !== window && window.parent.tmsArtistArt;
+    return a && (a.background || (a.dressing && a.dressing.length)) ? a : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 const SOLID_TEXTURES = {
   '#': ['ground-top', 'ground'],
   s: ['sand-top', 'sand'],
@@ -87,6 +98,9 @@ export class PlatformerScene extends Phaser.Scene {
       this.art = null;
       this.artName = null;
     }
+    // Test play from the designer can carry the artist's own background and
+    // dressing (designer/artist.js); they replace the art set's.
+    this.artist = this.test && !this.demo ? artistArt() : null;
     const rows = layout.rows;
     const cols = Math.max(...rows.map((r) => r.length));
     const worldW = cols * TILE;
@@ -132,8 +146,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH + BOTTOM_ROOM, MAP_H));
     this.cameras.main.setBackgroundColor(this.blocks ? BLOCKS_SKY : (this.art && this.art.sky) || lvl.color);
 
-    if (this.blocks) {
-      // No backdrop.
+    if (this.artist) {
+      this.loadArtistArt(worldW, worldH);
+    }
+    if (this.blocks || (this.artist && this.artist.background)) {
+      // No backdrop (or the artist's, once it has loaded).
     } else if (this.art && this.art.background && this.art.background.length) this.buildArtBackdrop(worldW, worldH);
     else this.buildBackdrop(worldW, worldH);
     if (this.art && this.art.foreground) this.buildForeground(worldW);
@@ -610,7 +627,7 @@ export class PlatformerScene extends Phaser.Scene {
     if (!key) return false;
     this.add.image(x, y, key);
     // Little extras on open grass: tufts, pebbles, flowers.
-    const scatter = this.art.scatter || [];
+    const scatter = (this.artist && this.artist.dressing) ? [] : this.art.scatter || [];
     if (role.startsWith('top') && scatter.length && at(r - 1, c) === '.'
         && tileHash(c + 101, r + 7) < (this.art.scatter_chance || 0)) {
       const sk = texKey(this.artName, pick(scatter, c + 13, r));
@@ -654,6 +671,38 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // The artist's art handed over by the designer: pictures by URL, loaded
+  // now and placed when they arrive. The background repeats across the
+  // level with the same parallax as an art set's; the dressing pieces sit
+  // 1:1 with the level, behind the ground's edge and the player.
+  loadArtistArt(worldW, worldH) {
+    const a = this.artist;
+    const keys = [];
+    const queue = (key, url) => {
+      if (this.textures.exists(key)) this.textures.remove(key);
+      this.load.image(key, url);
+      keys.push(key);
+    };
+    if (a.background) queue('artist-bg', a.background.url);
+    (a.dressing || []).forEach((d, i) => queue(`artist-dress-${i}`, d.url));
+    if (!keys.length) return;
+    this.load.once('complete', () => {
+      if (!this.sys.isActive()) return;
+      if (a.background && this.textures.exists('artist-bg')) {
+        const w = a.background.w;
+        const sf = 0.3;
+        const span = (worldW - MAP_W) * sf + MAP_W + w;
+        for (let x = 0; x < span; x += w) {
+          this.add.image(x, worldH, 'artist-bg').setOrigin(0, 1).setScrollFactor(sf, 1).setDepth(-10);
+        }
+      }
+      (a.dressing || []).forEach((d, i) => {
+        if (this.textures.exists(`artist-dress-${i}`)) this.add.image(d.x, 0, `artist-dress-${i}`).setOrigin(0, 0).setDepth(-1);
+      });
+    });
+    this.load.start();
   }
 
   // A flat block for the "blocks" look, with a faint edge so tiles can be
@@ -761,7 +810,7 @@ export class PlatformerScene extends Phaser.Scene {
   // and platforms. Scenery only, all behind the player.
   buildDressing(rows, at, isSolid, worldW, worldH) {
     const d = this.art && this.art.dressing;
-    if (!d) return;
+    if (!d || (this.artist && this.artist.dressing)) return;
     const k = (f) => texKey(this.artName, f);
     const has = (f) => !!f && this.textures.exists(k(f));
     if (has(d.trunk)) {
@@ -800,6 +849,7 @@ export class PlatformerScene extends Phaser.Scene {
   // A fern patch now and then along a platform's top. Decoration only.
   decoratePlatform(x, r, c) {
     const decor = this.art && this.art.platform_decor;
+    if (this.artist && this.artist.dressing) return;
     if (!decor || !decor.length || tileHash(c + 31, r + 5) >= (this.art.platform_decor_chance || 0)) return;
     const key = texKey(this.artName, pick(decor, c, r));
     // Its top edge sits level with the plank's top, so the moss drapes
