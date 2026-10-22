@@ -23,10 +23,10 @@ const FADE_MS = 1200;
 
 // Sound effects, by name: { url, volume }. Each comes as OGG with an MP3
 // copy; the browser takes the first it can play. All CC0: footsteps (carpet),
-// jump and toss (cloth) and paw (zap up) from Kenney's packs. From
-// OpenGameArt: splash and swim stroke by rubberduck, food pickup twinkle by
-// Bobjt, eating crunch by StarNinjas, secret door and level end chimes by
-// JaggedStone.
+// jump and toss (cloth), paw (zap up), hint and right answer from Kenney's
+// packs. From OpenGameArt: splash and swim stroke by rubberduck, food pickup
+// twinkle by Bobjt, eating crunch by StarNinjas, secret door and level end
+// chimes by JaggedStone, crate opening by Oiboo.
 const fx = (name, volume) => ({ url: [`assets/audio/sfx/${name}.ogg`, `assets/audio/sfx/${name}.mp3`], volume });
 export const SFX = {
   'step-0': fx('step-0', 0.16),
@@ -43,6 +43,9 @@ export const SFX = {
   energy: fx('energy', 0.55),
   door: fx('door', 0.6),
   'level-end': fx('level-end', 0.6),
+  crate: fx('crate', 0.6),
+  hint: fx('hint', 0.6),
+  correct: fx('correct', 0.6),
 };
 
 function readPref(key) {

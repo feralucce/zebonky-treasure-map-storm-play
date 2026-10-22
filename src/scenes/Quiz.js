@@ -6,6 +6,7 @@ import { LEVELS, MAP_W, MAP_H } from '../data/world.js';
 import { drawQuestion } from '../data/questions.js';
 import { state } from '../state.js';
 import { COLORS, heading, text, makeButton } from '../theme.js';
+import { audio } from '../audio.js';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -52,6 +53,7 @@ export class QuizScene extends Phaser.Scene {
     const lvl = LEVELS[this.levelId];
     const item = lvl.items[this.itemIndex];
     const q = drawQuestion(this.levelId);
+    audio.sfx(this, 'crate');
     this.item = item;
     this.q = q;
     this.correct = q.answers[0];
@@ -176,6 +178,7 @@ export class QuizScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: btn, scale: 1.06, duration: 140, yoyo: true, ease: 'Sine.Out' });
     state.giveTreasure(this.levelId, this.item.id);
+    audio.sfx(this, 'correct');
     this.result.setText(`You got it! The ${this.item.name} is yours.
 ${this.q.fact}`);
     this.cameras.main.flash(250, 255, 236, 150);
@@ -195,6 +198,7 @@ ${this.q.fact}`);
   showHint(lead = '') {
     if (this.answered || this.hintPop || !this.q.hint) return;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    audio.sfx(this, 'hint');
     const cx = MAP_W / 2;
     const cy = MAP_H / 2 + 20;
     const w = 640;
