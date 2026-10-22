@@ -59,7 +59,8 @@ function cleanFringe(cv, passes = 2) {
         const b = a[i + 2];
         const lum = (r + gr + b) / 3;
         const sat = Math.max(r, gr, b) - Math.min(r, gr, b);
-        if (a[i + 3] < 250 || (lum > 130 && sat < 70) || (r > gr + 15 && lum > 110)) drop.push(i);
+        const washedGreen = sat < 40 && lum > 40 && gr >= r && gr >= b;   // a green blended with the paper
+        if (a[i + 3] < 250 || (lum > 130 && sat < 70) || (r > gr + 15 && lum > 110) || washedGreen) drop.push(i);
       }
     }
     drop.forEach((i) => { a[i + 3] = 0; });

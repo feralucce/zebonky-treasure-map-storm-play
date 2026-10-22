@@ -794,6 +794,8 @@ export class PlatformerScene extends Phaser.Scene {
     if (!keys.length) return;
     this.load.once('complete', () => {
       if (!this.sys.isActive()) return;
+      // Pixel art: sharp pixels, so edges never blend with see-through neighbours.
+      keys.forEach((k) => this.textures.exists(k) && this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
       // The whole background at 1:1, then copies after it for as far as
       // the parallax needs.
       if (bgPieces.length) {

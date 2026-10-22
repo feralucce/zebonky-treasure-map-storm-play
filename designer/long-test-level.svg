@@ -112,9 +112,5 @@
 <text x="10272" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">7</text>
 <circle cx="12384" cy="992" r="24" fill="#006060"/>
 <text x="12384" y="1001" font-size="26" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">8</text>
-<rect x="4104" y="388" width="48" height="124" fill="#7030A0"/>
-<text x="4128" y="458" font-size="30" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">1</text>
-<rect x="4744" y="900" width="48" height="124" fill="#7030A0"/>
-<text x="4768" y="970" font-size="30" font-weight="800" fill="#ffffff" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif">1</text>
 </g>
 </svg>
