@@ -624,6 +624,40 @@ export class PlatformerScene extends Phaser.Scene {
     return name;
   }
 
+  // A ground tile on an open side: its slice of the rock wall with the
+  // side's edge drawn in and the corners rounded (cleared, then outlined)
+  // where that side meets an open top or bottom. Made once per kind.
+  skinEdgeTile(skin, rock, frameName, sx, sy, openL, openR, openT, openB) {
+    const key = `${rock}:${frameName}:${+openL}${+openR}${+openT}${+openB}`;
+    if (this.textures.exists(key)) return key;
+    const k = (f) => texKey(this.artName, f);
+    const cv = Object.assign(document.createElement('canvas'), { width: TILE, height: TILE });
+    const g = cv.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(this.textures.get(rock).getSourceImage(), sx, sy, TILE, TILE, 0, 0, TILE, TILE);
+    if (openL) g.drawImage(this.textures.get(k(skin.edge_left)).getSourceImage(), 0, 0);
+    if (openR) g.drawImage(this.textures.get(k(skin.edge_right)).getSourceImage(), 0, 0);
+    // Rounding, in art pixels (4 game px): 3 cleared on the corner row, then 2, then 1.
+    const P = 4;
+    const cut = [3, 2, 1];
+    const outline = 'rgb(44,38,56)';
+    const corner = (left, top) => {
+      cut.forEach((n, i) => {
+        const row = top ? i : TILE / P - 1 - i;
+        const x0 = left ? 0 : TILE - n * P;
+        g.clearRect(x0, row * P, n * P, P);
+        g.fillStyle = outline;
+        g.fillRect(left ? n * P : TILE - (n + 1) * P, row * P, P, P);
+      });
+    };
+    if (openL && openT) corner(true, true);
+    if (openR && openT) corner(false, true);
+    if (openL && openB) corner(true, false);
+    if (openR && openB) corner(false, false);
+    this.textures.addCanvas(key, cv);
+    return key;
+  }
+
   // Seamless ground (an art set's ground "skin", tools/make_floor_ground.py):
   // each tile shows the rock wall's slice for its place in the level, so
   // rocks run across tile edges; moss lies along the top and hangs a little
@@ -634,18 +668,24 @@ export class PlatformerScene extends Phaser.Scene {
     if (!parts.every((n) => this.textures.exists(k(skin[n])))) return false;
     const [rw, rh] = skin.rock_tiles;
     const rock = k(skin.rock);
-    const img = this.add.image(x, y, rock,
-      this.skinFrame(rock, `s${c % rw}_${r % rh}`, (c % rw) * TILE, (r % rh) * TILE, TILE, TILE));
+    const openL = !isSolid(r, c - 1);
+    const openR = !isSolid(r, c + 1);
+    const openT = !isSolid(r - 1, c);
+    const openB = !isSolid(r + 1, c);
+    const sx = (c % rw) * TILE;
+    const sy = (r % rh) * TILE;
+    const frameName = this.skinFrame(rock, `s${c % rw}_${r % rh}`, sx, sy, TILE, TILE);
+    // Tiles on an open side get their own picture, with the edge drawn in
+    // and the corners rounded off where a side meets an open top or bottom.
+    const img = openL || openR
+      ? this.add.image(x, y, this.skinEdgeTile(skin, rock, frameName, sx, sy, openL, openR, openT, openB))
+      : this.add.image(x, y, rock, frameName);
     // A little darker each row down from the third, so there's no hard line.
     let depth = 0;
     while (depth < 6 && isSolid(r - depth - 1, c)) depth++;
     const shade = Math.round(255 * Math.max(0.8, 1 - 0.05 * Math.max(0, depth - 2)));
     if (shade < 255) img.setTint((shade << 16) | (shade << 8) | shade);
-    const openL = !isSolid(r, c - 1);
-    const openR = !isSolid(r, c + 1);
-    if (openL) this.add.image(x, y, k(skin.edge_left));
-    if (openR) this.add.image(x, y, k(skin.edge_right));
-    if (!isSolid(r - 1, c)) {
+    if (openT) {
       const left = x - TILE / 2;
       const top = r * TILE - (skin.moss_top || 0);
       let moss;
