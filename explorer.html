@@ -17,7 +17,7 @@
   .lede { max-width: 560px; margin: 12px auto 0; }
   main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 22px; justify-items: center; }
   .stage { background: var(--teal); border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 8px; }
-  canvas { display: block; width: min(360px, 80vw); image-rendering: pixelated; }
+  canvas { display: block; width: min(440px, 86vw); image-rendering: pixelated; }
   .pick { width: 100%; }
   h2 { font: 800 15px 'Nunito', sans-serif; letter-spacing: .08em; text-transform: uppercase; margin: 0 0 8px; color: var(--green-dark); text-align: center; }
   .row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
@@ -35,11 +35,12 @@
   <p class="lede">She's built from separate parts, like a paper doll, so kids will be able to make an explorer who looks like them. Try it.</p>
 </header>
 <main>
-  <div class="stage"><canvas id="doll" width="90" height="104" aria-label="The explorer, standing and breathing"></canvas></div>
+  <div class="stage"><canvas id="doll" width="110" height="104" aria-label="The explorer"></canvas></div>
+  <section class="pick"><div class="row" id="moves"></div></section>
   <section class="pick"><h2>Skin</h2><div class="row" id="skins"></div></section>
   <section class="pick"><h2>Hair</h2><div class="row" id="hairs"></div></section>
   <section class="pick"><div class="row"><button class="toggle" id="glasses" aria-pressed="false">Glasses</button></div></section>
-  <p class="small">An early test made from the explorer's existing art. Faces, hairstyles and more come later, drawn as parts that swap in.</p>
+  <p class="small">An early test made from the explorer's existing art. Running and swimming will look smoother once her parts are drawn for it. Faces, hairstyles and more come later, drawn as parts that swap in.</p>
 </main>
 <script type="module">
 import { Doll, ANIMS, SKINS, HAIRS } from './src/doll.js';
@@ -71,15 +72,40 @@ glasses.onclick = () => {
   doll.setLook(look);
 };
 
-const idle = ANIMS.idle;
+// Stand, run or swim. Swimming shows the water over her from the chest down.
+const MOVES = { Stand: 'idle', Run: 'run', Swim: 'swim' };
+const WATER = 52;
+let move = 'Stand';
+const moves = document.getElementById('moves');
+Object.keys(MOVES).forEach((name) => {
+  const b = document.createElement('button');
+  b.className = 'toggle';
+  b.textContent = name;
+  b.setAttribute('aria-pressed', String(name === move));
+  b.onclick = () => {
+    move = name;
+    frame = 0;
+    moves.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  };
+  moves.appendChild(b);
+});
+
 let frame = 0, last = 0;
 function tick(t) {
-  if (t - last > 1000 / idle.fps) {
+  const anim = ANIMS[MOVES[move]];
+  if (t - last > 1000 / anim.fps) {
     last = t;
+    frame %= anim.frames.length;
     const g = canvas.getContext('2d');
     g.clearRect(0, 0, canvas.width, canvas.height);
-    doll.draw(g, idle.frames[frame], 10, 4);
-    frame = (frame + 1) % idle.frames.length;
+    doll.draw(g, anim.frames[frame], 20, 4);
+    if (move === 'Swim') {
+      g.fillStyle = 'rgba(160, 225, 255, 0.45)';
+      g.fillRect(0, WATER, canvas.width, canvas.height - WATER);
+      g.fillStyle = 'rgba(230, 250, 255, 0.9)';
+      g.fillRect(0, WATER, canvas.width, 1);
+    }
+    frame = (frame + 1) % anim.frames.length;
   }
   requestAnimationFrame(tick);
 }

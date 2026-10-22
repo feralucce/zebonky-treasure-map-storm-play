@@ -145,7 +145,8 @@
     40,
     47
    ],
-   "blink": "head_blink.png"
+   "blink": "head_blink.png",
+   "blinkMask": "head_blink.mask.png"
   },
   {
    "name": "arm_front_upper",

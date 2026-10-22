@@ -105,7 +105,10 @@ export class Doll {
     await Promise.all(info.parts.map(async (p) => {
       const [im, mk] = await Promise.all([loadImage(base + p.file), loadImage(base + p.mask)]);
       parts[p.name] = { ...p, img: pixels(im), mask: pixels(mk) };
-      if (p.blink) parts[p.name].blinkImg = pixels(await loadImage(base + p.blink));
+      if (p.blink) {
+        parts[p.name].blinkImg = pixels(await loadImage(base + p.blink));
+        parts[p.name].blinkMask = p.blinkMask ? pixels(await loadImage(base + p.blinkMask)) : parts[p.name].mask;
+      }
     }));
     return new Doll(info, parts);
   }
@@ -140,7 +143,7 @@ export class Doll {
     this.cache = new Map();
     Object.values(this.parts).forEach((p) => {
       p.cur = recolour(p.img, p.mask, looks);
-      if (p.blinkImg) p.curBlink = recolour(p.blinkImg, p.mask, looks);
+      if (p.blinkImg) p.curBlink = recolour(p.blinkImg, p.blinkMask, looks);
     });
   }
 
