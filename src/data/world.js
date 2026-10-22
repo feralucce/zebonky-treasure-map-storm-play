@@ -5,7 +5,8 @@
 export const MAP_W = 1180;
 export const MAP_H = 787;
 
-export const START_NODE = 'dorsal';
+// For the tech demo the map starts on Cumulus Rainforest.
+export const START_NODE = 'cumulus';
 
 export const LEVELS = {
   dorsal: {
@@ -26,6 +27,8 @@ export const LEVELS = {
     name: 'Cumulus Rainforest',
     x: 612, y: 432,
     kind: 'level',
+    // Plays this saved drawing (assets/levels/<layout>.json) from the map.
+    layout: 'long-test-level',
     hasSecret: false,
     color: 0x4d9e76,
     items: [

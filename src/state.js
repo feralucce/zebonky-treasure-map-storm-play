@@ -27,7 +27,8 @@ export const state = {
     } catch (e) {
       this.data = fresh();
     }
-    if (!LEVELS[this.data.at]) this.data.at = START_NODE;
+    // An old save can stand on a level that's no longer open (the start moved).
+    if (!LEVELS[this.data.at] || !this.isNodeOpen(this.data.at)) this.data.at = START_NODE;
   },
 
   // Set while the level designer is test-playing a drawing.

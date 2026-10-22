@@ -81,7 +81,7 @@ export class PlatformerScene extends Phaser.Scene {
 
   init(data) {
     this.levelId = data.levelId;
-    this.layoutId = data.layoutId || data.levelId;
+    this.layoutId = data.layoutId || (LEVELS[data.levelId] && LEVELS[data.levelId].layout) || data.levelId;
     this.test = !!data.test;
     this.demo = !!data.demo;
     // A designer test run never touches the player's saved progress.
