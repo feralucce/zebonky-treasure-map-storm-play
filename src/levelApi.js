@@ -5,9 +5,9 @@
 //
 //   startQuiz(scene, levelId, itemIndex, onDone)
 //     Call when the player touches quiz item number `itemIndex` (0, 1 or 2).
-//     The level pauses and the quiz card opens. onDone(true) means the answer
-//     was right and the treasure is already saved; onDone(false) means it
-//     slipped away for this visit. It comes back the next time the level loads.
+//     The level pauses and the quiz card opens. Wrong answers show a hint and
+//     the child tries again, so onDone(true) comes once they find the right
+//     one, with the treasure already saved.
 //
 //   finishLevel(scene, levelId, exit)
 //     Call when the player reaches an exit: 'normal' for the goal,

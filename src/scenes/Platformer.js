@@ -10,6 +10,7 @@ import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js';
 import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js';
 import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js';
 import { makeNav } from '../pathing.js';
+import { startQuestionRun } from '../data/questions.js';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -101,6 +102,7 @@ export class PlatformerScene extends Phaser.Scene {
 
   create() {
     const lvl = LEVELS[this.levelId];
+    startQuestionRun(this.levelId);
     // A demo plays the level's saved drawing; a designer test plays the hand-off.
     const layout = layoutFor(this.layoutId, this.test && !this.demo);
     this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
@@ -452,14 +454,16 @@ export class PlatformerScene extends Phaser.Scene {
   buildPickups(foodSpots, pawSpots) {
     this.pickups = this.physics.add.staticGroup();
     foodSpots.forEach(({ x, y }) => {
-      const f = this.pickups.create(x, y, this.foodTex);
+      const f = this.pickups.create(x, y, this.foodTex).setDepth(3);
       f.kind = 'food';
       this.tweens.add({ targets: f, y: y - 6, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.pickupShine(f);
     });
     pawSpots.forEach(({ x, y }) => {
-      const z = this.pickups.create(x, y, 'zpaw');
+      const z = this.pickups.create(x, y, 'zpaw').setDepth(3);
       z.kind = 'paw';
       this.tweens.add({ targets: z, scale: 1.12, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.pickupShine(z);
     });
     // Taken on contact; only crates wait for Down.
     this.physics.add.overlap(this.player, this.pickups, (_, it) => { if (it.active) this.collect(it); });
@@ -476,6 +480,52 @@ export class PlatformerScene extends Phaser.Scene {
         z.feed();
       });
     }
+  }
+
+  // A soft glow and sparkles rising from behind a pickup, so it reads as
+  // something to grab. Both go when it's taken (collect).
+  pickupShine(it) {
+    if (!this.textures.exists('pickup-glow')) {
+      const cv = Object.assign(document.createElement('canvas'), { width: 128, height: 128 });
+      const g = cv.getContext('2d');
+      const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+      grad.addColorStop(0, 'rgba(255,250,200,1)');
+      grad.addColorStop(0.3, 'rgba(255,232,120,0.8)');
+      grad.addColorStop(0.65, 'rgba(255,214,80,0.3)');
+      grad.addColorStop(1, 'rgba(255,210,80,0)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 128, 128);
+      this.textures.addCanvas('pickup-glow', cv);
+    }
+    if (!this.textures.exists('pickup-spark')) {
+      // A little four-pointed gold star with a light middle.
+      const cv = Object.assign(document.createElement('canvas'), { width: 13, height: 13 });
+      const g = cv.getContext('2d');
+      g.fillStyle = '#ffcf3a';
+      g.fillRect(5, 0, 3, 13);
+      g.fillRect(0, 5, 13, 3);
+      g.fillRect(4, 4, 5, 5);
+      g.fillStyle = '#fff8d8';
+      g.fillRect(6, 2, 1, 9);
+      g.fillRect(2, 6, 9, 1);
+      g.fillRect(5, 5, 3, 3);
+      this.textures.addCanvas('pickup-spark', cv);
+    }
+    const glow = this.add.image(it.x, it.y, 'pickup-glow').setDepth(it.depth - 0.2)
+      .setAlpha(0.9);
+    this.tweens.add({ targets: glow, scale: 1.2, alpha: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    const sparks = this.add.particles(it.x, it.y + 8, 'pickup-spark', {
+      lifespan: 1400,
+      frequency: 110,
+      quantity: 1,
+      x: { min: -20, max: 20 },
+      speedY: { min: -55, max: -28 },
+      speedX: { min: -10, max: 10 },
+      scale: { start: 1.8, end: 0.5 },
+      alpha: { start: 1, end: 0 },
+      rotate: { min: 0, max: 45 },
+    }).setDepth(it.depth - 0.1);
+    it.shine = [glow, sparks];
   }
 
   // Thrown food lying on the ground near a point, that no Zebonky is
@@ -506,6 +556,7 @@ export class PlatformerScene extends Phaser.Scene {
       this.refreshHud();
     }
     this.tweens.killTweensOf(it);
+    (it.shine || []).forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
     it.destroy();
   }
 

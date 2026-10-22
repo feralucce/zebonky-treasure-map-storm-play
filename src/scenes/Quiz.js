@@ -1,8 +1,9 @@
 // Quiz card overlay. Opened over a paused level by startQuiz() in levelApi.js.
-// Right answer: the treasure is saved. Wrong answer: it slips away this visit.
+// A wrong answer fades out and pops up the hint, and the child tries again
+// until they find it. The right answer saves the treasure.
 
 import { LEVELS, MAP_W, MAP_H } from '../data/world.js';
-import { QUESTIONS } from '../data/questions.js';
+import { drawQuestion } from '../data/questions.js';
 import { state } from '../state.js';
 import { COLORS, heading, text, makeButton } from '../theme.js';
 
@@ -43,15 +44,14 @@ export class QuizScene extends Phaser.Scene {
     this.itemIndex = data.itemIndex;
     this.onDone = data.onDone;
     this.answered = false;
+    this.tried = new Set(); // wrong answers already picked
     this.closing = false; // the scene object is reused for every quiz
   }
 
   create() {
     const lvl = LEVELS[this.levelId];
     const item = lvl.items[this.itemIndex];
-    const bank = QUESTIONS[this.levelId] || [];
-    let q = bank[this.itemIndex % bank.length];
-    if (Array.isArray(q)) q = q[Math.floor(Math.random() * q.length)];
+    const q = drawQuestion(this.levelId);
     this.item = item;
     this.q = q;
     this.correct = q.answers[0];
@@ -99,6 +99,18 @@ export class QuizScene extends Phaser.Scene {
       this.readBtn = read;
     }
 
+    // Hint: a note that pops up over the card. Tap it to put it away; the
+    // button stays so it can be read again.
+    this.hintPop = null;
+    if (q.hint) {
+      this.hintBtn = makeButton(this, x + 100, y + h - 36, 'Hint', () => this.showHint(), {
+        width: 120, height: 44, size: 18, fill: COLORS.parchment, textColor: COLORS.inkCss,
+      });
+      card.add(this.hintBtn);
+      this.input.keyboard.on('keydown-H', () => (this.hintPop ? this.closeHint() : this.showHint()));
+      ['ENTER', 'SPACE', 'ESC'].forEach((k) => this.input.keyboard.on(`keydown-${k}`, () => this.closeHint()));
+    }
+
     // Keyboard: 1-4 or A-D
     ['ONE', 'TWO', 'THREE', 'FOUR'].forEach((k, i) => this.input.keyboard.on(`keydown-${k}`, () => this.pick(i)));
     LETTERS.forEach((k, i) => this.input.keyboard.on(`keydown-${k}`, () => this.pick(i)));
@@ -136,43 +148,99 @@ export class QuizScene extends Phaser.Scene {
   }
 
   pick(i) {
-    if (this.answered || i >= this.choices.length) return;
-    this.answered = true;
+    if (this.hintPop) { this.closeHint(); return; }
+    if (this.answered || i >= this.choices.length || this.tried.has(i)) return;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    const right = this.choices[i] === this.correct;
-    const rightIndex = this.choices.indexOf(this.correct);
+    const btn = this.answerBtns[i];
 
+    if (this.choices[i] !== this.correct) {
+      // A gentle "not that one": a small wobble, the answer fades out of
+      // play, and the hint appears so they can try again.
+      this.tried.add(i);
+      btn.disableInteractive();
+      btn.draw(0xece3d2);
+      this.tweens.add({ targets: btn, angle: { from: -3, to: 3 }, duration: 90, yoyo: true, repeat: 1,
+        onComplete: () => { btn.angle = 0; } });
+      this.tweens.add({ targets: btn, alpha: 0.4, duration: 400, delay: 200 });
+      const cheer = this.tried.size === 1 ? 'Good try!' : 'So close!';
+      if (this.q.hint) this.time.delayedCall(350, () => this.showHint(cheer));
+      else this.result.setText(`${cheer} Try another one.`);
+      return;
+    }
+
+    this.answered = true;
     this.answerBtns.forEach((b, j) => {
       b.disableInteractive();
-      if (j === rightIndex) b.draw(0x8fd19e);
-      else if (j === i) b.draw(0xf08a7a);
-      else b.setAlpha(0.5);
+      if (j === i) b.draw(0x8fd19e);
+      else if (!this.tried.has(j)) b.setAlpha(0.5);
     });
-
-    if (right) {
-      state.giveTreasure(this.levelId, this.item.id);
-      this.result.setText(`You got it! The ${this.item.name} is yours.\n${this.q.fact}`);
-      this.cameras.main.flash(250, 255, 236, 150);
-    } else {
-      this.result.setText(`Not quite. It's "${this.correct}".\nThe ${this.item.name} slipped away. Come back and try again!`);
-      this.cameras.main.shake(220, 0.006);
-    }
+    this.tweens.add({ targets: btn, scale: 1.06, duration: 140, yoyo: true, ease: 'Sine.Out' });
+    state.giveTreasure(this.levelId, this.item.id);
+    this.result.setText(`You got it! The ${this.item.name} is yours.
+${this.q.fact}`);
+    this.cameras.main.flash(250, 255, 236, 150);
     if (this.readBtn) this.readBtn.setVisible(false);
+    if (this.hintBtn) this.hintBtn.setVisible(false);
 
     this.time.delayedCall(500, () => {
-      const cont = makeButton(this, MAP_W / 2 + 330, (MAP_H + 560) / 2 - 36, 'Continue', () => this.close(right), {
+      const cont = makeButton(this, MAP_W / 2 + 330, (MAP_H + 560) / 2 - 36, 'Continue', () => this.close(true), {
         width: 170, height: 48, size: 20,
       });
       this.card.add(cont);
-      this.input.keyboard.once('keydown-ENTER', () => this.close(right));
-      this.input.keyboard.once('keydown-SPACE', () => this.close(right));
+      this.input.keyboard.once('keydown-ENTER', () => this.close(true));
+      this.input.keyboard.once('keydown-SPACE', () => this.close(true));
     });
+  }
+
+  showHint(lead = '') {
+    if (this.answered || this.hintPop || !this.q.hint) return;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    const cx = MAP_W / 2;
+    const cy = MAP_H / 2 + 20;
+    const w = 640;
+    const h = 280;
+    const pop = this.add.container(0, 0).setDepth(10);
+    const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0);
+    const note = this.add.container(cx, cy);
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.ink, 1);
+    g.fillRoundedRect(-w / 2 + 6, -h / 2 + 8, w, h, 26);
+    g.fillStyle(0xfff6c8, 1);
+    g.fillRoundedRect(-w / 2, -h / 2, w, h, 26);
+    g.lineStyle(5, COLORS.ink, 1);
+    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 26);
+    const title = this.add.text(0, -h / 2 + 42, lead ? `${lead} Here's a hint` : 'Hint', heading(30, COLORS.inkCss))
+      .setOrigin(0.5);
+    const body = this.add.text(0, 8, this.q.hint, text(30, COLORS.inkCss, {
+      align: 'center', wordWrap: { width: w - 80 }, lineSpacing: 6,
+    })).setOrigin(0.5);
+    const tap = this.add.text(0, h / 2 - 32, 'Tap to close', text(18, '#7a5a2a')).setOrigin(0.5);
+    note.add([g, title, body, tap]);
+    note.setAngle(-1.5).setScale(0.6).setAlpha(0);
+    pop.add([shade, note]);
+    this.tweens.add({ targets: note, scale: 1, alpha: 1, duration: 260, ease: 'Back.Out' });
+
+    // Tap anywhere to close; the shade covers the whole screen.
+    shade.setInteractive({ useHandCursor: true });
+    shade.on('pointerup', () => this.closeHint());
+    this.hintPop = pop;
+    this.hintOpenedAt = this.time.now;
+  }
+
+  closeHint() {
+    const pop = this.hintPop;
+    // Ignore the same tap that opened it.
+    if (!pop || this.time.now - this.hintOpenedAt < 250) return;
+    this.hintPop = null;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    this.tweens.add({ targets: pop, alpha: 0, duration: 160, onComplete: () => pop.destroy() });
   }
 
   speak() {
     const synth = window.speechSynthesis;
     synth.cancel();
     const lines = [this.q.q, ...this.choices.map((c, i) => `${LETTERS[i]}. ${c}`)];
+    if (this.hintPop) lines.splice(0, lines.length, `Hint. ${this.q.hint}`);
     synth.speak(new SpeechSynthesisUtterance(lines.join('. ')));
   }
 
