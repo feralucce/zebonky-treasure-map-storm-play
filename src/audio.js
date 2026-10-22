@@ -21,18 +21,21 @@ const FADE_MS = 1200;
 
 // Sound effects, by name: { url, volume }. Each comes as OGG with an MP3
 // copy; the browser takes the first it can play. All CC0: footsteps (carpet),
-// jump (cloth) and paw (zap up) from Kenney's packs; splash by rubberduck and
-// food crunch by StarNinjas, both on OpenGameArt.
+// jump and toss (cloth) and paw (zap up) from Kenney's packs; splash by rubberduck,
+// food pickup twinkle by Bobjt and eating crunch by StarNinjas, all on
+// OpenGameArt.
 const fx = (name, volume) => ({ url: [`assets/audio/sfx/${name}.ogg`, `assets/audio/sfx/${name}.mp3`], volume });
 export const SFX = {
-  'step-0': fx('step-0', 0.35),
-  'step-1': fx('step-1', 0.35),
-  'step-2': fx('step-2', 0.35),
-  'step-3': fx('step-3', 0.35),
-  'step-4': fx('step-4', 0.35),
+  'step-0': fx('step-0', 0.16),
+  'step-1': fx('step-1', 0.16),
+  'step-2': fx('step-2', 0.16),
+  'step-3': fx('step-3', 0.16),
+  'step-4': fx('step-4', 0.16),
   jump: fx('jump', 0.6),
+  toss: fx('toss', 0.6),
   splash: fx('splash', 0.7),
-  food: fx('food', 0.7),
+  food: fx('pickup', 0.6),
+  eat: fx('eat', 0.7),
   energy: fx('energy', 0.55),
 };
 

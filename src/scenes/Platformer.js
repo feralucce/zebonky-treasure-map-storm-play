@@ -616,10 +616,15 @@ export class PlatformerScene extends Phaser.Scene {
     f.setVelocity(dir * TOSS_VX, TOSS_VY).setBounce(0.25).setDragX(500).setAngularVelocity(dir * 540);
     f.setCollideWorldBounds(true);
     f.landed = false;
+    audio.sfx(this, 'toss');
   }
 
+  // A Zebonky eats tossed food.
   eatFood(f) {
-    if (f && f.active) f.destroy();
+    if (f && f.active) {
+      audio.sfx(this, 'eat');
+      f.destroy();
+    }
   }
 
   // ---------- level geometry helpers (used by the Zebonkies) ----------
@@ -1522,16 +1527,6 @@ export class PlatformerScene extends Phaser.Scene {
       if (p.body.blocked.down && !inWater && this.floorUnder(p.x, p.body.bottom)) {
         this.safe = { x: p.x, y: p.y - 4, feet: p.body.bottom };
       }
-      // Footsteps while walking, a little faster when running, never the
-      // same step twice in a row.
-      const speed = Math.abs(p.body.velocity.x);
-      if (!inWater && p.body.blocked.down && speed > 60 && time >= (this.nextStepAt || 0)) {
-        let n;
-        do n = Phaser.Math.Between(0, 4); while (n === this.lastStep);
-        this.lastStep = n;
-        audio.sfx(this, `step-${n}`, { detune: Phaser.Math.Between(-80, 80) });
-        this.nextStepAt = time + Phaser.Math.Clamp(78000 / speed, 230, 420);
-      }
     }
 
     const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
@@ -1559,6 +1554,16 @@ export class PlatformerScene extends Phaser.Scene {
       p.setTexture('explorer-crouch', 2);
     } else if (Math.abs(p.body.velocity.x) > 30) {
       if (p.anims.currentAnim?.key !== 'explorer-walk' || !p.anims.isPlaying) p.play('explorer-walk');
+      // A footstep as each heel lands (walk frames 0 and 2), never the same
+      // sound twice in a row.
+      const frame = p.anims.currentFrame ? p.anims.currentFrame.index - 1 : -1;
+      if (frame !== this.walkFrame && (frame === 0 || frame === 2) && !inWater && p.body.blocked.down) {
+        let n;
+        do n = Phaser.Math.Between(0, 4); while (n === this.lastStep);
+        this.lastStep = n;
+        audio.sfx(this, `step-${n}`, { detune: Phaser.Math.Between(-80, 80) });
+      }
+      this.walkFrame = frame;
     } else if (p.anims.currentAnim?.key !== 'explorer-idle' || !p.anims.isPlaying) {
       p.play('explorer-idle');
     }
