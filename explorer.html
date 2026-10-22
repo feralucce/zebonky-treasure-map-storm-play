@@ -36,11 +36,10 @@
 </header>
 <main>
   <div class="stage"><canvas id="doll" width="110" height="104" aria-label="The explorer"></canvas></div>
-  <section class="pick"><div class="row" id="moves"></div></section>
   <section class="pick"><h2>Skin</h2><div class="row" id="skins"></div></section>
   <section class="pick"><h2>Hair</h2><div class="row" id="hairs"></div></section>
   <section class="pick"><div class="row"><button class="toggle" id="glasses" aria-pressed="false">Glasses</button></div></section>
-  <p class="small">An early test made from the explorer's existing art. Running and swimming will look smoother once her parts are drawn for it. Faces, hairstyles and more come later, drawn as parts that swap in.</p>
+  <p class="small">An early test made from the explorer's existing art. Faces, hairstyles and more come later, drawn as parts that swap in.</p>
 </main>
 <script type="module">
 import { Doll, ANIMS, SKINS, HAIRS } from './src/doll.js';
@@ -72,23 +71,11 @@ glasses.onclick = () => {
   doll.setLook(look);
 };
 
-// Stand, run or swim. Swimming shows the water over her from the chest down.
-const MOVES = { Stand: 'idle', Run: 'run', Swim: 'swim' };
+// Standing only for now: running and swimming wait for parts drawn for it.
+// (Swimming shows the water over her from the chest down.)
+const MOVES = { Stand: 'idle' };
 const WATER = 52;
 let move = 'Stand';
-const moves = document.getElementById('moves');
-Object.keys(MOVES).forEach((name) => {
-  const b = document.createElement('button');
-  b.className = 'toggle';
-  b.textContent = name;
-  b.setAttribute('aria-pressed', String(name === move));
-  b.onclick = () => {
-    move = name;
-    frame = 0;
-    moves.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-  };
-  moves.appendChild(b);
-});
 
 let frame = 0, last = 0;
 function tick(t) {
