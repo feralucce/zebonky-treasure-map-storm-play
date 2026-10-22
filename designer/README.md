@@ -82,8 +82,15 @@ is, for the level that's loaded (`designer/artist.js`). Drop the pictures
 
 Both are shrunk to game size and shown in test play (the art set switches
 to the pixel ground) while **Show the artist's art in test play** is ticked.
-They're for test play only: nothing is saved into the game yet, and
-dropping a different level drawing clears them.
+Dropping a different level drawing clears them.
+
+While it's ticked, saving takes the art along: the pictures go to
+`assets/levels/art/<level>/` and the saved layout's `art` entry points at
+them, so the game shows them whenever that level is played. **Save as
+demo** saves the drawing under its own name instead of over a map level
+(it borrows the picked level's name and questions) and plays at
+`index.html?demo=<name>`; the long test level is saved that way as
+`long-test-level`. Saving needs the local dev server.
 
 ## Drawing rules
 

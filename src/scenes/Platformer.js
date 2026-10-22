@@ -52,6 +52,17 @@ function artistArt() {
   }
 }
 
+// The artist's art saved with a level by the designer (layout.art: the
+// pictures in assets/levels/art/<id>/), in the same shape as above.
+function savedArt(art) {
+  if (!art || !art.dir) return null;
+  const a = {
+    background: art.background ? { url: art.dir + art.background.file, w: art.background.w } : null,
+    dressing: (art.dressing || []).map((d) => ({ url: art.dir + d.file, x: d.x })),
+  };
+  return a.background || a.dressing.length ? a : null;
+}
+
 const SOLID_TEXTURES = {
   '#': ['ground-top', 'ground'],
   s: ['sand-top', 'sand'],
@@ -100,7 +111,7 @@ export class PlatformerScene extends Phaser.Scene {
     }
     // Test play from the designer can carry the artist's own background and
     // dressing (designer/artist.js); they replace the art set's.
-    this.artist = this.test && !this.demo ? artistArt() : null;
+    this.artist = (this.test && !this.demo ? artistArt() : null) || savedArt(layout.art);
     const rows = layout.rows;
     const cols = Math.max(...rows.map((r) => r.length));
     const worldW = cols * TILE;

@@ -52,7 +52,7 @@ async function open(file) {
   drawingImg.src = url;
 
   $('status').textContent = `${file.name}: ${result.cols} x ${result.rowsCount} tiles`;
-  ['play', 'save', 'download'].forEach((id) => { $(id).disabled = false; });
+  ['play', 'save', 'savedemo', 'download'].forEach((id) => { $(id).disabled = false; });
   showWarnings(result.warnings);
   $('out').textContent = JSON.stringify(layout(), null, 1);
   draw();
@@ -233,22 +233,65 @@ async function saveGuide(guide, base) {
   }
 }
 
+// The artist's art (when it's shown in test play) goes up with the level:
+// each picture to assets/levels/art/<id>/, and the layout says where.
+async function uploadArt(id) {
+  if (!artistReady || !$('useart').checked) return null;
+  const put = async (name, url) => {
+    const blob = await fetch(url).then((r) => r.blob());
+    const res = await fetch(`/api/levels/${id}/art/${name}`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
+    if (!res.ok) throw new Error(res.status);
+    return name;
+  };
+  const art = { dir: `assets/levels/art/${id}/` };
+  if (artistReady.background) {
+    art.background = { file: await put('background.png', artistReady.background.url), w: artistReady.background.w };
+  }
+  art.dressing = [];
+  for (const [i, d] of artistReady.dressing.entries()) {
+    art.dressing.push({ file: await put(`dressing-${i}.png`, d.url), x: d.x });
+  }
+  return art;
+}
+
+async function saveAs(id, extra) {
+  const out = { ...layout(), ...extra };
+  const art = await uploadArt(id);
+  if (art) out.art = art;
+  const res = await fetch(`/api/levels/${id}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(out),
+  });
+  if (!res.ok) throw new Error(res.status);
+  const { saved } = await res.json();
+  return { saved, art: !!art };
+}
+
 async function save() {
   const id = $('level').value;
   const name = LEVELS[id].name;
+  $('status').textContent = 'Saving...';
   try {
-    const res = await fetch(`/api/levels/${id}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(layout()),
-    });
-    if (!res.ok) throw new Error(res.status);
-    const { saved } = await res.json();
-    $('status').textContent = `Saved as ${name}: ${saved}. Play it from the map.`;
+    const { saved, art } = await saveAs(id);
+    $('status').textContent = `Saved as ${name}: ${saved}${art ? ", with the artist's art" : ''}. Play it from the map.`;
   } catch (e) {
     // Not running on the local dev server (node server.js): download instead.
     download();
-    $('status').textContent = `Can't save from here, so it downloaded instead. Put ${id}.json in assets/levels/.`;
+    $('status').textContent = `Can't save from here, so it downloaded instead (without the artist's art). Put ${id}.json in assets/levels/.`;
+  }
+}
+
+// A demo: the drawing saved under its own name, not on the map. It borrows
+// the picked level's name and questions, and plays at index.html?demo=<name>.
+async function saveDemo() {
+  const id = levelName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'demo';
+  $('status').textContent = 'Saving...';
+  try {
+    const { saved, art } = await saveAs(id, { level: $('level').value });
+    $('status').innerHTML = `Saved demo ${saved}${art ? ", with the artist's art" : ''}. <a href="../index.html?demo=${id}" target="_blank">Play it</a>`;
+  } catch (e) {
+    $('status').textContent = "Demos can only be saved from the local dev server (node server.js).";
   }
 }
 
@@ -385,6 +428,7 @@ $('bgsave').addEventListener('click', () => {
 $('sheetsave').addEventListener('click', () => saveGuide(tileSheet(result.rows, levelName), `${levelName}-tile-sheet`));
 $('play').addEventListener('click', play);
 $('save').addEventListener('click', save);
+$('savedemo').addEventListener('click', saveDemo);
 $('download').addEventListener('click', download);
 $('close').addEventListener('click', closePlay);
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('playbox').classList.contains('open') && document.activeElement !== $('game')) closePlay(); });
