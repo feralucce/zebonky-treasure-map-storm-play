@@ -1,0 +1,64 @@
+{
+ "rows": [
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "...................................................................WW............................WW.T...........",
+  "..................................WW....T..f.......................WW....T.......................WWsss..........",
+  "..................................WWsssssssss......................WW.sssssss....................WWsss..........",
+  "..................................WWsssssssss......................WW.........Z..................WWsss..........",
+  "..................................WWssssssssssss...................WW........................WW..WWssssss.......",
+  "..............WW...T..............WWssssssssssss...................WW..........ssss..........WWssWWssssss.......",
+  "..............WWsssssss...........WWsssssssssssssss................WW........................WWssWWssssss.......",
+  "..............WWsssssss...........WWsssssssssssssss................WW...............ssss.....WWssWWssssssss.....",
+  "..............WWssssssssss........WWssssssssssssssssss.............WW........................WWssWWssssssss.....",
+  "..P..B.>.f....WWssssssssss..Z.....WWssssssssssssssssss...E.........WW........................WWssWWssssssss.T.G.",
+  "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss~~~~~ss....................sssssssssssssssssssssss",
+  "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss~~~~~ss....................sssssssssssssssssssssss",
+  "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss....................sssssssssssssssssssssss",
+  "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss....................sssssssssssssssssssssss"
+ ],
+ "artset": "blocks",
+ "waits": [
+  {
+   "c": 30,
+   "r": 15
+  },
+  {
+   "c": 59,
+   "r": 15
+  },
+  {
+   "c": 91,
+   "r": 15
+  },
+  {
+   "c": 108,
+   "r": 15
+  }
+ ],
+ "level": "dorsal",
+ "title": "Ride the Falls",
+ "idea": "The uphill waterfall",
+ "beats": [
+  {
+   "c": 0,
+   "text": "Introduce: a short waterfall up a low cliff"
+  },
+  {
+   "c": 32,
+   "text": "Develop: a taller falls, a crate at the top"
+  },
+  {
+   "c": 61,
+   "text": "Twist: up the falls, then down a ladder of ledges over a gully"
+  },
+  {
+   "c": 92,
+   "text": "Show it off: two falls in a row"
+  }
+ ]
+}

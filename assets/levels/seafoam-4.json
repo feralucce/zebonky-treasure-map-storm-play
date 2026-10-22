@@ -1,0 +1,64 @@
+{
+ "rows": [
+  "................................................................................................................................................................",
+  "................................................................................................................................................................",
+  "................................................................................................................................................................",
+  "................................................................................................................................................................",
+  "................................................................................................................................................................",
+  "................................................................................................................................................................",
+  "........................................................................................................................................Z.......................",
+  "................................................................................................................................................................",
+  "..............................................................Z.....................................................................T...........................",
+  "..................................................................................................................................sssss.........................",
+  "..................................T.......................................................................f.....................sssssssss.......................",
+  "..................................sssss...................sssss...............................................................sssssssssssss.....................",
+  "................T...............sssssssss...............sssssssss.......................T.............sssss.................sssssssssssssssss...................",
+  "..............sssss...........sssssssssssss...........sssssssssssss.................sssss...........sssssssss.............sssssssssssssssssssss.................",
+  "............sssssssss.......sssssssssssssssss.......sssssssssssssssss.............sssssssss.......sssssssssssss.........sssssssssssssssssssssssss...............",
+  "..P..B.>..sssssssssssss...sssssssssssssssssssss...sssssssssssssssssssss...E.....sssssssssssss...sssssssssssssssss.....sssssssssssssssssssssssssssss...T....G....",
+  "sssssssssssssssssssssssssssssssssssssssssssssss...ssssssssssssssssssssssssssss~~sssssssssssss~~~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+  "sssssssssssssssssssssssssssssssssssssssssssssss...ssssssssssssssssssssssssssss~~sssssssssssss~~~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+  "sssssssssssssssssssssssssssssssssssssssssssssss...ssssssssssssssssssssssssssss~~sssssssssssss~~~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+  "sssssssssssssssssssssssssssssssssssssssssssssss...ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+ ],
+ "artset": "blocks",
+ "waits": [
+  {
+   "c": 28,
+   "r": 15
+  },
+  {
+   "c": 76,
+   "r": 15
+  },
+  {
+   "c": 115,
+   "r": 15
+  },
+  {
+   "c": 152,
+   "r": 15
+  }
+ ],
+ "level": "seafoam",
+ "title": "Foam Mounds",
+ "idea": "Climbing the mounds of foam",
+ "beats": [
+  {
+   "c": 0,
+   "text": "Introduce: a small mound"
+  },
+  {
+   "c": 26,
+   "text": "Develop: bigger mounds, a gap between"
+  },
+  {
+   "c": 77,
+   "text": "Twist: mounds in the sea"
+  },
+  {
+   "c": 116,
+   "text": "Show it off: the biggest mound"
+  }
+ ]
+}

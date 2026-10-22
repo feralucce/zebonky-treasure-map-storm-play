@@ -1,14 +1,16 @@
 // Overworld layout for the Zebonkia map (assets/z_map.png, 1180 x 787).
 // Node x/y are in map pixels. Paths unlock when their `from` level is
 // cleared through the named exit ('normal' or 'secret'), like Super Mario World.
+// Each biome has five levels (assets/levels/<biome>-<n>.json) in a chain;
+// the chain's last level opens the next biomes, so every level in a biome
+// has been played before the next one opens. See docs/guides/map.md.
 
 export const MAP_W = 1180;
 export const MAP_H = 787;
 
-// For the tech demo the map starts on Cumulus Rainforest.
-export const START_NODE = 'cumulus';
+export const START_NODE = 'dorsal-1';
 
-export const LEVELS = {
+export const BIOMES = {
   dorsal: {
     name: 'Dorsal Cove',
     x: 232, y: 545,
@@ -139,15 +141,69 @@ export const LEVELS = {
   },
 };
 
+// The five levels of each playable biome: title (from its level file) and
+// where its dot sits on the map, in play order. Bamboo Dunes, the volcano
+// and Uncharted East are off limits for now.
+const CHAINS = {
+  dorsal: [
+    ['First Steps', 128, 515], ['Tide Pools', 180, 560], ['Cliff Steps', 240, 565],
+    ['Ride the Falls', 300, 545], ['Fin Rock', 345, 500],
+  ],
+  magenta: [
+    ['Foothills', 300, 375], ['Crystal Ledges', 225, 345], ['Mountain Stream', 200, 265],
+    ['Switchback', 275, 235], ['Mt. Tanzan', 345, 250],
+  ],
+  squvannahs: [
+    ['Tall Grass', 425, 330], ['Royal River', 485, 350], ['Bison Plains', 550, 345],
+    ['Flood Season', 615, 420], ['Loosestrife Bloom', 545, 440],
+  ],
+  seafoam: [
+    ['Sandbar Hop', 865, 595], ['Shell Cove Swim', 925, 575], ['Driftwood', 990, 585],
+    ['Foam Mounds', 1050, 555], ['Low Tide', 960, 450],
+  ],
+  cumulus: [
+    ['Forest Floor', 830, 485], ['Canopy', 765, 540], ['Misty Falls', 690, 545],
+    ['Cloud Trees', 610, 545], ['Storm Canopy', 470, 450],
+  ],
+};
+
+export const LEVELS = {};
+Object.entries(CHAINS).forEach(([biome, chain]) => {
+  const b = BIOMES[biome];
+  chain.forEach(([title, x, y], i) => {
+    const n = i + 1;
+    const id = `${biome}-${n}`;
+    LEVELS[id] = {
+      biome, n, title, x, y,
+      name: `${b.name} ${n}`,
+      kind: 'level',
+      layout: id,
+      hasSecret: n === 5, // each biome's last level hides a secret door
+      color: b.color,
+      items: b.items,
+    };
+  });
+});
+LEVELS.unchartedW = { ...BIOMES.unchartedW, biome: 'unchartedW', x: 110, y: 300 };
+
 // `bend` pushes the curve's midpoint sideways (in px) so routes arc
 // across the parchment instead of running ruler-straight.
-export const PATHS = [
-  { from: 'dorsal', to: 'cumulus', exit: 'normal', bend: 40 },
-  { from: 'cumulus', to: 'seafoam', exit: 'normal', bend: 30 },
-  { from: 'seafoam', to: 'bamboo', exit: 'normal', bend: 190 },
-  { from: 'bamboo', to: 'squvannahs', exit: 'normal', bend: 30 },
-  { from: 'bamboo', to: 'unchartedE', exit: 'secret', bend: 25 },
-  { from: 'squvannahs', to: 'magenta', exit: 'normal', bend: -30 },
-  { from: 'magenta', to: 'volcano', exit: 'normal', bend: -70 },
-  { from: 'magenta', to: 'unchartedW', exit: 'secret', bend: 25 },
-];
+export const PATHS = [];
+Object.entries(CHAINS).forEach(([biome, chain]) => {
+  for (let n = 1; n < chain.length; n++) {
+    PATHS.push({ from: `${biome}-${n}`, to: `${biome}-${n + 1}`, exit: 'normal', bend: n % 2 ? 10 : -10 });
+  }
+});
+PATHS.push(
+  // Cove first, then the shores or the mountains.
+  { from: 'dorsal-5', to: 'seafoam-1', exit: 'normal', bend: 100 },
+  { from: 'dorsal-5', to: 'magenta-1', exit: 'normal', bend: 20 },
+  // Mountains lead to the Squvannahs; the shores lead to the rainforest.
+  { from: 'magenta-5', to: 'squvannahs-1', exit: 'normal', bend: -20 },
+  { from: 'seafoam-5', to: 'cumulus-1', exit: 'normal', bend: 20 },
+  // The Squvannahs and the rainforest join up, whichever way you came.
+  { from: 'squvannahs-5', to: 'cumulus-5', exit: 'normal', bend: -15 },
+  { from: 'cumulus-5', to: 'squvannahs-5', exit: 'normal', bend: 15 },
+  // The secret door at the top of Mt. Tanzan.
+  { from: 'magenta-5', to: 'unchartedW', exit: 'secret', bend: 30 },
+);

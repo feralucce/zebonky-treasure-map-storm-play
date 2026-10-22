@@ -1,0 +1,64 @@
+{
+ "rows": [
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "................................................................................................................",
+  "...........................................T....................................................................",
+  "........................................Z.RRR...................................................................",
+  "..........................................RRR.............................T......................T..............",
+  ".......................................RRRRRRRRR....................RRR..RRR.................Z...RR.............",
+  ".......................................RRRRRRRRR....................RRR..RRR.....................RR.............",
+  ".................T..................RRRRRRRRRRRRRRR..............RRRRRR..RRRRRR............RR..RRRRRR...........",
+  "................RRR.................RRRRRRRRRRRRRRR..............RRRRRR..RRRRRR............RR..RRRRRR...........",
+  ".............RRRRRRRRR...........RRRRRRRRRRRRRRRRRRRRR........RRRRRRRRR..RRRRRRRRR.......RRRRRRRRRRRRRR.........",
+  "..P..B.>..RRRRRRRRRRRRRRR...f....RRRRRRRRRRRRRRRRRRRRR....E...RRRRRRRRR..RRRRRRRRR...f...RRRRRRRRRRRRRR...T..G..",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+ ],
+ "artset": "blocks",
+ "waits": [
+  {
+   "c": 30,
+   "r": 15
+  },
+  {
+   "c": 60,
+   "r": 15
+  },
+  {
+   "c": 87,
+   "r": 15
+  },
+  {
+   "c": 106,
+   "r": 15
+  }
+ ],
+ "level": "magenta",
+ "title": "Foothills",
+ "idea": "Gentle slopes, up and down",
+ "beats": [
+  {
+   "c": 0,
+   "text": "Introduce: a low hill"
+  },
+  {
+   "c": 32,
+   "text": "Develop: a bigger hill"
+  },
+  {
+   "c": 62,
+   "text": "Twist: a gap at the top of the hill"
+  },
+  {
+   "c": 89,
+   "text": "Show it off"
+  }
+ ]
+}

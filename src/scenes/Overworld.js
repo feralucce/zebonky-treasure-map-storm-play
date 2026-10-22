@@ -8,7 +8,8 @@ import { COLORS, heading, text, makeButton } from '../theme.js';
 import { audio } from '../audio.js';
 
 const WALK_SPEED = 280;     // map px per second
-const DOT_SPACING = 16;     // px between path dots
+const DOT_SPACING = 18;     // px between paw prints on a path
+const PAW_SIZE = 16;        // px across one paw print
 
 // Points along a gently bent path from one level dot to another.
 function pathPoints(p) {
@@ -60,6 +61,51 @@ function dotsAlong(pts) {
   return out.filter((_, i) => i > 0 && i < out.length - 1);
 }
 
+// Paw prints along a path: each one turned to face the way the path runs,
+// stepping a little left and right like real tracks.
+function pawsAlong(pts) {
+  const dots = dotsAlong(pts);
+  return dots.map((d, i) => {
+    const a = dots[Math.max(0, i - 1)];
+    const b = dots[Math.min(dots.length - 1, i + 1)];
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    const side = i % 2 ? 3.5 : -3.5;
+    return {
+      x: d.x - Math.sin(ang) * side,
+      y: d.y + Math.cos(ang) * side,
+      rot: ang + Math.PI / 2, // the print's toes point up in its texture
+    };
+  });
+}
+
+// A black paw silhouette with the Z cut out of the pad, so the map shows
+// through it. Drawn once into a texture at 4x and shrunk on the map.
+function makePawTexture(scene) {
+  if (scene.textures.exists('paw-sil')) return;
+  const S = 64;
+  const tex = scene.textures.createCanvas('paw-sil', S, S);
+  const ctx = tex.getContext();
+  ctx.fillStyle = '#1c130c';
+  ctx.beginPath();
+  ctx.ellipse(32, 41, 17, 15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  [[11, 24, 6.5, 8], [23, 12, 7, 9], [41, 12, 7, 9], [53, 24, 6.5, 8]].forEach(([x, y, rx, ry]) => {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.lineWidth = 5.5;
+  ctx.lineJoin = 'miter';
+  ctx.beginPath();
+  ctx.moveTo(23, 32);
+  ctx.lineTo(41, 32);
+  ctx.lineTo(23, 50);
+  ctx.lineTo(41, 50);
+  ctx.stroke();
+  tex.refresh();
+}
+
 export class OverworldScene extends Phaser.Scene {
   constructor() {
     super('Overworld');
@@ -75,7 +121,8 @@ export class OverworldScene extends Phaser.Scene {
 
     this.add.image(0, 0, 'map').setOrigin(0);
 
-    this.pathLayer = this.add.graphics();
+    makePawTexture(this);
+    this.pathLayer = this.add.container(0, 0);
     this.nodeLayer = this.add.container(0, 0);
     this.drawOpenPaths();
     this.buildNodes();
@@ -102,18 +149,21 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   drawOpenPaths() {
-    this.pathLayer.clear();
-    this.shownPaths().forEach((p) => this.drawPathDots(this.pathLayer, p));
+    this.pathLayer.removeAll(true);
+    const drawn = new Set();
+    this.shownPaths().forEach((p) => {
+      // Two-way links (the Squvannahs and the rainforest) are drawn once.
+      if (drawn.has(`${p.to}>${p.from}`)) return;
+      drawn.add(pathKey(p));
+      pawsAlong(pathPoints(p)).forEach((d) => this.pathLayer.add(this.pawPrint(d, p)));
+    });
   }
 
-  drawPathDots(g, p) {
-    const secret = p.exit === 'secret';
-    dotsAlong(pathPoints(p)).forEach((d) => {
-      g.fillStyle(COLORS.ink, 1);
-      g.fillCircle(d.x, d.y + 1, 5);
-      g.fillStyle(secret ? COLORS.red : COLORS.yellow, 1);
-      g.fillCircle(d.x, d.y, 4);
-    });
+  pawPrint(d, p) {
+    const img = this.add.image(d.x, d.y, 'paw-sil').setRotation(d.rot);
+    img.setDisplaySize(PAW_SIZE, PAW_SIZE);
+    if (p.exit === 'secret') img.setTint(0x8a1f1f);
+    return img;
   }
 
   revealPaths(paths) {
@@ -121,15 +171,14 @@ export class OverworldScene extends Phaser.Scene {
     let delay = 0;
     const temp = [];
     paths.forEach((p) => {
-      const dots = dotsAlong(pathPoints(p));
-      const secret = p.exit === 'secret';
+      const dots = pawsAlong(pathPoints(p));
       dots.forEach((d, i) => {
         this.time.delayedCall(delay + i * 45, () => {
-          const dot = this.add.circle(d.x, d.y, 4, secret ? COLORS.red : COLORS.yellow)
-            .setStrokeStyle(2, COLORS.ink);
-          temp.push(dot);
-          dot.setScale(0);
-          this.tweens.add({ targets: dot, scale: 1, duration: 160, ease: 'Back.Out' });
+          const paw = this.pawPrint(d, p);
+          temp.push(paw);
+          const full = paw.scaleX;
+          paw.setScale(0);
+          this.tweens.add({ targets: paw, scale: full, duration: 160, ease: 'Back.Out' });
         });
       });
       delay += dots.length * 45;
@@ -156,7 +205,8 @@ export class OverworldScene extends Phaser.Scene {
       const c = this.add.container(lvl.x, lvl.y);
       c.g = this.add.graphics();
       c.add(c.g);
-      c.setSize(56, 56);
+      if (lvl.n) c.add(this.add.text(0, 0, String(lvl.n), heading(16)).setOrigin(0.5, 0.55));
+      c.setSize(40, 40);
       c.setInteractive({ useHandCursor: true });
       c.on('pointerup', () => this.onNodeTapped(id));
       this.nodeLayer.add(c);
@@ -175,7 +225,7 @@ export class OverworldScene extends Phaser.Scene {
       g.clear();
 
       const big = lvl.kind === 'final';
-      const r = big ? 21 : 15;
+      const r = big ? 21 : 12;
       let fill = COLORS.yellow;
       if (lvl.hasSecret && !state.foundSecret(id)) fill = COLORS.red;
       if (lvl.kind === 'final') fill = COLORS.red;
@@ -194,28 +244,28 @@ export class OverworldScene extends Phaser.Scene {
       // treasure pips: one diamond per quiz item
       const n = lvl.items.length;
       lvl.items.forEach((it, i) => {
-        const px = (i - (n - 1) / 2) * 15;
-        const py = r + 14;
+        const px = (i - (n - 1) / 2) * 9;
+        const py = r + 10;
         const have = state.hasTreasure(id, it.id);
         g.fillStyle(COLORS.ink, 1);
-        g.fillPoints(diamond(px, py, 7), true);
+        g.fillPoints(diamond(px, py, 5), true);
         g.fillStyle(have ? 0xffc93c : COLORS.parchment, 1);
-        g.fillPoints(diamond(px, py, 4.5), true);
+        g.fillPoints(diamond(px, py, 3), true);
       });
 
       // check mark when every quiz treasure in the level is collected
       if (state.isChecked(id)) {
-        const bx = r + 4;
-        const by = -r - 2;
+        const bx = r + 3;
+        const by = -r - 1;
         g.fillStyle(COLORS.ink, 1);
-        g.fillCircle(bx, by + 2, 13);
+        g.fillCircle(bx, by + 1.5, 9);
         g.fillStyle(0xffffff, 1);
-        g.fillCircle(bx, by, 12);
-        g.lineStyle(4, COLORS.green, 1);
+        g.fillCircle(bx, by, 8.5);
+        g.lineStyle(3, COLORS.green, 1);
         g.beginPath();
-        g.moveTo(bx - 6, by);
-        g.lineTo(bx - 1.5, by + 5);
-        g.lineTo(bx + 7, by - 5);
+        g.moveTo(bx - 4, by);
+        g.lineTo(bx - 1, by + 3.5);
+        g.lineTo(bx + 5, by - 3.5);
         g.strokePath();
       }
     });
@@ -299,7 +349,7 @@ export class OverworldScene extends Phaser.Scene {
     const have = state.treasureFor(id).length;
     this.panelTitle.setText(lvl.name);
 
-    let status = `Treasure ${have}/${lvl.items.length}`;
+    let status = `${lvl.title ? `${lvl.title}  ·  ` : ''}Treasure ${have}/${lvl.items.length}`;
     if (state.isChecked(id)) status += '   ✓ Complete!';
     else if (state.isCleared(id)) status += '   Cleared';
     this.panelStatus.setText(status);

@@ -1,0 +1,64 @@
+{
+ "rows": [
+  "............................................................................................................................",
+  "............................................................................................................................",
+  "............................................................................................................................",
+  "............................................................................................................................",
+  "...................................................................................WW..T....................................",
+  "..................................WW.....T.........................................WWRRRRRRR................................",
+  "..................................WW.RRRRRRRR......................................WWRRRRRRR................................",
+  "..................................WW...........Z...................................WWRRRRRRRRRR.............................",
+  "..................................WW..........RRRR.................................WWRRRRRRRRRR.............................",
+  "..................................WW.........................................WW.f..WWRRRRRRRRRRRRR..........................",
+  "..................................WW...............RRRR......................WWRRRRWWRRRRRRRRRRRRR..............WWT.........",
+  "...............WW...T.............WW.........................................WWRRRRWWRRRRRRRRRRRRRRRR...........WWRR........",
+  "...............WWRRRRRR...........WW....................RRRR.................WWRRRRWWRRRRRRRRRRRRRRRR...........WWRR........",
+  "...............WWRRRRRR...........WW.........................................WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR........",
+  "...............WWRRRRRRRRR........WW.........................RRRR............WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR........",
+  "..P..B.>.......WWRRRRRRRRR...f....WW.................................E.......WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR.Z.T..G.",
+  "RRRRRRRRRR~~~~~RRRRRRRRRRRRRRRRRRRRR..............................RRRRRRR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~~RRRRRRRRRRRR",
+  "RRRRRRRRRR~~~~~RRRRRRRRRRRRRRRRRRRRR..............................RRRRRRR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~~RRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+ ],
+ "artset": "blocks",
+ "waits": [
+  {
+   "c": 31,
+   "r": 15
+  },
+  {
+   "c": 71,
+   "r": 15
+  },
+  {
+   "c": 106,
+   "r": 15
+  },
+  {
+   "c": 120,
+   "r": 15
+  }
+ ],
+ "level": "magenta",
+ "title": "Mountain Stream",
+ "idea": "Waterfalls up the cliffs",
+ "beats": [
+  {
+   "c": 0,
+   "text": "Introduce: a stream and a low falls"
+  },
+  {
+   "c": 33,
+   "text": "Develop: a high falls, then down the ledges over a gully"
+  },
+  {
+   "c": 73,
+   "text": "Twist: two falls, a cliff between"
+  },
+  {
+   "c": 107,
+   "text": "Show it off"
+  }
+ ]
+}

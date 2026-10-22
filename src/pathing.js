@@ -267,7 +267,13 @@ export function makeNav(rows) {
   const reachableFrom = (from, opts) => spread(from, 'fwd', opts);
   const canReach = (to, opts) => spread(to, 'back', opts);
 
-  return { find, isSpot, surface, nearestSpot, reachableFrom, canReach, keyOf };
+  // Where something placed at (r, c) ends up once it falls: a start drawn in
+  // mid-air drops straight down onto the floor or into the water.
+  const landing = (r, c) => {
+    while (r < R - 1 && !isSpot(r, c)) r++;
+    return { r, c };
+  };
+  return { find, isSpot, surface, nearestSpot, reachableFrom, canReach, keyOf, landing };
 }
 
 // Crates a player can miss for good: somewhere they can get to without
@@ -282,7 +288,8 @@ export function missableCrates(rows) {
     rows.forEach((row, r) => [...row].forEach((x, c) => { if (x === ch) out.push({ r, c }); }));
     return out;
   };
-  const start = cells('P').pop();
+  const p = cells('P').pop();
+  const start = p && nav.landing(p.r, p.c);
   const exit = cells('G')[0];
   if (!start || !exit) return [];
   const toExit = nav.canReach(exit, { doorsToo: false });

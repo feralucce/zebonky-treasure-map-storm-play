@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Explorer paper doll</title>
+<style>
+  :root { --ink: #2b1d12; --paper: #fbf6ea; --teal: #008080; --green: #4d9e76; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.4 system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  p.note { margin: 0 0 14px; opacity: .75; }
+  .stage { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  canvas { image-rendering: pixelated; background: var(--teal); border: 3px solid var(--ink); border-radius: 10px; }
+  #big { width: 480px; max-width: 100%; }
+  .controls { flex: 1; min-width: 260px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 14px; }
+  button { font: inherit; border: 2px solid var(--ink); border-radius: 999px; background: #fff; color: var(--ink); padding: 6px 14px; cursor: pointer; }
+  button.on { background: var(--green); color: #fff; }
+  .swatch { width: 30px; height: 30px; padding: 0; border-radius: 50%; }
+  .swatch.on { outline: 3px solid var(--ink); outline-offset: 2px; }
+  h2 { font-size: 15px; margin: 10px 0 0; text-transform: uppercase; letter-spacing: .06em; opacity: .7; }
+  #strip { width: 100%; margin-top: 18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Explorer paper doll</h1>
+  <p class="note">Her parts, cut from her standing frame, turning on their joints. One set of poses plays with any look.</p>
+  <div class="stage">
+    <canvas id="big" width="120" height="110"></canvas>
+    <div class="controls">
+      <h2>Animation</h2><div class="row" id="anims"></div>
+      <h2>Skin</h2><div class="row" id="skins"></div>
+      <h2>Hair</h2><div class="row" id="hairs"></div>
+      <h2>Extras</h2><div class="row"><button id="glasses">Glasses</button></div>
+    </div>
+  </div>
+  <canvas id="strip" height="110"></canvas>
+</main>
+<script type="module">
+import { Doll, ANIMS, SKINS, HAIRS } from '../src/doll.js';
+
+const doll = await Doll.load('../assets/player/doll/');
+const big = document.getElementById('big');
+const strip = document.getElementById('strip');
+const BOX = [120, 110], OFF = [25, 8];
+let anim = 'idle', frame = 0, look = { skin: 'As drawn', hair: 'As drawn', glasses: false };
+
+function buttons(id, names, pick, current) {
+  const row = document.getElementById(id);
+  row.innerHTML = '';
+  names.forEach((name) => {
+    const b = document.createElement('button');
+    b.textContent = name;
+    b.className = name === current() ? 'on' : '';
+    b.onclick = () => { pick(name); buttons(id, names, pick, current); };
+    row.appendChild(b);
+  });
+}
+
+function swatches(id, table, key) {
+  const row = document.getElementById(id);
+  row.innerHTML = '';
+  Object.entries(table).forEach(([name, ramp]) => {
+    const b = document.createElement('button');
+    b.className = 'swatch' + (look[key] === name ? ' on' : '');
+    b.title = name;
+    b.style.background = ramp ? `rgb(${ramp[1].join(',')})` : 'conic-gradient(#e8894a, #3a2020, #e8894a)';
+    b.onclick = () => { look[key] = name; doll.setLook(look); swatches(id, table, key); drawStrip(); };
+    row.appendChild(b);
+  });
+}
+
+function drawStrip() {
+  const frames = ANIMS[anim].frames;
+  strip.width = BOX[0] * frames.length;
+  const g = strip.getContext('2d');
+  g.clearRect(0, 0, strip.width, strip.height);
+  frames.forEach((pose, i) => doll.draw(g, pose, i * BOX[0] + OFF[0], OFF[1]));
+  strip.style.width = Math.min(980, strip.width * 2) + 'px';
+}
+
+buttons('anims', Object.keys(ANIMS), (n) => { anim = n; frame = 0; drawStrip(); }, () => anim);
+swatches('skins', SKINS, 'skin');
+swatches('hairs', HAIRS, 'hair');
+document.getElementById('glasses').onclick = (e) => {
+  look.glasses = !look.glasses;
+  e.target.className = look.glasses ? 'on' : '';
+  doll.setLook(look);
+  drawStrip();
+};
+drawStrip();
+
+let last = 0;
+function tick(t) {
+  const a = ANIMS[anim];
+  if (t - last > 1000 / a.fps) {
+    last = t;
+    const g = big.getContext('2d');
+    g.clearRect(0, 0, BOX[0], BOX[1]);
+    doll.draw(g, a.frames[frame], OFF[0], OFF[1]);
+    frame = (frame + 1) % a.frames.length;
+  }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+window.doll = doll;
+</script>
+</body>
+</html>

@@ -53,9 +53,12 @@ export const state = {
     return Object.keys(d.cleared).length > 0 || Object.keys(d.treasure).length > 0;
   },
 
+  // A normal path opens however the level was finished (a secret door
+  // still counts as playing it); a secret path needs the secret.
   isPathOpen(p) {
     const c = this.data.cleared[p.from];
-    return !!(c && c[p.exit]);
+    if (!c) return false;
+    return p.exit === 'secret' ? !!c.secret : !!(c.normal || c.secret);
   },
 
   openPaths() {

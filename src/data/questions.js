@@ -1427,7 +1427,8 @@ export function startQuestionRun(levelId) {
 }
 
 export function drawQuestion(levelId) {
-  const bank = QUESTIONS[levelId] || QUESTIONS.cumulus;
+  // A biome's levels (dorsal-1 ... dorsal-5) share the biome's questions.
+  const bank = QUESTIONS[levelId] || QUESTIONS[levelId.split('-')[0]] || QUESTIONS.cumulus;
   const used = usedThisRun[levelId] || (usedThisRun[levelId] = new Set());
   let pile = (unused[levelId] || []).filter((q) => !used.has(q));
   if (!pile.length) pile = bank.filter((q) => !used.has(q));
