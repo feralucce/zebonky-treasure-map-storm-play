@@ -2,16 +2,16 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=cafacdb';
-import { TILE, layoutFor } from '../data/levels.js?v=cafacdb';
-import { state } from '../state.js?v=cafacdb';
-import { COLORS, heading, text } from '../theme.js?v=cafacdb';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=cafacdb';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=cafacdb';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=cafacdb';
-import { makeNav } from '../pathing.js?v=cafacdb';
-import { startQuestionRun } from '../data/questions.js?v=cafacdb';
-import { audio, musicButton, soundButton } from '../audio.js?v=cafacdb';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=1f72981';
+import { TILE, layoutFor } from '../data/levels.js?v=1f72981';
+import { state } from '../state.js?v=1f72981';
+import { COLORS, heading, text } from '../theme.js?v=1f72981';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=1f72981';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=1f72981';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=1f72981';
+import { makeNav } from '../pathing.js?v=1f72981';
+import { startQuestionRun } from '../data/questions.js?v=1f72981';
+import { audio, musicButton, soundButton } from '../audio.js?v=1f72981';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -24,7 +24,7 @@ const SWIM_SPEED = 220;
 const SWIM_STROKE = 430;
 const FLOAT_RISE = 170;       // water carries you up to the surface at this speed
 const SWIM_DIVE = 200;        // hold Down to swim down
-const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto land
+const SWIM_HOP_OUT = 990;     // a stroke near the surface pops you out onto land (her feet clear 2 tiles above the water)
 // The Dorsal Cove waterfall flows uphill and carries you with it.
 const CURRENT_LIFT = 660;
 const CLIMB_SPEED = 260;      // up and down a vine wall
@@ -618,8 +618,7 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   // Thrown food lying on the ground near a point, that no Zebonky is
-  // already heading for. Thrown food is for Zebonkies: the player can't
-  // pick it back up.
+  // already heading for.
   foodNear(x, y, range) {
     let best = null;
     this.tossed.getChildren().forEach((f) => {
@@ -663,7 +662,23 @@ export class PlatformerScene extends Phaser.Scene {
     f.setVelocity(dir * TOSS_VX, TOSS_VY).setBounce(0.25).setDragX(500).setAngularVelocity(dir * 540);
     f.setCollideWorldBounds(true);
     f.landed = false;
+    f.tossedAt = this.time.now;
     audio.sfx(this, 'toss');
+  }
+
+  // Food she threw, landed at her feet (not the moment it leaves her hand).
+  droppedFoodAt(p) {
+    return this.tossed.getChildren().find((f) => f.active && f.landed && this.time.now - (f.tossedAt || 0) > 500
+      && Math.abs(f.x - p.x) < 44 && Math.abs(f.y - p.body.bottom) < TILE) || null;
+  }
+
+  // Crouch and take it back. A Zebonky walking to it turns away.
+  pickUpFood(f, time) {
+    f.destroy();
+    this.food += 1;
+    this.refreshHud();
+    audio.sfx(this, 'food');
+    this.crouchUntil = time + 280;
   }
 
   // A Zebonky eats tossed food.
@@ -1594,17 +1609,20 @@ export class PlatformerScene extends Phaser.Scene {
     }
     this.touchDoor = false;
 
-    // At a crate: Down (or the touch button) opens it.
+    // At a crate: Down (or the touch button) opens it. Next to food she
+    // threw that has landed: Down crouches and picks it back up.
     const item = this.nearItem && this.nearItem.active && !this.nearItem.taken ? this.nearItem : null;
     this.nearItem = null;
-    this.grabHint.setVisible(!!item);
-    this.btnGrab.setVisible(!!item);
-    if (item) {
+    const landedFood = !item && onFloor ? this.droppedFoodAt(p) : null;
+    this.grabHint.setVisible(!!(item || landedFood));
+    this.btnGrab.setVisible(!!(item || landedFood));
+    if (item || landedFood) {
       this.grabHint.setPosition(p.x, p.y - 62);
       const grab = Phaser.Input.Keyboard.JustDown(k.DOWN) || Phaser.Input.Keyboard.JustDown(k.S) || this.touchGrab;
       if (grab) {
         this.touchGrab = false;
-        if (item.itemIndex !== undefined) this.touchTreasure(item);
+        if (landedFood) this.pickUpFood(landedFood, time);
+        else if (item.itemIndex !== undefined) this.touchTreasure(item);
         else this.collect(item);
         return;
       }
@@ -1738,7 +1756,7 @@ export class PlatformerScene extends Phaser.Scene {
       const f = vy < -450 ? 1 : vy < -150 ? 2 : vy < 150 ? 3 : vy < 450 ? 4 : 5;
       p.anims.stop();
       p.setTexture('explorer-jump', f);
-    } else if (down && Math.abs(p.body.velocity.x) <= 30) {
+    } else if ((down && Math.abs(p.body.velocity.x) <= 30) || time < (this.crouchUntil || 0)) {
       p.anims.stop();
       p.setTexture('explorer-crouch', 2);
     } else if (Math.abs(p.body.velocity.x) > 30) {

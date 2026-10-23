@@ -2,8 +2,8 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=cafacdb';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=cafacdb';
+import { LEVELS, PATHS, START_NODE } from './data/world.js?v=1f72981';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=1f72981';
 
 const KEY = 'zebonky-tms-save-v1';
 
