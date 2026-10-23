@@ -178,7 +178,7 @@ Object.entries(CHAINS).forEach(([biome, chain]) => {
       name: `${b.name} ${n}`,
       kind: 'level',
       layout: id,
-      hasSecret: n === 5, // each biome's last level hides a secret door
+      hasSecret: true, // every level hides a bonus exit (a secret door)
       color: b.color,
       items: b.items,
     };

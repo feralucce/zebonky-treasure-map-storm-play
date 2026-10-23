@@ -1,42 +1,42 @@
 {
  "rows": [
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "............................................................................................................................",
-  "............................................................................................................................",
-  "...................................................................................WW..T....................................",
-  "..................................WW.....T.........................................WWRRRRRRR................................",
-  "..................................WW.RRRRRRRR......................................WWRRRRRRR................................",
-  "..................................WW...........Z...................................WWRRRRRRRRRR.............................",
-  "..................................WW..........RRRR.................................WWRRRRRRRRRR.............................",
-  "..................................WW.........................................WW.f..WWRRRRRRRRRRRRR..........................",
-  "..................................WW...............RRRR......................WWRRRRWWRRRRRRRRRRRRR..............WWT.........",
-  "...............WW...T.............WW.........................................WWRRRRWWRRRRRRRRRRRRRRRR...........WWRR........",
-  "...............WWRRRRRR...........WW....................RRRR.................WWRRRRWWRRRRRRRRRRRRRRRR...........WWRR........",
-  "...............WWRRRRRR...........WW.........................................WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR........",
-  "...............WWRRRRRRRRR........WW.........................RRRR............WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR........",
-  "..P..B.>.......WWRRRRRRRRR...f....WW.................................E.......WWRRRRWWRRRRRRRRRRRRRRRRRRR........WWRR.Z.T..G.",
-  "RRRRRRRRRR~~~~~RRRRRRRRRRRRRRRRRRRRR..............................RRRRRRR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~~RRRRRRRRRRRR",
-  "RRRRRRRRRR~~~~~RRRRRRRRRRRRRRRRRRRRR..............................RRRRRRR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~~RRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "..................................................................................................................................................................................................................................................",
+  "..................................................................................................................................................................................................................................................",
+  "..................................................................................................................................................................................................................................................",
+  "..................................................................................................................................................................................................................................................",
+  "..................................................................................................................................................................................................................................................",
+  ".......................................................................................................................................................................Z..........................................................................",
+  "...................................................................................................................................................................S.......WW.....................................................................",
+  "..................................................................................................................................................................RRRRRRRRRWW.....................................................................",
+  "..............................................................................................................................................T............................WW.....................................................................",
+  "..........................................................................................................................................RRRRRR...........................WW......................................WW...T.........................",
+  "..........................................................................................................................................RRRRRRRR.........................WW......................................WWRRRRRRR......................",
+  "........................................Z.................................................................RRRR..RRRR...RRR...Z..........RRRRRRRRRRRR...............Z.......WW...............................Z......WWRRRRRRR......................",
+  "...................................................................................................RRRR..............................RRRRRRRRRRRRRRRRR.....................WW......................................WWRRRRRRRRR....................",
+  "..P..B.>...............T.............f..E.............RRR..f...RRR.E................T.........................................E......RRRRRRRRRRRRRRRRRRR......E....f..E....WW..f..E............T...................WWRRRRRRRRR...E............G...",
+  "RRRRRRRRRRRRRR~~~RR~~~RRR~~~~RRR~~~~RRRRRRRRRR...RRR..RRRRRRR..RRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~RRRR..........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRR~~~RR~~~RRR~~~~RRR~~~~RRRRRRRRRR...RRR..RRRRRRR..RRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~RRRR..........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRR~~~RR~~~RRR~~~~RRR~~~~RRRRRRRRRR...RRR..RRRRRRR..RRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~RRRR..........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR~~~RR~~~RRR~~~RR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR...RRR..RRRRRRR..RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
  ],
  "artset": "blocks",
  "waits": [
-  {
-   "c": 31,
-   "r": 15
-  },
   {
    "c": 71,
    "r": 15
   },
   {
-   "c": 106,
+   "c": 129,
    "r": 15
   },
   {
-   "c": 120,
+   "c": 178,
+   "r": 15
+  },
+  {
+   "c": 228,
    "r": 15
   }
  ],
@@ -45,19 +45,19 @@
  "idea": "Waterfalls up the cliffs of a cave",
  "beats": [
   {
-   "c": 0,
-   "text": "Introduce: a stream and a low falls"
+   "c": 14,
+   "text": "Introduce"
   },
   {
-   "c": 33,
-   "text": "Develop: a high falls, then down the ledges over a gully"
+   "c": 75,
+   "text": "Develop"
   },
   {
-   "c": 73,
-   "text": "Twist: two falls, a cliff between"
+   "c": 133,
+   "text": "Twist"
   },
   {
-   "c": 107,
+   "c": 182,
    "text": "Show it off"
   }
  ],
