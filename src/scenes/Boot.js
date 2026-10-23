@@ -1,5 +1,6 @@
 import { ARTSETS, texKey } from '../data/artsets.js';
 import { testParams, DRAWN } from '../data/levels.js';
+import { playableLevelId } from '../data/world.js';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -100,6 +101,7 @@ export class BootScene extends Phaser.Scene {
     if (test && test.demo && DRAWN[test.layoutId] && DRAWN[test.layoutId].level) {
       test.levelId = DRAWN[test.layoutId].level;
     }
+    if (test) test.levelId = playableLevelId(test.levelId);
     if (test) this.scene.start('Level', test);
     else this.scene.start('Overworld');
   }

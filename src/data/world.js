@@ -186,6 +186,14 @@ Object.entries(CHAINS).forEach(([biome, chain]) => {
 });
 LEVELS.unchartedW = { ...BIOMES.unchartedW, biome: 'unchartedW', x: 110, y: 300 };
 
+// A level id to play. Demos, designer tests and older files name a whole
+// biome ('cumulus', 'dorsal'): that means the biome's first level.
+export function playableLevelId(id) {
+  if (LEVELS[id]) return id;
+  if (LEVELS[`${id}-1`]) return `${id}-1`;
+  return START_NODE;
+}
+
 // `bend` pushes the curve's midpoint sideways (in px) so routes arc
 // across the parchment instead of running ruler-straight.
 export const PATHS = [];
