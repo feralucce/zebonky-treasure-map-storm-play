@@ -1,13 +1,13 @@
-import { MAP_W, MAP_H } from './data/world.js';
-import { state } from './state.js';
-import { audio } from './audio.js';
-import { BootScene } from './scenes/Boot.js';
-import { OverworldScene } from './scenes/Overworld.js';
-import { PlatformerScene } from './scenes/Platformer.js';
-import { QuizScene } from './scenes/Quiz.js';
-import { BonusScene } from './scenes/Bonus.js';
-import { SaveMenuScene } from './scenes/SaveMenu.js';
-import { takeLinkSave } from './savecode.js';
+import { MAP_W, MAP_H } from './data/world.js?v=13c0f1b';
+import { state } from './state.js?v=13c0f1b';
+import { audio } from './audio.js?v=13c0f1b';
+import { BootScene } from './scenes/Boot.js?v=13c0f1b';
+import { OverworldScene } from './scenes/Overworld.js?v=13c0f1b';
+import { PlatformerScene } from './scenes/Platformer.js?v=13c0f1b';
+import { QuizScene } from './scenes/Quiz.js?v=13c0f1b';
+import { BonusScene } from './scenes/Bonus.js?v=13c0f1b';
+import { SaveMenuScene } from './scenes/SaveMenu.js?v=13c0f1b';
+import { takeLinkSave } from './savecode.js?v=13c0f1b';
 
 state.load();
 // Opened from a save link: the map asks before loading it.

@@ -2,11 +2,11 @@
 // walk between level dots along open paths, press Enter (or tap the dot
 // you're standing on) to go into a level.
 
-import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js';
-import { state, pathKey } from '../state.js';
-import { COLORS, heading, text, makeButton } from '../theme.js';
-import { audio } from '../audio.js';
-import { starsFor, rewardTotals } from '../rewards.js';
+import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js?v=13c0f1b';
+import { state, pathKey } from '../state.js?v=13c0f1b';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=13c0f1b';
+import { audio } from '../audio.js?v=13c0f1b';
+import { starsFor, rewardTotals } from '../rewards.js?v=13c0f1b';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
