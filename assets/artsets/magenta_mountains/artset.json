@@ -16,7 +16,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }
@@ -34,7 +34,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }
@@ -52,7 +52,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }

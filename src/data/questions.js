@@ -15,8 +15,8 @@
 
 // This is the Explorer bank. Junior Explorer and Pioneer have their own
 // (questions_junior.js, questions_pioneer.js), copies of this one for now.
-import { JUNIOR_QUESTIONS } from './questions_junior.js?v=4179fa0';
-import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=4179fa0';
+import { JUNIOR_QUESTIONS } from './questions_junior.js?v=cafacdb';
+import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=cafacdb';
 
 export const QUESTIONS = {
   dorsal: [

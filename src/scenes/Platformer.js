@@ -2,16 +2,16 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4179fa0';
-import { TILE, layoutFor } from '../data/levels.js?v=4179fa0';
-import { state } from '../state.js?v=4179fa0';
-import { COLORS, heading, text } from '../theme.js?v=4179fa0';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4179fa0';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4179fa0';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=4179fa0';
-import { makeNav } from '../pathing.js?v=4179fa0';
-import { startQuestionRun } from '../data/questions.js?v=4179fa0';
-import { audio, musicButton, soundButton } from '../audio.js?v=4179fa0';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=cafacdb';
+import { TILE, layoutFor } from '../data/levels.js?v=cafacdb';
+import { state } from '../state.js?v=cafacdb';
+import { COLORS, heading, text } from '../theme.js?v=cafacdb';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=cafacdb';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=cafacdb';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=cafacdb';
+import { makeNav } from '../pathing.js?v=cafacdb';
+import { startQuestionRun } from '../data/questions.js?v=cafacdb';
+import { audio, musicButton, soundButton } from '../audio.js?v=cafacdb';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -235,7 +235,8 @@ export class PlatformerScene extends Phaser.Scene {
           foodSpots.push({ x, y });
         } else if (ch === 'Z') {
           pawSpots.push({ x, y });
-        } else if (ch === 'E') {
+        } else if (ch === 'E' || (ch === 'e' && this.band.extraWild)) {
+          // e: a wild Zebonky only Pioneer meets.
           wildSpots.push({ x, y: (r + 1) * TILE });
         } else if (ch === 'B') {
           guideSpot = { x, y: (r + 1) * TILE };

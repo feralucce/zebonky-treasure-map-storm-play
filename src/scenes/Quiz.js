@@ -2,11 +2,11 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4179fa0';
-import { drawQuestion } from '../data/questions.js?v=4179fa0';
-import { state } from '../state.js?v=4179fa0';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=4179fa0';
-import { audio } from '../audio.js?v=4179fa0';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=cafacdb';
+import { drawQuestion } from '../data/questions.js?v=cafacdb';
+import { state } from '../state.js?v=cafacdb';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=cafacdb';
+import { audio } from '../audio.js?v=cafacdb';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -45,7 +45,7 @@ export class QuizScene extends Phaser.Scene {
     this.itemIndex = data.itemIndex;
     this.onDone = data.onDone;
     this.parentKey = data.parentKey;
-    this.hintSeen = false;
+    this.missCharged = false;  // Pioneer: this question's Z-bolt already taken
     this.answered = false;
     this.tried = new Set(); // wrong answers already picked
     this.closing = false; // the scene object is reused for every quiz
@@ -55,6 +55,7 @@ export class QuizScene extends Phaser.Scene {
     const lvl = LEVELS[this.levelId];
     const item = lvl.items[this.itemIndex];
     this.band = state.difficulty();
+    this.hintsLeft = this.band.hints;
     const q = drawQuestion(this.levelId, this.band.id);
     audio.sfx(this, 'crate');
     this.item = item;
@@ -174,10 +175,16 @@ export class QuizScene extends Phaser.Scene {
         onComplete: () => { btn.angle = 0; } });
       this.tweens.add({ targets: btn, alpha: 0.4, duration: 400, delay: 200 });
       const cheer = this.tried.size === 1 ? 'Good try!' : 'So close!';
-      // Pioneer: a miss after the hint has been seen costs a Z-bolt.
-      const lost = this.band.missCostsEnergy && this.hintSeen && this.missCost();
-      if (this.q.hint) this.time.delayedCall(350, () => this.showHint(lost ? `${cheer} That cost a Z-bolt.` : cheer));
-      else this.result.setText(`${cheer}${lost ? ' That cost a Z-bolt.' : ''} Try another one.`);
+      // Pioneer: getting a question wrong costs one Z-bolt, once per
+      // question, whether or not the hint was looked at.
+      let lost = false;
+      if (this.band.missCostsEnergy && !this.missCharged) {
+        this.missCharged = true;
+        lost = this.missCost();
+      }
+      const lead = lost ? `${cheer} That cost a Z-bolt.` : cheer;
+      if (this.q.hint && this.hintsLeft > 0) this.time.delayedCall(350, () => this.showHint(lead));
+      else this.result.setText(`${lead} Try another one.`);
       return;
     }
 
@@ -213,8 +220,10 @@ ${this.q.fact}`);
   }
 
   showHint(lead = '') {
-    if (this.answered || this.hintPop || !this.q.hint) return;
-    this.hintSeen = true;
+    if (this.answered || this.hintPop || !this.q.hint || this.hintsLeft <= 0) return;
+    // Pioneer gets one look at the hint; then the button goes.
+    this.hintsLeft -= 1;
+    if (this.hintsLeft <= 0 && this.hintBtn) this.hintBtn.setVisible(false);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     audio.sfx(this, 'hint');
     const cx = MAP_W / 2;
