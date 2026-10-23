@@ -77,10 +77,13 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
-    // Levels drawn in the designer and saved into assets/levels/.
-    this.load.json('drawn-levels', 'assets/levels/index.json');
+    // Levels drawn in the designer and saved into assets/levels/. Always
+    // fetched fresh (the files are small): a browser's cached copy would
+    // keep showing a level from before an update.
+    const fresh = `?v=${Date.now()}`;
+    this.load.json('drawn-levels', `assets/levels/index.json${fresh}`);
     this.load.once('filecomplete-json-drawn-levels', (key, type, list) => {
-      (Array.isArray(list) ? list : []).forEach((id) => this.load.json(`drawn:${id}`, `assets/levels/${id}.json`));
+      (Array.isArray(list) ? list : []).forEach((id) => this.load.json(`drawn:${id}`, `assets/levels/${id}.json${fresh}`));
     });
   }
 
