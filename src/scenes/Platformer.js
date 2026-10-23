@@ -2,16 +2,16 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=13c0f1b';
-import { TILE, layoutFor } from '../data/levels.js?v=13c0f1b';
-import { state } from '../state.js?v=13c0f1b';
-import { COLORS, heading, text } from '../theme.js?v=13c0f1b';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=13c0f1b';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=13c0f1b';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=13c0f1b';
-import { makeNav } from '../pathing.js?v=13c0f1b';
-import { startQuestionRun } from '../data/questions.js?v=13c0f1b';
-import { audio, musicButton, soundButton } from '../audio.js?v=13c0f1b';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b79ca59';
+import { TILE, layoutFor } from '../data/levels.js?v=b79ca59';
+import { state } from '../state.js?v=b79ca59';
+import { COLORS, heading, text } from '../theme.js?v=b79ca59';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b79ca59';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b79ca59';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=b79ca59';
+import { makeNav } from '../pathing.js?v=b79ca59';
+import { startQuestionRun } from '../data/questions.js?v=b79ca59';
+import { audio, musicButton, soundButton } from '../audio.js?v=b79ca59';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -237,20 +237,28 @@ export class PlatformerScene extends Phaser.Scene {
           guideSpot = { x, y: (r + 1) * TILE };
         } else if (isWater(r, c)) {
           const surface = !isWater(r - 1, c);
+          const wa = !this.blocks && this.art && this.art.water;
+          const wFiles = wa && (surface ? wa.top : wa.body);
+          const wKey = wFiles && wFiles.length && texKey(this.artName, pick(wFiles, c, r));
           if (this.blocks) this.block(x, y, TILE, BLOCK_COLORS['~'], 0.45).setDepth(5);
+          else if (wKey && this.textures.exists(wKey)) this.add.image(x, y, wKey).setDepth(5).setAlpha(wa.alpha ?? 0.75);
           else this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
           this.water.add(`${c},${r}`);
           if (surface) this.surfaceRow[c] = r;
           if (ch === 'T') treasureSpots.push({ x, y });
         } else if (ch === 'V') {
-          // Vine wall: no art yet, so a see-through green block in any art set.
-          this.block(x, y, TILE, BLOCK_COLORS.V, 0.55).setDepth(1);
+          // Vine wall: the art set's vine tile, or a see-through green block.
+          const vKey = !this.blocks && this.art && this.art.vines && texKey(this.artName, this.art.vines);
+          if (vKey && this.textures.exists(vKey)) this.add.image(x, y, vKey).setDepth(1);
+          else this.block(x, y, TILE, BLOCK_COLORS.V, 0.55).setDepth(1);
           this.vines.add(`${c},${r}`);
         } else if (ch === 'W' && this.blocks) {
           this.block(x, y, TILE, BLOCK_COLORS.W, 0.5).setDepth(5);
           this.current.add(`${c},${r}`);
         } else if (ch === 'W') {
-          const fall =this.add.tileSprite(x, y, TILE, TILE, 'waterfall').setDepth(5).setAlpha(0.5);
+          const fk = this.art && this.art.water && this.art.water.falls && texKey(this.artName, this.art.water.falls);
+          const art = fk && this.textures.exists(fk);
+          const fall = this.add.tileSprite(x, y, TILE, TILE, art ? fk : 'waterfall').setDepth(5).setAlpha(art ? 0.8 : 0.5);
           fall.tilePositionX = (c % 2) * TILE;
           this.falls.push(fall);
           this.current.add(`${c},${r}`);
@@ -788,14 +796,19 @@ export class PlatformerScene extends Phaser.Scene {
     const openR = !isSolid(r, c + 1);
     const openT = !isSolid(r - 1, c);
     const openB = !isSolid(r + 1, c);
-    const sx = (c % rw) * TILE;
-    const sy = (r % rh) * TILE;
-    const frameName = this.skinFrame(rock, `s${c % rw}_${r % rh}`, sx, sy, TILE, TILE);
+    // A surface tile shows the cap (the boulder row drawn under the moss),
+    // if the skin has one; the rest show their slice of the rock wall.
+    const capKey = skin.cap && k(skin.cap);
+    const useCap = openT && capKey && this.textures.exists(capKey);
+    const src = useCap ? capKey : rock;
+    const sx = useCap ? (c % skin.cap_tiles) * TILE : (c % rw) * TILE;
+    const sy = useCap ? 0 : (r % rh) * TILE;
+    const frameName = this.skinFrame(src, useCap ? `c${c % skin.cap_tiles}` : `s${c % rw}_${r % rh}`, sx, sy, TILE, TILE);
     // Tiles on an open side get their own picture, with the edge drawn in
     // and the corners rounded off where a side meets an open top or bottom.
     const img = openL || openR
-      ? this.add.image(x, y, this.skinEdgeTile(skin, rock, frameName, sx, sy, openL, openR, openT, openB))
-      : this.add.image(x, y, rock, frameName);
+      ? this.add.image(x, y, this.skinEdgeTile(skin, src, frameName, sx, sy, openL, openR, openT, openB))
+      : this.add.image(x, y, src, frameName);
     // A little darker each row down from the third, so there's no hard line.
     let depth = 0;
     while (depth < 6 && isSolid(r - depth - 1, c)) depth++;
@@ -863,6 +876,10 @@ export class PlatformerScene extends Phaser.Scene {
         this.buildBackdropColumn(layer, i, worldW, worldH);
         return;
       }
+      if (layer.pieces) {
+        this.buildBackdropPieces(layer, i, worldW, worldH);
+        return;
+      }
       const key = texKey(this.artName, layer.file);
       if (!this.textures.exists(key)) return;
       // A whole-level picture (from the designer's 1:1 guide) is locked to
@@ -890,6 +907,23 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // A wide background cut into pieces (Chris's biome backgrounds,
+  // tools/make_biome_artset.py): laid side by side, the whole repeating
+  // across the level, bottom-anchored, scrolling slower for parallax.
+  buildBackdropPieces(layer, i, worldW, worldH) {
+    const sf = layer.scroll ?? 0.3;
+    const span = (worldW - MAP_W) * sf + MAP_W;
+    const y = worldH + BOTTOM_ROOM - (layer.offset || 0);
+    for (let n = 0, x0 = 0; x0 < span; n++, x0 += layer.w) {
+      layer.pieces.forEach((file, p) => {
+        const key = texKey(this.artName, file);
+        const x = x0 + p * layer.piece_w;
+        if (x > span || !this.textures.exists(key)) return;
+        this.add.image(x, y, key).setOrigin(0, 1).setScrollFactor(sf, 1).setDepth(-10 + i);
+      });
+    }
   }
 
   // The artist's art handed over by the designer: pictures by URL, loaded

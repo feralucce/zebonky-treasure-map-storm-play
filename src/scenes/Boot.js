@@ -1,6 +1,6 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=13c0f1b';
-import { testParams, DRAWN } from '../data/levels.js?v=13c0f1b';
-import { playableLevelId } from '../data/world.js?v=13c0f1b';
+import { ARTSETS, texKey } from '../data/artsets.js?v=b79ca59';
+import { testParams, DRAWN } from '../data/levels.js?v=b79ca59';
+import { playableLevelId } from '../data/world.js?v=b79ca59';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -54,10 +54,14 @@ export class BootScene extends Phaser.Scene {
         (data.scatter || []).forEach(add);
         (data.background || []).forEach((b) => {
           add(b.file);
+          (b.pieces || []).forEach(add);
           if (b.column) ['top', 'mid', 'bottom'].forEach((k) => add(b.column[k]));
         });
         (data.foreground || []).forEach((f) => add(f.file));
         add(data.food);
+        // Water (surface and body) and the vine wall, from Chris's biome sets.
+        if (data.water) [...(data.water.top || []), ...(data.water.body || []), data.water.falls].forEach(add);
+        add(data.vines);
         (data.platform_decor || []).forEach(add);
         const dr = data.dressing || {};
         [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);

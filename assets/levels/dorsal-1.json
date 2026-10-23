@@ -21,7 +21,7 @@
   "s~~~~~~~~~~~~sssssssss~~~ss~~~~ss~~~sssssssss..ssssss.sssssss~~~sss~~~~sss~~~~sssssssssssssssssssssssssssssssss.sssssss..ssss.sssssssssss~~~~sss~~~ss~~~sss~~~~sssssssssss.sss.ssssss.sssssssssssss~~~~ss~~~sss~~~sss~~~~sssssssssss.ssssss..ssssssssssss~~~~sss~~~sss~~~~ssssssss..ssssss.sssssssssssssssssssssssssssssssssssss~~~~sss~~~~sss~~~~ss~~~~ssssssss~~~~sss~~~~ss~~~~sssssss~~~ss~~~ss~~~~sss~~~ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
   "sssssssssssssssssssssssssssssssssssssssssssss..ssssss.sssssssssssssssssssssssssssssssssssssssssssssssssssssssss.sssssss..ssss.ssssssssssssssssssssssssssssssssssssssssssss.sss.ssssss.ssssssssssssssssssssssssssssssssssssssssssssss.ssssss..sssssssssssssssssssssssssssssssssssss..ssssss.sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
  ],
- "artset": "blocks",
+ "artset": "dorsal_cove",
  "waits": [
   {
    "c": 133,
