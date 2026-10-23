@@ -122,7 +122,7 @@ function silhouette(info, x0 = 0, maxCols = info.cols) {
       } else if (ch === '~' || ch === 'W') {
         out.push(`<rect x="${x}" y="${y}" width="${TILE}" height="${TILE}" fill="#0050FF" fill-opacity="0.22"/>`);
       } else if ('PGS'.includes(ch)) {
-        const t = { P: 'Start', G: 'Exit', S: 'Secret exit' }[ch];
+        const t = { P: 'Start', G: 'Exit', S: 'Bonus level door' }[ch];
         out.push(`<circle cx="${x + TILE / 2}" cy="${y + TILE / 2}" r="22" fill="${{ P: '#00B050', G: '#FF0000', S: '#FF00FF' }[ch]}" fill-opacity="0.7"/>`);
         out.push(label(x + TILE / 2, y - 6, t, 20, '#2b1d12', 'middle'));
       }

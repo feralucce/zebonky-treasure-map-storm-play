@@ -23,7 +23,7 @@ export const MARKERS = [
   { key: 'start',  char: 'P', hex: '#00B050', label: 'Player start', snap: true },
   { key: 'quiz',   char: 'T', hex: '#FFC000', label: 'Mystery crate (draw 5)', snap: true },
   { key: 'goal',   char: 'G', hex: '#FF0000', label: 'Exit door', snap: true },
-  { key: 'secret', char: 'S', hex: '#FF00FF', label: 'Secret exit', snap: true },
+  { key: 'secret', char: 'S', hex: '#FF00FF', label: 'Bonus level door', snap: true },
   { key: 'food',   char: 'f', hex: '#9BFF00', label: 'Food pickup', snap: false },
   { key: 'paw',    char: 'Z', hex: '#FFFF80', label: 'Z-bolt paw (energy)', snap: false },
   { key: 'wild',   char: 'E', hex: '#FF6600', label: 'Wild Zebonky', snap: true },

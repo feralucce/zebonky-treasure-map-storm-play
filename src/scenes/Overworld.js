@@ -357,7 +357,7 @@ export class OverworldScene extends Phaser.Scene {
     this.panelStatus.setText(status);
 
     let hint = 'Arrow keys to walk  ·  Enter to play';
-    if (lvl.hasSecret && !state.foundSecret(id)) hint = 'Red dot: a bonus exit hides here!';
+    if (lvl.hasSecret && !state.foundSecret(id)) hint = 'Red dot: a bonus level door hides here!';
     if (lvl.kind === 'final') hint = 'The Z-Stone waits inside the volcano.';
     this.panelHint.setText(hint);
   }

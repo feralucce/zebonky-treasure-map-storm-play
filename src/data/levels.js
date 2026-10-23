@@ -6,7 +6,7 @@
 //   V  vine wall: hold Up to climb, Down to climb down, Jump to leap off
 //   F  dorsal-fin rock (scenery)
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
-//   G  goal flag       S  secret exit (only appears in levels with a secret)
+//   G  goal flag       S  bonus level door (in code: the secret exit)
 //   P  player start    .  empty
 //   <  >  ^  [  ]  arrow signposts: left, right, up, up-left, up-right (scenery)
 //   1-9  hidden door: the two cells with the same digit are a pair. Stand in

@@ -1283,7 +1283,7 @@ export class PlatformerScene extends Phaser.Scene {
     if (!secret) audio.sfx(this, 'level-end');
     const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0)
       .setScrollFactor(0).setDepth(50).setAlpha(0);
-    const msg = this.add.text(MAP_W / 2, MAP_H / 2 - 30, secret ? 'You found a secret!' : 'Level completed!',
+    const msg = this.add.text(MAP_W / 2, MAP_H / 2 - 30, secret ? 'You found a bonus level door!' : 'Level completed!',
       heading(64, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 12 }))
       .setOrigin(0.5).setScrollFactor(0).setDepth(51).setScale(0.6).setAlpha(0);
     const tap = this.add.text(MAP_W / 2, MAP_H / 2 + 50, 'Tap to continue', text(24, COLORS.parchmentCss, {

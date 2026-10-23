@@ -1,42 +1,42 @@
 {
  "rows": [
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
-  "....................................................................................................................................................................................................................................................................",
-  "....................................................................................................................................................................................................................................................................",
-  "....................................................................................................................................................................................................................................................................",
-  ".....................................................................................................................................................................................S..............................................................................",
-  "..............................................................................................................................................................................Z..RRRRRR.............................................................................",
-  "....................................................................................................................................................................................................................................................................",
-  ".............................................................................................................................................................................RRR....................................................................................",
-  ".................................................................................T.........................................................................................................................T........................................................",
-  "........................T...................................................RRRRRRRR.................WW.E................................................................RRR..........................RRRRRRRR......................................................",
-  "....................RRRRRRR..............................................RRRRRRRRRRR.................WWRRRRRRR............................T...........................E...............................RRRRRRRRRR....................................................",
-  ".................RRRRRRRRRR..................RRRR........RRRR............RRRRRRRRRRRRR...............WWRRRRRRR..........................RRRR......................RRRRRR............................RRRRRRRRRRRR..................RRR...............................",
-  ".................RRRRRRRRRRRR......................RRRR................RRRRRRRRRRRRRRR........Z......WWRRRRRRRRR......Z.............................RRR...........RRRRRR....Z.........Z...........RRRRRRRRRRRRRRRR........................T.........................",
-  "..............RRRRRRRRRRRRRRR...........RRR............................RRRRRRRRRRRRRRRRR.............WWRRRRRRRRR.............RRR..RRRR........RRR...............RRRRRRRRRR......................RRRRRRRRRRRRRRRRRR...........RRR........RRRR...RRR..................",
-  "..P..B.>......RRRRRRRRRRRRRRRRR...f..E...............................RRRRRRRRRRRRRRRRRRRRR...........WWRRRRRRRRRRR...f..E.......................................RRRRRRRRRR...f....E..........RRRRRRRRRRRRRRRRRRRRRRR.....E......................................G...",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRR",
-  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRR"
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................",
+  "...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................",
+  "...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................",
+  ".......................................................................................................................................................................................................................................................................................................................................................................S...................................................................................................................................................................................",
+  "................................................................................................................................................................................................................................................................................................................................................................Z..RRRRRR..................................................................................................................................................................................",
+  "................................................................................Z..........................................................................................................................................................................................................................................................................................................................................................................................................................................................................",
+  "................................................................................................................................................................................................................................Z..............................................................................................................................RRR...........................................................................................................Z.............................................................................",
+  "............................................................................................................................................................................T....................................................................................................................................................E............................................................................................T...........................................................................E................................................",
+  "........................T.................................................RRRRRRRR.................WW..................................................................RRRRRRRR.............................................................................................................................................RRRRRRR........................RRR...........................................................RRRRRRRR.........................................WW........................RRRRRRRR...............................................",
+  "....................RRRRRRR............................................RRRRRRRRRRR.................WWRRRRRRR...........................................................RRRRRRRRRR............................................RRRRRRR........................................................................................RRRRRRRRR....................................................................................RRRRRRRRRR........................T..............WWRRRRR.................RRRRRRRRRR.................WW............................",
+  ".................RRRRRRRRRR..................RRRR........RRRR..........RRRRRRRRRRRRR...............WWRRRRRRR........................RRRR.............................RRRRRRRRRRRR..................RRR.....................RRRRRRRRR............................................................T....RRRR................RRRRRRRRRRRRRR.............RRRRRR.............................................................RRRRRRRRRRRRRR..............RRR...RRRR..RRR........WWRRRRR..............RRRRRRRRRRRRRRR...............WWRRRRR.......................",
+  ".................RRRRRRRRRRRR......................RRRR..............RRRRRRRRRRRRRRR...............WWRRRRRRRRR.......Z..........................RRR................RRRRRRRRRRRRRRRR........................................RRRRRRRRRRR..........................Z.......................RRRR..RRRR.........RRR...........RRRRRRRRRRRRRR.......Z.....RRRRRR..........Z..............RRRR........RRRR...RRR............RRRRRRRRRRRRRRRR.....................................WWRRRRRRR............RRRRRRRRRRRRRRRRR.........Z...WWRRRRR.......................",
+  "..............RRRRRRRRRRRRRRR...........RRR..........................RRRRRRRRRRRRRRRRR.............WWRRRRRRRRR...........RRR..RRRR........RRR....................RRRRRRRRRRRRRRRRRR...........RRR........RRRR...RRR......RRRRRRRRRRRRRRR...........................................RRR.................................RRRRRRRRRRRRRRRRRR.........RRRRRRRRRR..................RRR.........RRR.....................RRRRRRRRRRRRRRRRRRRRR.......RRR.........................WWRRRRRRR.........RRRRRRRRRRRRRRRRRRRR.............WWRRRRRRR.....................",
+  "..P..B.>......RRRRRRRRRRRRRRRRR.................................E..RRRRRRRRRRRRRRRRRRRRR...f..E....WWRRRRRRRRRRR.....E........................................RRRRRRRRRRRRRRRRRRRRRRR.....E..............................RRRRRRRRRRRRRRRRR.....E.....................RRR....E........................................RRRRRRRRRRRRRRRRRRRR.........RRRRRRRRRR..E.....f..E..........................................RRRRRRRRRRRRRRRRRRRRR...............................E...WWRRRRRRRRR.......RRRRRRRRRRRRRRRRRRRRRR...........WWRRRRRRR...E.............G...",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRR..RRRR...RRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.......................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRR..RRRR...RRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.......................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRR..RRRR...RRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.......................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR........................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..RRRR..RRRR...RRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..............................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.......................RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR"
  ],
  "artset": "blocks",
  "waits": [
   {
-   "c": 65,
+   "c": 154,
    "r": 15
   },
   {
-   "c": 120,
+   "c": 270,
    "r": 15
   },
   {
-   "c": 185,
+   "c": 398,
    "r": 15
   },
   {
-   "c": 246,
+   "c": 525,
    "r": 15
   }
  ],
@@ -49,15 +49,15 @@
    "text": "Introduce"
   },
   {
-   "c": 69,
+   "c": 158,
    "text": "Develop"
   },
   {
-   "c": 124,
+   "c": 274,
    "text": "Twist"
   },
   {
-   "c": 189,
+   "c": 402,
    "text": "Show it off"
   }
  ],

@@ -30,10 +30,10 @@ export class BonusScene extends Phaser.Scene {
     g.lineStyle(5, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, h, 28);
 
-    this.add.text(MAP_W / 2, y + 70, 'Bonus round!', heading(48, COLORS.yellowCss, {
+    this.add.text(MAP_W / 2, y + 70, 'Bonus level!', heading(48, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 10,
     })).setOrigin(0.5);
-    this.add.text(MAP_W / 2, y + 170, 'Secret exit minigame here', text(30, COLORS.inkCss)).setOrigin(0.5);
+    this.add.text(MAP_W / 2, y + 170, 'The bonus level goes here', text(30, COLORS.inkCss)).setOrigin(0.5);
 
     const label = this.levelData ? 'Play again' : 'Back to map';
     makeButton(this, MAP_W / 2, y + h - 70, label, () => this.back(), { width: 260, height: 64, size: 26 });
