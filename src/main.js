@@ -6,8 +6,12 @@ import { OverworldScene } from './scenes/Overworld.js';
 import { PlatformerScene } from './scenes/Platformer.js';
 import { QuizScene } from './scenes/Quiz.js';
 import { BonusScene } from './scenes/Bonus.js';
+import { SaveMenuScene } from './scenes/SaveMenu.js';
+import { takeLinkSave } from './savecode.js';
 
 state.load();
+// Opened from a save link: the map asks before loading it.
+state.pendingLoad = takeLinkSave();
 
 async function start() {
   // Make sure the brand fonts are ready before Phaser draws any text.
@@ -38,7 +42,7 @@ async function start() {
       default: 'arcade',
       arcade: { gravity: { y: 1900 }, debug: false },
     },
-    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene],
+    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene, SaveMenuScene],
   });
   audio.init(window.game);
 }

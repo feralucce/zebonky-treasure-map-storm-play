@@ -1375,6 +1375,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.add.text(px + 16, 44, lvl.name, heading(20)).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
     this.hudPips = this.add.graphics().setScrollFactor(0).setDepth(21);
 
+    // Wild Zebonkies tamed so far (the tamed star needs all of them).
+    this.tamedText = this.add.text(MAP_W / 2, 92, '', heading(18, COLORS.parchmentCss, {
+      stroke: COLORS.inkCss, strokeThickness: 6,
+    })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
+
     // Food carried.
     this.add.image(MAP_W - 190, 44, this.foodTex).setScrollFactor(0).setDepth(21);
     this.foodText = this.add.text(MAP_W - 162, 44, 'x0', heading(26, COLORS.parchmentCss, {
@@ -1392,9 +1397,23 @@ export class PlatformerScene extends Phaser.Scene {
     audio.preloadSfx(this);
   }
 
+  // A wild Zebonky ate: count it, and the tamed star once all have.
+  onZebonkyFed() {
+    this.refreshHud();
+    if (!this.wild.length || !this.wild.every((z) => z.fed)) return;
+    if (this.test || state.hasTamedAll(this.levelId)) return;
+    state.markTamed(this.levelId);
+    this.floatText(this.player.x, this.player.y - 110, 'Every Zebonky tamed! ★', 28);
+  }
+
   refreshHud() {
     if (this.spentBolts) this.spentBolts.forEach((img, i) => img.setVisible(i >= this.energy));
     if (this.foodText) this.foodText.setText(`x${this.food}`);
+    if (this.tamedText && this.wild) {
+      const fed = this.wild.filter((z) => z.fed).length;
+      const done = this.wild.length && (fed === this.wild.length || state.hasTamedAll(this.levelId));
+      this.tamedText.setText(this.wild.length ? `Zebonkies tamed ${fed}/${this.wild.length}${done ? '  ★' : ''}` : '');
+    }
     const g = this.hudPips;
     g.clear();
     const items = LEVELS[this.levelId].items;

@@ -6,6 +6,7 @@ import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js';
 import { state, pathKey } from '../state.js';
 import { COLORS, heading, text, makeButton } from '../theme.js';
 import { audio } from '../audio.js';
+import { starsFor, rewardTotals } from '../rewards.js';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -137,6 +138,21 @@ export class OverworldScene extends Phaser.Scene {
     if (fresh.length) {
       this.time.delayedCall(450, () => this.revealPaths(fresh));
     }
+
+    // Opened from a save link: ask before replacing this device's progress.
+    if (state.pendingLoad) {
+      const res = state.pendingLoad;
+      state.pendingLoad = null;
+      this.time.delayedCall(350, () => this.openSaveMenu(res.ok
+        ? { mode: 'confirm', loadData: res.data }
+        : { mode: 'note', note: res.reason || "That save link doesn't work." }));
+    }
+  }
+
+  openSaveMenu(data = { mode: 'main' }) {
+    if (this.walking) return;
+    this.scene.pause();
+    this.scene.launch('SaveMenu', data);
   }
 
   // ---------- paths ----------
@@ -352,12 +368,16 @@ export class OverworldScene extends Phaser.Scene {
     this.panelTitle.setText(lvl.name);
 
     let status = `${lvl.title ? `${lvl.title}  ·  ` : ''}Treasure ${have}/${lvl.items.length}`;
-    if (state.isChecked(id)) status += '   ✓ Complete!';
-    else if (state.isCleared(id)) status += '   Cleared';
+    if (state.isCleared(id)) status += '   Cleared';
     this.panelStatus.setText(status);
 
+    // The level's three stars, filled in once won.
     let hint = 'Arrow keys to walk  ·  Enter to play';
-    if (lvl.hasSecret && !state.foundSecret(id)) hint = 'Red dot: a bonus level door hides here!';
+    if (lvl.kind === 'level') {
+      const s = starsFor(id);
+      const star = (on) => (on ? '★' : '☆');
+      hint = `${star(s.crates)} Crates   ${star(s.bonus)} Bonus   ${star(s.tamed)} Tamed`;
+    }
     if (lvl.kind === 'final') hint = 'The Z-Stone waits inside the volcano.';
     this.panelHint.setText(hint);
   }
@@ -365,7 +385,7 @@ export class OverworldScene extends Phaser.Scene {
   // ---------- HUD ----------
 
   buildHud() {
-    const t = state.totals();
+    const t = rewardTotals();
     const w = 330;
     const x = MAP_W - w - 22;
     const y = 22;
@@ -376,8 +396,8 @@ export class OverworldScene extends Phaser.Scene {
     g.fillRoundedRect(x, y, w, 52, 16);
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, 52, 16);
-    this.add.text(x + 18, y + 26, `✓ ${t.checks}/${t.levels}`, text(22, COLORS.greenCss)).setOrigin(0, 0.5);
-    this.add.text(x + 110, y + 26, `Treasure ${t.items}/${t.maxItems}`, text(22)).setOrigin(0, 0.5);
+    this.add.text(x + 18, y + 26, `★ ${t.stars}/${t.maxStars}`, heading(22, '#b8860b')).setOrigin(0, 0.5);
+    this.add.text(x + 150, y + 26, `${t.points.toLocaleString()} points`, text(22)).setOrigin(0, 0.5);
     // No music on the map for now; a level's music fades out on the way back.
     audio.stopMusic();
 
@@ -386,6 +406,13 @@ export class OverworldScene extends Phaser.Scene {
       backgroundColor: 'rgba(43,29,18,0.75)',
       padding: { x: 8, y: 4 },
     })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    // Save codes, save files and save links.
+    const save = this.add.text(MAP_W - 26 - reset.width - 12, y + 70, 'Save', text(14, '#ffffff', {
+      backgroundColor: COLORS.greenCss,
+      padding: { x: 10, y: 4 },
+    })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    save.on('pointerup', () => this.openSaveMenu());
+
     let armed = false;
     reset.on('pointerup', () => {
       if (!armed) {

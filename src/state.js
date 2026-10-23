@@ -13,6 +13,7 @@ function fresh() {
     treasure: {},   // levelId -> [itemId, ...]
     revealed: [],   // open paths already announced, so new ones can animate in
     walked: [],     // paths walked at least once: only these show paw prints
+    tamed: {},      // levelId -> true once every wild Zebonky in it was tamed
   };
 }
 
@@ -47,6 +48,18 @@ export const state = {
   reset() {
     this.data = fresh();
     this.save();
+  },
+
+  // Replace this device's progress with a loaded one (save code, file, link).
+  replaceWith(data) {
+    this.data = { ...fresh(), ...data };
+    if (!LEVELS[this.data.at] || !this.isNodeOpen(this.data.at)) this.data.at = START_NODE;
+    this.save();
+  },
+
+  // A fresh save, for building a loaded one on.
+  blank() {
+    return fresh();
   },
 
   hasSave() {
@@ -87,6 +100,17 @@ export const state = {
   markWalked(p) {
     if (this.hasWalked(p)) return;
     this.data.walked = [...(this.data.walked || []), pathKey(p)];
+    this.save();
+  },
+
+  // The tamed star: every wild Zebonky in the level fed at least once.
+  hasTamedAll(id) {
+    return !!(this.data.tamed && this.data.tamed[id]);
+  },
+
+  markTamed(id) {
+    if (this.hasTamedAll(id)) return;
+    this.data.tamed = { ...(this.data.tamed || {}), [id]: true };
     this.save();
   },
 

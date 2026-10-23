@@ -119,6 +119,7 @@ export class WildZebonky {
     // follows along.
     this.hearts(9);
     this.heartTimer = this.scene.time.addEvent({ delay: 1400, loop: true, callback: () => this.hearts(3) });
+    if (this.scene.onZebonkyFed) this.scene.onZebonkyFed(this);
   }
 
   // A rising stream of red and pink hearts, staggered and drifting.
