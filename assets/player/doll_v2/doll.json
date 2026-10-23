@@ -1,0 +1,200 @@
+{
+ "frame": [
+  71,
+  96
+ ],
+ "ground": 95,
+ "parts": [
+  {
+   "name": "hair_back",
+   "file": "hair_back.png",
+   "mask": "hair_back.mask.png",
+   "x": 6,
+   "y": 48,
+   "joint": [
+    40,
+    47
+   ],
+   "parent": "head",
+   "at": [
+    40,
+    47
+   ]
+  },
+  {
+   "name": "leg_back_upper",
+   "file": "leg_back_upper.png",
+   "mask": "leg_back_upper.mask.png",
+   "x": 19,
+   "y": 76,
+   "joint": [
+    29,
+    75
+   ],
+   "parent": "torso",
+   "at": [
+    29,
+    75
+   ]
+  },
+  {
+   "name": "leg_back_lower",
+   "file": "leg_back_lower.png",
+   "mask": "leg_back_lower.mask.png",
+   "x": 16,
+   "y": 81,
+   "joint": [
+    27,
+    83
+   ],
+   "parent": "leg_back_upper",
+   "at": [
+    27,
+    83
+   ]
+  },
+  {
+   "name": "arm_back_upper",
+   "file": "arm_back_upper.png",
+   "mask": "arm_back_upper.mask.png",
+   "x": 21,
+   "y": 58,
+   "joint": [
+    26,
+    58
+   ],
+   "parent": "torso",
+   "at": [
+    26,
+    58
+   ]
+  },
+  {
+   "name": "arm_back_lower",
+   "file": "arm_back_lower.png",
+   "mask": "arm_back_lower.mask.png",
+   "x": 20,
+   "y": 63,
+   "joint": [
+    24,
+    66
+   ],
+   "parent": "arm_back_upper",
+   "at": [
+    24,
+    66
+   ]
+  },
+  {
+   "name": "leg_front_upper",
+   "file": "leg_front_upper.png",
+   "mask": "leg_front_upper.mask.png",
+   "x": 38,
+   "y": 76,
+   "joint": [
+    46,
+    75
+   ],
+   "parent": "torso",
+   "at": [
+    46,
+    75
+   ]
+  },
+  {
+   "name": "leg_front_lower",
+   "file": "leg_front_lower.png",
+   "mask": "leg_front_lower.mask.png",
+   "x": 38,
+   "y": 81,
+   "joint": [
+    45,
+    83
+   ],
+   "parent": "leg_front_upper",
+   "at": [
+    45,
+    83
+   ]
+  },
+  {
+   "name": "torso",
+   "file": "torso.png",
+   "mask": "torso.mask.png",
+   "x": 24,
+   "y": 48,
+   "joint": [
+    38,
+    75
+   ],
+   "parent": null,
+   "at": null
+  },
+  {
+   "name": "head",
+   "file": "head.png",
+   "mask": "head.mask.png",
+   "x": 6,
+   "y": 12,
+   "joint": [
+    40,
+    47
+   ],
+   "parent": "torso",
+   "at": [
+    40,
+    47
+   ],
+   "blink": "head_blink.png",
+   "blinkMask": "head_blink.mask.png"
+  },
+  {
+   "name": "arm_front_upper",
+   "file": "arm_front_upper.png",
+   "mask": "arm_front_upper.mask.png",
+   "x": 49,
+   "y": 58,
+   "joint": [
+    52,
+    58
+   ],
+   "parent": "torso",
+   "at": [
+    52,
+    58
+   ]
+  },
+  {
+   "name": "arm_front_lower",
+   "file": "arm_front_lower.png",
+   "mask": "arm_front_lower.mask.png",
+   "x": 51,
+   "y": 63,
+   "joint": [
+    54,
+    66
+   ],
+   "parent": "arm_front_upper",
+   "at": [
+    54,
+    66
+   ]
+  },
+  {
+   "name": "glasses",
+   "file": "glasses.png",
+   "mask": "glasses.mask.png",
+   "x": 33,
+   "y": 32,
+   "joint": [
+    40,
+    47
+   ],
+   "parent": "head",
+   "at": [
+    40,
+    47
+   ]
+  }
+ ]
+}
