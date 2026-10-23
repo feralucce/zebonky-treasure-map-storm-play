@@ -21,7 +21,7 @@
   "ssssssssssssss..............................sssss~~~~ss~~~~ss~~~sss~~~~ssss~~ss~sss~~ss~~sss~ss~~~ssssss.......................sssssss~~~~ss~~~sss~~~ss~~~~sss~~~ssssssss..ssss..ssss...ssss...ssssssssssss..........................ssssssss...ssss...sss...sssssssssssssss............................ssssss~~~sss~~~sss~~~ss~~~ssssssssssssssssssssssssssssssssss..............................sssssssss~~~sss~~~~sss~~~ss~~~ssssssssssssssssssssssssssssssss~~~ss~ss~~ss~~sss~ss~~~sssssss.......................sssssssssssssssssss",
   "ssssssssssssss..............................ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.......................ssssssssssssssssssssssssssssssssssssssssss..ssss..ssss...ssss...ssssssssssss..........................ssssssss...ssss...sss...sssssssssssssss............................ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss..............................ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss.......................sssssssssssssssssss"
  ],
- "artset": "blocks",
+ "artset": "seafoam_shores",
  "waits": [
   {
    "c": 130,

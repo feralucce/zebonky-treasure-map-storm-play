@@ -1,0 +1,147 @@
+{
+ "name": "Crystal Caverns (pixel, Chris)",
+ "tile": 64,
+ "source": "Chris, 2026-10-22: crystal caverns",
+ "sets": {
+  "rock": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  },
+  "ground": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  },
+  "sand": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  }
+ },
+ "platform": {
+  "left": [
+   "pl_left_1.png",
+   "pl_left_2.png",
+   "pl_left_3.png",
+   "pl_left_4.png"
+  ],
+  "mid": [
+   "pl_mid_1.png",
+   "pl_mid_2.png",
+   "pl_mid_3.png",
+   "pl_mid_4.png"
+  ],
+  "right": [
+   "pl_right_1.png",
+   "pl_right_2.png",
+   "pl_right_3.png",
+   "pl_right_4.png"
+  ],
+  "single": [
+   "pl_single_1.png",
+   "pl_single_2.png",
+   "pl_single_3.png",
+   "pl_single_4.png"
+  ]
+ },
+ "water": {
+  "top": [
+   "../dorsal_cove/wt_top_1.png",
+   "../dorsal_cove/wt_top_2.png",
+   "../dorsal_cove/wt_top_3.png",
+   "../dorsal_cove/wt_top_4.png",
+   "../dorsal_cove/wt_top_5.png",
+   "../dorsal_cove/wt_top_6.png"
+  ],
+  "body": [
+   "../dorsal_cove/wt_body_1.png",
+   "../dorsal_cove/wt_body_2.png",
+   "../dorsal_cove/wt_body_3.png",
+   "../dorsal_cove/wt_body_4.png",
+   "../dorsal_cove/wt_body_5.png",
+   "../dorsal_cove/wt_body_6.png"
+  ],
+  "falls": "../dorsal_cove/wt_falls.png",
+  "alpha": 0.62
+ },
+ "vines": "vn_wall.png",
+ "food": "../rainforest/food_bananas.png",
+ "sky": "#0a0f27",
+ "background": [
+  {
+   "pieces": [
+    "bg_00.png",
+    "bg_01.png",
+    "bg_02.png",
+    "bg_03.png",
+    "bg_04.png",
+    "bg_05.png",
+    "bg_06.png",
+    "bg_07.png",
+    "bg_08.png",
+    "bg_09.png",
+    "bg_10.png"
+   ],
+   "piece_w": 1024,
+   "w": 11040,
+   "h": 1104,
+   "scroll": 0.3,
+   "mirror_repeat": false
+  }
+ ],
+ "dressing": {
+  "ground_plants": [
+   "pt_crystal_small_a.png",
+   "pt_crystal_small_b.png",
+   "pt_crystal_medium_a.png",
+   "pt_crystal_medium_b.png",
+   "pt_crystal_cluster_a.png",
+   "pt_crystal_cluster_b.png",
+   "pt_crystal_group_a.png",
+   "pt_crystal_group_b.png",
+   "pt_crystal_group_c.png",
+   "pt_crystal_group_d.png"
+  ],
+  "ground_chance": 0.22
+ }
+}

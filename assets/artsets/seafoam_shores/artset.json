@@ -1,0 +1,151 @@
+{
+ "name": "Seafoam Shores (pixel, Chris)",
+ "tile": 64,
+ "source": "Chris, 2026-10-22: seafoam shores",
+ "sets": {
+  "sand": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  },
+  "ground": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  },
+  "rock": {
+   "deep_from": 3,
+   "skin": {
+    "rock": "sk_rock.png",
+    "moss": "sk_moss.png",
+    "moss_left": "sk_moss_left.png",
+    "moss_right": "sk_moss_right.png",
+    "edge_left": "sk_edge_left.png",
+    "edge_right": "sk_edge_right.png",
+    "rock_tiles": [
+     16,
+     8
+    ],
+    "moss_tiles": 8,
+    "moss_top": 16,
+    "deep_from": 3
+   }
+  }
+ },
+ "platform": {
+  "left": [
+   "pl_left_1.png",
+   "pl_left_2.png",
+   "pl_left_3.png",
+   "pl_left_4.png"
+  ],
+  "mid": [
+   "pl_mid_1.png",
+   "pl_mid_2.png",
+   "pl_mid_3.png",
+   "pl_mid_4.png"
+  ],
+  "right": [
+   "pl_right_1.png",
+   "pl_right_2.png",
+   "pl_right_3.png",
+   "pl_right_4.png"
+  ],
+  "single": [
+   "pl_single_1.png",
+   "pl_single_2.png",
+   "pl_single_3.png",
+   "pl_single_4.png"
+  ]
+ },
+ "water": {
+  "top": [
+   "../dorsal_cove/wt_top_1.png",
+   "../dorsal_cove/wt_top_2.png",
+   "../dorsal_cove/wt_top_3.png",
+   "../dorsal_cove/wt_top_4.png",
+   "../dorsal_cove/wt_top_5.png",
+   "../dorsal_cove/wt_top_6.png"
+  ],
+  "body": [
+   "../dorsal_cove/wt_body_1.png",
+   "../dorsal_cove/wt_body_2.png",
+   "../dorsal_cove/wt_body_3.png",
+   "../dorsal_cove/wt_body_4.png",
+   "../dorsal_cove/wt_body_5.png",
+   "../dorsal_cove/wt_body_6.png"
+  ],
+  "falls": "../dorsal_cove/wt_falls.png",
+  "alpha": 0.62
+ },
+ "vines": "vn_wall.png",
+ "food": "../rainforest/food_bananas.png",
+ "sky": "#02aafd",
+ "background": [
+  {
+   "pieces": [
+    "bg_00.png",
+    "bg_01.png",
+    "bg_02.png",
+    "bg_03.png",
+    "bg_04.png",
+    "bg_05.png",
+    "bg_06.png",
+    "bg_07.png",
+    "bg_08.png",
+    "bg_09.png",
+    "bg_10.png",
+    "bg_11.png",
+    "bg_12.png",
+    "bg_13.png"
+   ],
+   "piece_w": 1024,
+   "w": 13780,
+   "h": 1380,
+   "scroll": 0.3,
+   "mirror_repeat": false
+  }
+ ],
+ "dressing": {
+  "ground_plants": [
+   "pt_bush_large_a.png",
+   "pt_bush_medium_a.png",
+   "pt_bush_small_a.png",
+   "pt_fern_a.png",
+   "pt_fern_b.png",
+   "pt_flower_bush.png",
+   "pt_palm_bush_a.png",
+   "pt_tropical_plant_a.png",
+   "pt_tropical_plant_b.png",
+   "pt_leaf_cluster_a.png",
+   "pt_leaf_cluster_b.png"
+  ],
+  "ground_chance": 0.22
+ }
+}

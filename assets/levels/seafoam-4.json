@@ -21,7 +21,7 @@
   "ssssssssssssss~~ss~sss~~sss~~sss~ss~~~sssssssssssssssssssssssss...............................ssssss~~~sss~~~~sss~~~sss~~~sss~~~sss~~~sssssssss~~ss~ss~~ss~~ss~ss~~ssssssssssssssssssssssssss...ssss..sssssss...ssssss..ssssssssssssssssssssssss~~~ss~ss~~ss~~sss~ss~~ssssssssssssssssssssssssssssss..sssssss...sss..sssssssssssssssssssssssssss~~~~sss~~~~sss~~~~ss~~~ss~~~sss~~~~ssssss...................................ssssssssssssssssssssssssssssssssssssss~~~~sss~~~~ss~~~sss~~~sss~~~ssssssssssssssssssssssssssssssssssssss....................................ssssssssssssssssss",
   "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...............................sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...ssss..sssssss...ssssss..ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss..sssssss...sss..ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss...................................ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss....................................ssssssssssssssssss"
  ],
- "artset": "blocks",
+ "artset": "seafoam_shores",
  "waits": [
   {
    "c": 139,

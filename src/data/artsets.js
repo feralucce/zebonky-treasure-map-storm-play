@@ -7,7 +7,8 @@
 // A layout chooses its set with `artset: 'name'`. Layouts without one keep
 // the concept-box look.
 
-export const ARTSETS = ['rainforest', 'rainforest_jungle', 'rainforest_floor', 'dorsal_cove'];
+export const ARTSETS = ['rainforest', 'rainforest_jungle', 'rainforest_floor', 'dorsal_cove',
+  'seafoam_shores', 'squvannahs', 'magenta_mountains', 'crystal_caverns', 'cumulus_floor', 'cumulus_canopy'];
 
 // Not a folder: the "blocks" look plays a drawing as flat blocks in the
 // designer's legend colours, with no scenery, for testing a layout.
