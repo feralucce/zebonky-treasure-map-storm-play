@@ -16,8 +16,8 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=b79ca59';
-import { state, pathKey } from './state.js?v=b79ca59';
+import { LEVELS, PATHS, START_NODE } from './data/world.js?v=c726f9d';
+import { state, pathKey } from './state.js?v=c726f9d';
 
 const VERSION = 2;
 const FILE_TAG = 'zebonky-treasure-map-storm';
