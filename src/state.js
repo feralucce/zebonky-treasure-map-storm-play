@@ -11,7 +11,8 @@ function fresh() {
     at: START_NODE,
     cleared: {},    // levelId -> { normal: bool, secret: bool }
     treasure: {},   // levelId -> [itemId, ...]
-    revealed: [],   // path keys already drawn, so new ones can animate in
+    revealed: [],   // open paths already announced, so new ones can animate in
+    walked: [],     // paths walked at least once: only these show paw prints
   };
 }
 
@@ -75,6 +76,18 @@ export const state = {
     fresh.forEach((p) => this.data.revealed.push(pathKey(p)));
     if (fresh.length) this.save();
     return fresh;
+  },
+
+  // Paw prints show on a path once it has been walked, either way.
+  hasWalked(p) {
+    const w = this.data.walked || [];
+    return w.includes(pathKey(p)) || w.includes(`${p.to}>${p.from}`);
+  },
+
+  markWalked(p) {
+    if (this.hasWalked(p)) return;
+    this.data.walked = [...(this.data.walked || []), pathKey(p)];
+    this.save();
   },
 
   isCleared(id) {

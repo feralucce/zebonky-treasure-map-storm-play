@@ -114,8 +114,8 @@ export class OverworldScene extends Phaser.Scene {
   create() {
     this.walking = false;
     this.at = state.data.at;
-    // Paths opened by the level just played: drawn in with an animation
-    // rather than shown straight away.
+    // Paths opened by the level just played: their new dots pop in with an
+    // animation. A path's paw prints only appear as she first walks it.
     const fresh = state.takeNewPaths();
     this.pending = new Set(fresh.map(pathKey));
 
@@ -141,18 +141,24 @@ export class OverworldScene extends Phaser.Scene {
 
   // ---------- paths ----------
 
-  shownPaths() {
+  // Open paths she can use (their new dot has popped in).
+  usablePaths() {
     return state.openPaths().filter((p) => {
       const k = pathKey(p);
       return state.data.revealed.includes(k) && !this.pending.has(k);
     });
   }
 
+  // Paths that show their paw prints: walked at least once.
+  shownPaths() {
+    return this.usablePaths().filter((p) => state.hasWalked(p));
+  }
+
   drawOpenPaths() {
     this.pathLayer.removeAll(true);
     const drawn = new Set();
     this.shownPaths().forEach((p) => {
-      // Two-way links (the Squvannahs and the rainforest) are drawn once.
+      // A path listed both ways is drawn once.
       if (drawn.has(`${p.to}>${p.from}`)) return;
       drawn.add(pathKey(p));
       pawsAlong(pathPoints(p)).forEach((d) => this.pathLayer.add(this.pawPrint(d, p)));
@@ -166,35 +172,31 @@ export class OverworldScene extends Phaser.Scene {
     return img;
   }
 
+  // New dots pop in one after another; no trail yet.
   revealPaths(paths) {
-    this.walking = true; // hold input while the path draws
+    this.walking = true; // hold input while the dots appear
     let delay = 0;
-    const temp = [];
     paths.forEach((p) => {
-      const dots = pawsAlong(pathPoints(p));
-      dots.forEach((d, i) => {
-        this.time.delayedCall(delay + i * 45, () => {
-          const paw = this.pawPrint(d, p);
-          temp.push(paw);
-          const full = paw.scaleX;
-          paw.setScale(0);
-          this.tweens.add({ targets: paw, scale: full, duration: 160, ease: 'Back.Out' });
-        });
-      });
-      delay += dots.length * 45;
       this.time.delayedCall(delay, () => {
         this.pending.delete(pathKey(p));
         this.refreshNodes();
         this.popNode(p.to);
       });
-      delay += 250;
+      delay += 350;
     });
-    this.time.delayedCall(delay + 200, () => {
+    this.time.delayedCall(delay + 100, () => {
       this.walking = false;
-      this.drawOpenPaths();
-      temp.forEach((d) => d.destroy());
       this.updatePanel();
     });
+  }
+
+  // Leave a paw print on the map as she walks a path for the first time.
+  stampPaw(d, p) {
+    const paw = this.pawPrint(d, p);
+    this.pathLayer.add(paw);
+    const full = paw.scaleX;
+    paw.setScale(0);
+    this.tweens.add({ targets: paw, scale: full, duration: 160, ease: 'Back.Out' });
   }
 
   // ---------- level dots ----------
@@ -274,7 +276,7 @@ export class OverworldScene extends Phaser.Scene {
   // A node only shows once the path leading to it has been drawn.
   isRevealed(id) {
     if (!PATHS.some((p) => p.to === id)) return true;
-    return this.shownPaths().some((p) => p.to === id);
+    return this.usablePaths().some((p) => p.to === id);
   }
 
   popNode(id) {
@@ -417,10 +419,10 @@ export class OverworldScene extends Phaser.Scene {
   // Open neighbours of a node, with the point list oriented away from it.
   neighbours(id) {
     const out = [];
-    this.shownPaths()
+    this.usablePaths()
       .forEach((p) => {
-        if (p.from === id) out.push({ to: p.to, pts: pathPoints(p) });
-        if (p.to === id) out.push({ to: p.from, pts: pathPoints(p).reverse() });
+        if (p.from === id) out.push({ to: p.to, p, pts: pathPoints(p) });
+        if (p.to === id) out.push({ to: p.from, p, pts: pathPoints(p).reverse() });
       });
     return out;
   }
@@ -485,6 +487,15 @@ export class OverworldScene extends Phaser.Scene {
     for (let i = 1; i < pts.length; i++) {
       cum.push(cum[i - 1] + Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y));
     }
+    // First time along this path: paw prints appear behind her as she goes.
+    const paws = state.hasWalked(step.p) ? [] : pawsAlong(pts);
+    let stamped = 0;
+    const stampUpTo = (d) => {
+      while (stamped < paws.length && DOT_SPACING * (stamped + 1.5) <= d) {
+        this.stampPaw(paws[stamped], step.p);
+        stamped++;
+      }
+    };
     const prog = { d: 0 };
     this.tweens.add({
       targets: prog,
@@ -500,8 +511,11 @@ export class OverworldScene extends Phaser.Scene {
         const b = pts[i];
         this.player.setPosition(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t);
         if (Math.abs(b.x - a.x) > 0.5) this.playerBody.scaleX = b.x < a.x ? -1 : 1;
+        stampUpTo(prog.d);
       },
       onComplete: () => {
+        stampUpTo(Infinity);
+        state.markWalked(step.p);
         this.at = step.to;
         state.data.at = step.to;
         state.save();

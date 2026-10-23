@@ -150,20 +150,20 @@ const CHAINS = {
     ['Ride the Falls', 300, 545], ['Fin Rock', 345, 500],
   ],
   magenta: [
-    ['Foothills', 300, 375], ['Crystal Ledges', 225, 345], ['Mountain Stream', 200, 265],
-    ['Switchback', 275, 235], ['Mt. Tanzan', 345, 250],
+    ['Foothills', 420, 260], ['Crystal Ledges', 345, 240], ['Mountain Stream', 275, 230],
+    ['Switchback', 200, 265], ['Mt. Tanzan', 235, 345],
   ],
   squvannahs: [
-    ['Tall Grass', 425, 330], ['Royal River', 485, 350], ['Bison Plains', 550, 345],
-    ['Flood Season', 615, 420], ['Loosestrife Bloom', 545, 440],
+    ['Tall Grass', 620, 385], ['Royal River', 560, 350], ['Bison Plains', 500, 355],
+    ['Flood Season', 440, 335], ['Loosestrife Bloom', 420, 400],
   ],
   seafoam: [
     ['Sandbar Hop', 865, 595], ['Shell Cove Swim', 925, 575], ['Driftwood', 990, 585],
     ['Foam Mounds', 1050, 555], ['Low Tide', 960, 450],
   ],
   cumulus: [
-    ['Forest Floor', 830, 485], ['Canopy', 765, 540], ['Misty Falls', 690, 545],
-    ['Cloud Trees', 610, 545], ['Storm Canopy', 470, 450],
+    ['Forest Floor', 440, 505], ['Canopy', 520, 550], ['Misty Falls', 610, 555],
+    ['Cloud Trees', 700, 545], ['Storm Canopy', 650, 450],
   ],
 };
 
@@ -195,15 +195,12 @@ Object.entries(CHAINS).forEach(([biome, chain]) => {
   }
 });
 PATHS.push(
-  // Cove first, then the shores or the mountains.
-  { from: 'dorsal-5', to: 'seafoam-1', exit: 'normal', bend: 100 },
-  { from: 'dorsal-5', to: 'magenta-1', exit: 'normal', bend: 20 },
-  // Mountains lead to the Squvannahs; the shores lead to the rainforest.
-  { from: 'magenta-5', to: 'squvannahs-1', exit: 'normal', bend: -20 },
-  { from: 'seafoam-5', to: 'cumulus-1', exit: 'normal', bend: 20 },
-  // The Squvannahs and the rainforest join up, whichever way you came.
-  { from: 'squvannahs-5', to: 'cumulus-5', exit: 'normal', bend: -15 },
-  { from: 'cumulus-5', to: 'squvannahs-5', exit: 'normal', bend: 15 },
+  // The cove leads into the rainforest; the rainforest's last level fans
+  // out to the other three biomes, in any order.
+  { from: 'dorsal-5', to: 'cumulus-1', exit: 'normal', bend: 15 },
+  { from: 'cumulus-5', to: 'squvannahs-1', exit: 'normal', bend: 10 },
+  { from: 'cumulus-5', to: 'magenta-1', exit: 'normal', bend: 130 },
+  { from: 'cumulus-5', to: 'seafoam-1', exit: 'normal', bend: -30 },
   // The secret door at the top of Mt. Tanzan.
   { from: 'magenta-5', to: 'unchartedW', exit: 'secret', bend: 30 },
 );
