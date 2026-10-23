@@ -2,7 +2,8 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=fce9648';
+import { LEVELS, PATHS, START_NODE } from './data/world.js?v=4179fa0';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=4179fa0';
 
 const KEY = 'zebonky-tms-save-v1';
 
@@ -14,6 +15,7 @@ function fresh() {
     revealed: [],   // open paths already announced, so new ones can animate in
     walked: [],     // paths walked at least once: only these show paw prints
     tamed: {},      // levelId -> true once every wild Zebonky in it was tamed
+    difficulty: DEFAULT_DIFFICULTY,  // the map's slider: junior, explorer or pioneer
   };
 }
 
@@ -45,8 +47,20 @@ export const state = {
     }
   },
 
+  // Progress goes; the difficulty is a setting, so it stays.
   reset() {
-    this.data = fresh();
+    const { difficulty } = this.data;
+    this.data = { ...fresh(), difficulty };
+    this.save();
+  },
+
+  // The slider's band: { id, name, maxEnergy, ... } from data/difficulty.js.
+  difficulty() {
+    return difficultyById(this.data.difficulty);
+  },
+
+  setDifficulty(id) {
+    this.data.difficulty = difficultyById(id).id;
     this.save();
   },
 

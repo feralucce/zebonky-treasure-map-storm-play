@@ -13,6 +13,11 @@
 // otter). Bamboo Dunes, Ricky (raccoon + cockatoo). Squvannahs, Sofia
 // (squirrel + buffalo). Magenta Mountains, Unity (unicorn + scorpion).
 
+// This is the Explorer bank. Junior Explorer and Pioneer have their own
+// (questions_junior.js, questions_pioneer.js), copies of this one for now.
+import { JUNIOR_QUESTIONS } from './questions_junior.js?v=4179fa0';
+import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=4179fa0';
+
 export const QUESTIONS = {
   dorsal: [
     {
@@ -1426,15 +1431,20 @@ export function startQuestionRun(levelId) {
   usedThisRun[levelId] = new Set();
 }
 
-export function drawQuestion(levelId) {
+// Each difficulty band has its own bank (data/difficulty.js).
+const BANKS = { junior: JUNIOR_QUESTIONS, explorer: QUESTIONS, pioneer: PIONEER_QUESTIONS };
+
+export function drawQuestion(levelId, band = 'explorer') {
   // A biome's levels (dorsal-1 ... dorsal-5) share the biome's questions.
-  const bank = QUESTIONS[levelId] || QUESTIONS[levelId.split('-')[0]] || QUESTIONS.cumulus;
+  const all = BANKS[band] || QUESTIONS;
+  const bank = all[levelId] || all[levelId.split('-')[0]] || all.cumulus;
   const used = usedThisRun[levelId] || (usedThisRun[levelId] = new Set());
-  let pile = (unused[levelId] || []).filter((q) => !used.has(q));
+  const key = `${band}:${levelId}`;
+  let pile = (unused[key] || []).filter((q) => !used.has(q));
   if (!pile.length) pile = bank.filter((q) => !used.has(q));
   if (!pile.length) pile = [...bank]; // more crates than questions
   const q = pile[Math.floor(Math.random() * pile.length)];
-  unused[levelId] = pile.filter((x) => x !== q);
+  unused[key] = pile.filter((x) => x !== q);
   used.add(q);
   return q;
 }

@@ -1,6 +1,6 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=fce9648';
-import { testParams, DRAWN } from '../data/levels.js?v=fce9648';
-import { playableLevelId } from '../data/world.js?v=fce9648';
+import { ARTSETS, texKey } from '../data/artsets.js?v=4179fa0';
+import { testParams, DRAWN } from '../data/levels.js?v=4179fa0';
+import { playableLevelId } from '../data/world.js?v=4179fa0';
 
 export class BootScene extends Phaser.Scene {
   constructor() {

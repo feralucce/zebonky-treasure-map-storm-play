@@ -16,8 +16,8 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=fce9648';
-import { state, pathKey } from './state.js?v=fce9648';
+import { LEVELS, PATHS, START_NODE } from './data/world.js?v=4179fa0';
+import { state, pathKey } from './state.js?v=4179fa0';
 
 const VERSION = 2;
 const FILE_TAG = 'zebonky-treasure-map-storm';
@@ -66,8 +66,15 @@ function fromB64(s) {
   return bytes;
 }
 
+// The byte for where she stands also carries the difficulty in its top two
+// bits (0 is Explorer, so links made before the slider still load as
+// Explorer). There are far fewer than 64 map nodes.
+const DIFF_CODE = { explorer: 0, junior: 1, pioneer: 2 };
+const DIFF_OF = ['explorer', 'junior', 'pioneer', 'explorer'];
+
 export function packSave(data = state.data) {
-  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), Math.max(0, ORDER.indexOf(data.at))];
+  const at = Math.max(0, ORDER.indexOf(data.at)) | ((DIFF_CODE[data.difficulty] || 0) << 6);
+  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), at];
   bytes.push(check(bytes));
   return toB64(bytes);
 }
@@ -95,7 +102,8 @@ export function unpackSave(letters) {
   }).map(pathKey);
   data.revealed = open;
   data.walked = open;
-  data.at = ORDER[bytes[1 + ORDER.length]] || START_NODE;
+  data.at = ORDER[bytes[1 + ORDER.length] & 63] || START_NODE;
+  data.difficulty = DIFF_OF[bytes[1 + ORDER.length] >> 6];
   return { ok: true, data };
 }
 

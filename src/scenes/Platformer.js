@@ -2,16 +2,16 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=fce9648';
-import { TILE, layoutFor } from '../data/levels.js?v=fce9648';
-import { state } from '../state.js?v=fce9648';
-import { COLORS, heading, text } from '../theme.js?v=fce9648';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=fce9648';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=fce9648';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=fce9648';
-import { makeNav } from '../pathing.js?v=fce9648';
-import { startQuestionRun } from '../data/questions.js?v=fce9648';
-import { audio, musicButton, soundButton } from '../audio.js?v=fce9648';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4179fa0';
+import { TILE, layoutFor } from '../data/levels.js?v=4179fa0';
+import { state } from '../state.js?v=4179fa0';
+import { COLORS, heading, text } from '../theme.js?v=4179fa0';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4179fa0';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4179fa0';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=4179fa0';
+import { makeNav } from '../pathing.js?v=4179fa0';
+import { startQuestionRun } from '../data/questions.js?v=4179fa0';
+import { audio, musicButton, soundButton } from '../audio.js?v=4179fa0';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -36,8 +36,9 @@ const BOTTOM_ROOM = 64;       // the camera can look this far below the level's 
 
 // Energy is the row of Z-bolts on the HUD. A wild Zebonky's bump or a fall
 // into a pit costs one; a Z-bolt paw print gives one back. Run out and you
-// start the level over.
-const MAX_ENERGY = 6;
+// start the level over. How many bolts, and whether there's a bar at all,
+// comes from the map's difficulty slider (data/difficulty.js): Junior
+// Explorer has no bar and is lifted out of pits; Pioneer has one bolt less.
 const HURT_SAFE_MS = 1300;     // blinking, can't be bumped again
 const TOSS_VX = 480;
 const TOSS_VY = -260;          // a low lob, so it reaches a Zebonky on the ground
@@ -94,7 +95,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.nearItem = null;      // crate the player is standing at
     this.flingUntil = 0;       // flying off a Zebonky's back: no air drag
     this.touchToss = false;
-    this.energy = MAX_ENERGY;
+    this.band = state.difficulty();
+    this.lifting = false;
+    this.maxEnergy = this.band.maxEnergy;
+    this.energy = this.maxEnergy;
     this.food = 0;
     this.safeUntil = 0;
     this.done = false;
@@ -268,6 +272,12 @@ export class PlatformerScene extends Phaser.Scene {
           const tex = this.blocks ? this.blockTexture('block-platform', TILE, 28, BLOCK_COLORS['='])
             : this.artTexture(this.art && this.art.platform, platformRole(isPlatform, r, c), r, c) || 'platform';
           const p = this.platforms.create(x, r * TILE + 14, tex);
+          if (p.height > 28) {
+            // A deep art platform: the top 28 px are what the player stands
+            // on; the rest (his island's underside) hangs below.
+            p.setOrigin(0.5, 14 / p.height).refreshBody();
+            p.body.setSize(p.width, 28, false).setOffset(0, 0);
+          }
           this.decoratePlatform(x, r, c);
           p.body.checkCollision.down = false;
           p.body.checkCollision.left = false;
@@ -440,7 +450,8 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   hurt() {
-    this.energy = Math.max(0, this.energy - 1);
+    // Junior Explorer has no energy: a bump or a fall only blinks.
+    if (this.band.energyBar) this.energy = Math.max(0, this.energy - 1);
     this.safeUntil = this.time.now + HURT_SAFE_MS;
     this.tweens.add({ targets: this.player, alpha: 0.3, duration: 110, yoyo: true, repeat: 5,
       onComplete: () => this.player.setAlpha(1) });
@@ -450,8 +461,18 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   heal() {
-    if (this.energy >= MAX_ENERGY) return false;
+    if (!this.band.energyBar || this.energy >= this.maxEnergy) return false;
     this.energy += 1;
+    this.refreshHud();
+    return true;
+  }
+
+  // Pioneer: a quiz question missed after its hint costs a Z-bolt, but
+  // never the last one, so a quiz can't send you back to the start. True if
+  // a bolt was taken.
+  questionMiss() {
+    if (!this.band.energyBar || this.energy <= 1) return false;
+    this.energy -= 1;
     this.refreshHud();
     return true;
   }
@@ -468,7 +489,7 @@ export class PlatformerScene extends Phaser.Scene {
       p.setVelocity(0, 0);
       this.safe = { ...this.start };
       this.wild.forEach((z) => { if (z.fed) z.catchUpAt(this.start.x, this.floorNear(this.start.x, this.start.y + 48) ?? this.start.y + 32, false); });
-      this.energy = MAX_ENERGY;
+      this.energy = this.maxEnergy;
       this.refreshHud();
       this.cameras.main.fadeIn(350, 43, 29, 18);
       p.body.enable = true;
@@ -486,7 +507,8 @@ export class PlatformerScene extends Phaser.Scene {
       this.tweens.add({ targets: f, y: y - 6, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       this.pickupShine(f);
     });
-    pawSpots.forEach(({ x, y }) => {
+    // Junior Explorer has no energy, so no Z-bolt paw prints either.
+    (this.band.energyBar ? pawSpots : []).forEach(({ x, y }) => {
       const z = this.pickups.create(x, y, 'zpaw').setDepth(3);
       z.kind = 'paw';
       this.tweens.add({ targets: z, scale: 1.12, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -697,6 +719,38 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   // Solid floor or a platform right under these feet?
+  // Junior Explorer's pit rescue: carry her up and over to the first ground
+  // past the pit, on the side she was heading. False if there's none to find.
+  liftAcross(p) {
+    const feet = this.safe.feet ?? this.safe.y + 52;
+    const dir = Math.sign(p.x - this.safe.x) || (p.flipX ? -1 : 1);
+    const c0 = Math.floor(p.x / TILE);
+    for (let k = 1; k <= 16; k++) {
+      const c = c0 + dir * k;
+      if (c < 0 || c >= this.rows[0].length) break;
+      const x = c * TILE + TILE / 2;
+      const top = this.floorNear(x, feet);
+      if (top === null || this.floorNear(x + dir * TILE, top) === null) continue;   // needs room to land
+      this.lifting = true;
+      p.body.enable = false;
+      p.setVelocity(0, 0);
+      p.setAcceleration(0, 0);
+      p.setPosition(p.x, this.worldH + 40);
+      this.floatText(x, top - 120, 'Up you go!', 26);
+      this.tweens.add({
+        targets: p, x, y: top - 72, duration: 900, ease: 'Sine.InOut',
+        onComplete: () => {
+          p.body.enable = true;
+          p.setVelocity(0, 0);
+          this.lifting = false;
+          this.wild.forEach((z) => { if (z.fed) z.catchUpAt(x, top, p.flipX); });
+        },
+      });
+      return true;
+    }
+    return false;
+  }
+
   floorUnder(x, feetY) {
     return this.isFloor(Math.floor((feetY + 4) / TILE), Math.floor(x / TILE));
   }
@@ -1101,7 +1155,7 @@ export class PlatformerScene extends Phaser.Scene {
       }
       if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1)
           && tileHash(c + 307, r + 41) < (d.hang_chance || 0)) {
-        const top = ch === '=' ? r * TILE + 22 : (r + 1) * TILE - 6;
+        const top = ch === '=' ? r * TILE + (this.art.platform_h || 28) - 6 : (r + 1) * TILE - 6;
         this.add.image(x + (tileHash(c, r + 9) - 0.5) * 20, top, k(pick(hangers, c + 7, r)))
           .setOrigin(0.5, 0).setDepth(-1);
       }
@@ -1392,9 +1446,22 @@ export class PlatformerScene extends Phaser.Scene {
   buildHud(lvl) {
     // Energy: the Z-bolt bar. Spent bolts are the grey copy laid on top.
     const bar = this.cache.json.get('zbar');
-    this.add.image(12, 8, 'zbar-full').setOrigin(0).setScrollFactor(0).setDepth(20);
-    this.spentBolts = bar.bolts.map((b) => this.add.image(12, 8, 'zbar-spent').setOrigin(0)
-      .setCrop(b.x - 2, 0, b.w + 4, bar.height).setScrollFactor(0).setDepth(21).setVisible(false));
+    if (this.band.energyBar) {
+      const full = this.add.image(12, 8, 'zbar-full').setOrigin(0).setScrollFactor(0).setDepth(20);
+      const bolts = bar.bolts.slice(0, this.maxEnergy);
+      // Fewer bolts than the picture has (Pioneer): cut the bar after the last one.
+      // The bar's rounded end is moved up to close it after the last bolt.
+      if (bolts.length < bar.bolts.length) {
+        const last = bolts[bolts.length - 1];
+        const cut = Math.round((last.x + last.w + bar.bolts[bolts.length].x) / 2);
+        const capFrom = bar.bolts[bar.bolts.length - 1].x + bar.bolts[bar.bolts.length - 1].w - 4;
+        full.setCrop(0, 0, cut, bar.height);
+        this.add.image(12 - (capFrom - cut), 8, 'zbar-full').setOrigin(0).setScrollFactor(0).setDepth(20)
+          .setCrop(capFrom, 0, bar.width - capFrom, bar.height);
+      }
+      this.spentBolts = bolts.map((b) => this.add.image(12, 8, 'zbar-spent').setOrigin(0)
+        .setCrop(b.x - 2, 0, b.w + 4, bar.height).setScrollFactor(0).setDepth(21).setVisible(false));
+    }
 
     // Level name and the five crates.
     const g = this.add.graphics().setScrollFactor(0).setDepth(20);
@@ -1690,7 +1757,9 @@ export class PlatformerScene extends Phaser.Scene {
     }
 
     // Fell in a pit: pop back to the last solid ground, one Z-bolt down.
-    if (p.y > this.worldH + 120) {
+    // Junior Explorer is lifted across to the far side instead.
+    if (p.y > this.worldH + 120 && this.band.pitLift && !this.lifting && this.liftAcross(p)) return;
+    if (p.y > this.worldH + 120 && !this.lifting) {
       p.setVelocity(0, 0);
       p.setAcceleration(0, 0);
       // A step back from the edge if there's floor there, else the spot itself.

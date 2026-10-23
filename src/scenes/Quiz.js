@@ -2,11 +2,11 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=fce9648';
-import { drawQuestion } from '../data/questions.js?v=fce9648';
-import { state } from '../state.js?v=fce9648';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=fce9648';
-import { audio } from '../audio.js?v=fce9648';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4179fa0';
+import { drawQuestion } from '../data/questions.js?v=4179fa0';
+import { state } from '../state.js?v=4179fa0';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=4179fa0';
+import { audio } from '../audio.js?v=4179fa0';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -44,6 +44,8 @@ export class QuizScene extends Phaser.Scene {
     this.levelId = data.levelId;
     this.itemIndex = data.itemIndex;
     this.onDone = data.onDone;
+    this.parentKey = data.parentKey;
+    this.hintSeen = false;
     this.answered = false;
     this.tried = new Set(); // wrong answers already picked
     this.closing = false; // the scene object is reused for every quiz
@@ -52,7 +54,8 @@ export class QuizScene extends Phaser.Scene {
   create() {
     const lvl = LEVELS[this.levelId];
     const item = lvl.items[this.itemIndex];
-    const q = drawQuestion(this.levelId);
+    this.band = state.difficulty();
+    const q = drawQuestion(this.levelId, this.band.id);
     audio.sfx(this, 'crate');
     this.item = item;
     this.q = q;
@@ -71,6 +74,12 @@ export class QuizScene extends Phaser.Scene {
     card.add(g);
 
     card.add(this.add.text(x + 40, y + 30, 'Mystery crate', text(20, '#6b3a1a')));
+    // Junior and Pioneer banks are still copies of the Explorer questions.
+    if (this.band.testingNote) {
+      card.add(this.add.text(x + w - 40, y + 32, this.band.testingNote, text(14, '#6b3a1a', {
+        fontStyle: 'italic', align: 'right', wordWrap: { width: 420 },
+      })).setOrigin(1, 0));
+    }
     card.add(this.add.text(x + 40, y + 62, q.q, heading(32, COLORS.inkCss, {
       wordWrap: { width: w - 80 },
       lineSpacing: 6,
@@ -165,8 +174,10 @@ export class QuizScene extends Phaser.Scene {
         onComplete: () => { btn.angle = 0; } });
       this.tweens.add({ targets: btn, alpha: 0.4, duration: 400, delay: 200 });
       const cheer = this.tried.size === 1 ? 'Good try!' : 'So close!';
-      if (this.q.hint) this.time.delayedCall(350, () => this.showHint(cheer));
-      else this.result.setText(`${cheer} Try another one.`);
+      // Pioneer: a miss after the hint has been seen costs a Z-bolt.
+      const lost = this.band.missCostsEnergy && this.hintSeen && this.missCost();
+      if (this.q.hint) this.time.delayedCall(350, () => this.showHint(lost ? `${cheer} That cost a Z-bolt.` : cheer));
+      else this.result.setText(`${cheer}${lost ? ' That cost a Z-bolt.' : ''} Try another one.`);
       return;
     }
 
@@ -195,8 +206,15 @@ ${this.q.fact}`);
     });
   }
 
+  // The level takes a Z-bolt, if it can spare one. True if it did.
+  missCost() {
+    const level = this.parentKey && this.scene.get(this.parentKey);
+    return !!(level && level.questionMiss && level.questionMiss());
+  }
+
   showHint(lead = '') {
     if (this.answered || this.hintPop || !this.q.hint) return;
+    this.hintSeen = true;
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     audio.sfx(this, 'hint');
     const cx = MAP_W / 2;

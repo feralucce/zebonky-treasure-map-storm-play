@@ -16,7 +16,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }
@@ -34,7 +34,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }
@@ -52,7 +52,7 @@
      16,
      8
     ],
-    "moss_tiles": 10,
+    "moss_tiles": 32,
     "moss_top": 16,
     "deep_from": 3
    }
@@ -84,6 +84,7 @@
    "pl_single_4.png"
   ]
  },
+ "platform_h": 64,
  "water": {
   "top": [
    "../dorsal_cove/wt_top_1.png",
@@ -144,6 +145,17 @@
    "pt_grass_clump_b.png",
    "pt_leaf_sprout_a.png"
   ],
-  "ground_chance": 0.22
+  "ground_chance": 0.22,
+  "hangers": [
+   "hg_left_cliff_art.png",
+   "hg_center_island_art.png",
+   "hg_small_island_art.png",
+   "hg_upper_right_ledge_art.png",
+   "hg_mid_right_ledge_art.png",
+   "hg_right_ledge_art.png",
+   "hg_center_right_island_art.png",
+   "hg_left_ledge_art.png"
+  ],
+  "hang_chance": 0.25
  }
 }

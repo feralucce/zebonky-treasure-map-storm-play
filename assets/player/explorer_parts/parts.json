@@ -1,0 +1,145 @@
+{
+ "frame": [
+  71,
+  96
+ ],
+ "source": "explorer_idle.png frame 0",
+ "parts": [
+  {
+   "name": "hair_back",
+   "file": "hair_back.png",
+   "x": 6,
+   "y": 18
+  },
+  {
+   "name": "shin_back",
+   "file": "shin_back.png",
+   "x": 20,
+   "y": 76
+  },
+  {
+   "name": "boot_back",
+   "file": "boot_back.png",
+   "x": 16,
+   "y": 84
+  },
+  {
+   "name": "upper_arm_back",
+   "file": "upper_arm_back.png",
+   "x": 21,
+   "y": 58
+  },
+  {
+   "name": "forearm_back",
+   "file": "forearm_back.png",
+   "x": 20,
+   "y": 67
+  },
+  {
+   "name": "hand_back",
+   "file": "hand_back.png",
+   "x": 20,
+   "y": 70
+  },
+  {
+   "name": "shin",
+   "file": "shin.png",
+   "x": 38,
+   "y": 76
+  },
+  {
+   "name": "boot",
+   "file": "boot.png",
+   "x": 38,
+   "y": 84
+  },
+  {
+   "name": "thigh",
+   "file": "thigh.png",
+   "x": 38,
+   "y": 68
+  },
+  {
+   "name": "thigh_back",
+   "file": "thigh_back.png",
+   "x": 20,
+   "y": 68
+  },
+  {
+   "name": "shorts",
+   "file": "shorts.png",
+   "x": 24,
+   "y": 65
+  },
+  {
+   "name": "shirt",
+   "file": "shirt.png",
+   "x": 24,
+   "y": 48
+  },
+  {
+   "name": "face",
+   "file": "face.png",
+   "x": 28,
+   "y": 29
+  },
+  {
+   "name": "hair_front",
+   "file": "hair_front.png",
+   "x": 26,
+   "y": 12
+  },
+  {
+   "name": "hat",
+   "file": "hat.png",
+   "x": 16,
+   "y": 12
+  },
+  {
+   "name": "upper_arm",
+   "file": "upper_arm.png",
+   "x": 49,
+   "y": 58
+  },
+  {
+   "name": "forearm",
+   "file": "forearm.png",
+   "x": 49,
+   "y": 67
+  },
+  {
+   "name": "hand",
+   "file": "hand.png",
+   "x": 50,
+   "y": 70
+  },
+  {
+   "name": "face_eyes_closed",
+   "file": "face_eyes_closed.png",
+   "x": 28,
+   "y": 29,
+   "swap_for": "face"
+  },
+  {
+   "name": "hand_fist",
+   "file": "hand_fist.png",
+   "x": 50,
+   "y": 70,
+   "swap_for": "hand"
+  },
+  {
+   "name": "hand_paddle",
+   "file": "hand_paddle.png",
+   "x": 49,
+   "y": 71,
+   "swap_for": "hand"
+  },
+  {
+   "name": "boot_toes_down",
+   "file": "boot_toes_down.png",
+   "x": 36,
+   "y": 82,
+   "swap_for": "boot"
+  }
+ ]
+}

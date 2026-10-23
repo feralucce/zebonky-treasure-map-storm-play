@@ -2,11 +2,12 @@
 // walk between level dots along open paths, press Enter (or tap the dot
 // you're standing on) to go into a level.
 
-import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js?v=fce9648';
-import { state, pathKey } from '../state.js?v=fce9648';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=fce9648';
-import { audio } from '../audio.js?v=fce9648';
-import { starsFor, rewardTotals } from '../rewards.js?v=fce9648';
+import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js?v=4179fa0';
+import { state, pathKey } from '../state.js?v=4179fa0';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=4179fa0';
+import { audio } from '../audio.js?v=4179fa0';
+import { starsFor, rewardTotals } from '../rewards.js?v=4179fa0';
+import { DIFFICULTIES } from '../data/difficulty.js?v=4179fa0';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -130,6 +131,7 @@ export class OverworldScene extends Phaser.Scene {
     this.buildPlayer();
     this.buildPanel();
     this.buildHud();
+    this.buildDifficulty();
     this.bindInput();
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
@@ -424,6 +426,74 @@ export class OverworldScene extends Phaser.Scene {
       state.reset();
       this.scene.restart();
     });
+  }
+
+  // ---------- difficulty slider ----------
+
+  // Three stops under the points panel: Junior Explorer, Explorer, Pioneer.
+  // Tap a stop or drag the knob; it snaps to the nearest stop and saves.
+  buildDifficulty() {
+    const w = 330;
+    const x = MAP_W - w - 22;
+    const y = 128;
+    const h = 92;
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.ink, 0.9);
+    g.fillRoundedRect(x, y + 5, w, h, 16);
+    g.fillStyle(COLORS.parchment, 1);
+    g.fillRoundedRect(x, y, w, h, 16);
+    g.lineStyle(3, COLORS.ink, 1);
+    g.strokeRoundedRect(x, y, w, h, 16);
+    this.add.text(x + 16, y + 10, 'Difficulty', heading(16, '#6b4a2e'));
+
+    const left = x + 56;
+    const right = x + w - 56;
+    const ty = y + 44;
+    const stops = DIFFICULTIES.map((d, i) => ({ d, sx: left + (i * (right - left)) / (DIFFICULTIES.length - 1) }));
+    const track = this.add.graphics();
+    track.lineStyle(8, COLORS.ink, 1);
+    track.lineBetween(left, ty, right, ty);
+    track.lineStyle(4, 0xd8c08a, 1);
+    track.lineBetween(left, ty, right, ty);
+    stops.forEach(({ sx }) => {
+      track.fillStyle(COLORS.ink, 1);
+      track.fillCircle(sx, ty, 7);
+    });
+    const labels = stops.map(({ d, sx }) => this.add.text(sx, ty + 16, d.name, text(14, COLORS.inkCss, { align: 'center' }))
+      .setOrigin(0.5, 0));
+
+    const knob = this.add.container(0, ty);
+    const kg = this.add.graphics();
+    kg.fillStyle(COLORS.ink, 1);
+    kg.fillCircle(0, 3, 15);
+    kg.fillStyle(COLORS.green, 1);
+    kg.fillCircle(0, 0, 15);
+    kg.lineStyle(3, COLORS.ink, 1);
+    kg.strokeCircle(0, 0, 15);
+    knob.add(kg);
+    knob.setSize(34, 34).setInteractive({ useHandCursor: true, draggable: true });
+
+    const show = (id) => {
+      const at = stops.find((st) => st.d.id === id) || stops[1];
+      knob.x = at.sx;
+      labels.forEach((t, i) => t.setStyle({ fontStyle: stops[i] === at ? 'bold' : 'normal' }));
+    };
+    const choose = (px) => {
+      const near = stops.reduce((a, b) => (Math.abs(b.sx - px) < Math.abs(a.sx - px) ? b : a));
+      if (near.d.id !== state.difficulty().id) {
+        state.setDifficulty(near.d.id);
+        audio.sfx(this, 'step');
+      }
+      show(near.d.id);
+    };
+    show(state.difficulty().id);
+
+    knob.on('drag', (pointer, dragX) => { knob.x = Phaser.Math.Clamp(dragX, left, right); });
+    knob.on('dragend', () => choose(knob.x));
+    // The whole track and the labels are tap targets too.
+    const hit = this.add.zone(x + w / 2, ty + 14, right - left + 80, 56).setInteractive({ useHandCursor: true });
+    hit.on('pointerup', (pointer) => choose(pointer.x));
+    knob.setDepth(1);
   }
 
   // ---------- input & movement ----------
