@@ -27,6 +27,8 @@ const SWIM_DIVE = 200;        // hold Down to swim down
 const SWIM_HOP_OUT = 780;     // a stroke near the surface pops you out onto land
 // The Dorsal Cove waterfall flows uphill and carries you with it.
 const CURRENT_LIFT = 660;
+const CLIMB_SPEED = 260;      // up and down a vine wall
+const VINE_TOP_HOP = 600;     // the little hop over the top of a vine wall
 // Hidden doors: a short fade while you slip through.
 const DOOR_FADE_MS = 160;
 const ARTIST_BG_SCROLL = 0.3;  // the artist's background's parallax speed
@@ -164,7 +166,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.physics.world.checkCollision.down = false;
     this.physics.world.checkCollision.up = false;
     this.cameras.main.setBounds(0, 0, worldW, Math.max(worldH + BOTTOM_ROOM, MAP_H));
-    this.cameras.main.setBackgroundColor(this.blocks ? BLOCKS_SKY : (this.art && this.art.sky) || lvl.color);
+    // An undressed level can carry its own sky (night on the waves, a cave).
+    this.cameras.main.setBackgroundColor(this.blocks ? (layout.sky || BLOCKS_SKY) : (this.art && this.art.sky) || lvl.color);
 
     if (this.artist) {
       this.loadArtistArt(worldW, worldH);
@@ -185,6 +188,7 @@ export class PlatformerScene extends Phaser.Scene {
     // Water and current cells, looked up every frame by the player's position.
     this.water = new Set();
     this.current = new Set();
+    this.vines = new Set();
     this.surfaceRow = {};
     this.falls = [];
     // For picking tile art, ground runs on past the left and right walls, so
@@ -238,6 +242,10 @@ export class PlatformerScene extends Phaser.Scene {
           this.water.add(`${c},${r}`);
           if (surface) this.surfaceRow[c] = r;
           if (ch === 'T') treasureSpots.push({ x, y });
+        } else if (ch === 'V') {
+          // Vine wall: no art yet, so a see-through green block in any art set.
+          this.block(x, y, TILE, BLOCK_COLORS.V, 0.55).setDepth(1);
+          this.vines.add(`${c},${r}`);
         } else if (ch === 'W' && this.blocks) {
           this.block(x, y, TILE, BLOCK_COLORS.W, 0.5).setDepth(5);
           this.current.add(`${c},${r}`);
@@ -1488,6 +1496,7 @@ export class PlatformerScene extends Phaser.Scene {
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
     const down = k.DOWN.isDown || k.S.isDown;
+    const up = k.UP.isDown || k.W.isDown;
     // Jump is Space or Z (or the touch button). Up is for hidden doors.
     const jumpHeld = k.SPACE.isDown || k.Z.isDown || this.touch.jump;
     const jumpPressed = [k.SPACE, k.Z].some((key) => Phaser.Input.Keyboard.JustDown(key));
@@ -1520,8 +1529,24 @@ export class PlatformerScene extends Phaser.Scene {
     const r = Math.floor(p.y / TILE);
     const inCurrent = this.current.has(`${c},${r}`);
     const inWater = !inCurrent && this.water.has(`${c},${r}`);
+    const onVine = !inCurrent && !inWater && this.vines.has(`${c},${r}`);
 
-    if (inCurrent) {
+    if (onVine) {
+      // Climbing: Up (or holding Jump, for touch) climbs, Down climbs down,
+      // letting go holds her still. At the top she hops over onto whatever
+      // is beside it; walking sideways steps off.
+      p.body.setGravityY(-this.physics.world.gravity.y);
+      p.setMaxVelocity(RUN_SPEED, 1400);
+      const climb = up || jumpHeld;
+      const atTop = !this.vines.has(`${c},${r - 1}`);
+      let vy = 0;
+      if (climb) vy = atTop ? -VINE_TOP_HOP : -CLIMB_SPEED;
+      else if (down) vy = CLIMB_SPEED;
+      p.setVelocityY(climb && atTop ? vy : Phaser.Math.Linear(p.body.velocity.y, vy, 0.3));
+      if (climb && atTop) this.boostUntil = time + 400;
+      this.jumpPressedAt = -1000; // Jump climbs here, it doesn't jump
+      this.wasInWater = false;
+    } else if (inCurrent) {
       // Riding the uphill waterfall.
       p.body.setGravityY(0);
       p.setVelocityY(Phaser.Math.Linear(p.body.velocity.y, -CURRENT_LIFT, 0.2));
@@ -1572,7 +1597,7 @@ export class PlatformerScene extends Phaser.Scene {
       }
     }
 
-    const canJump = !inWater && time - this.lastGrounded <= COYOTE_MS;
+    const canJump = !inWater && !onVine && time - this.lastGrounded <= COYOTE_MS;
     if (canJump && wantsJump && !dropped) {
       p.setVelocityY(-JUMP_SPEED);
       audio.sfx(this, 'jump');
@@ -1581,7 +1606,7 @@ export class PlatformerScene extends Phaser.Scene {
     }
     // Let go early for a short hop (not while the current or a hop-out is lifting you).
     const boosted = time < (this.boostUntil || 0);
-    if (!jumpHeld && !boosted && !inWater && p.body.velocity.y < -250) p.setVelocityY(p.body.velocity.y * 0.85);
+    if (!jumpHeld && !boosted && !inWater && !onVine && p.body.velocity.y < -250) p.setVelocityY(p.body.velocity.y * 0.85);
 
     this.falls.forEach((f) => { f.tilePositionY += delta * 0.35; });
 

@@ -566,7 +566,8 @@ export class GuideZebonky {
         const scene = this.scene;
         const r = Math.floor((a.y - 4) / TILE);
         const c = Math.floor(a.x / TILE);
-        const side = scene.cellAt(r, c - 1) === 'W' || scene.cellAt(r - 1, c - 1) === 'W' ? -1 : 1;
+        const up = (ch) => ch === 'W' || ch === 'V';
+        const side = up(scene.cellAt(r, c - 1)) || up(scene.cellAt(r - 1, c - 1)) ? -1 : 1;
         const inX = (c + side) * TILE + TILE / 2;
         const topY = b.y - TILE * 0.6;
         hops.push({ type: 'swim', x0: a.x, y0: a.y, x1: inX, y1: a.y, lift: 0 });

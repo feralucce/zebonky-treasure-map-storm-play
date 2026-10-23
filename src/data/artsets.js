@@ -13,7 +13,7 @@ export const ARTSETS = ['rainforest', 'rainforest_jungle', 'rainforest_floor'];
 // designer's legend colours, with no scenery, for testing a layout.
 export const BLOCKS = 'blocks';
 export const BLOCK_COLORS = {
-  '#': 0x000000, s: 0xd9b36c, R: 0x808080, '=': 0x8b4513, '~': 0x0050ff, W: 0x00e5ff,
+  '#': 0x000000, s: 0xd9b36c, R: 0x808080, '=': 0x8b4513, '~': 0x0050ff, W: 0x00e5ff, V: 0x2e9e3a,
 };
 export const BLOCKS_SKY = '#e8eef0';
 

@@ -3,6 +3,7 @@
 //   =  one-way platform (jump up through it)
 //   ~  water (you float up to the surface; Jump strokes or hops out, Down dives)
 //   W  upward current (the Dorsal Cove waterfall that flows uphill)
+//   V  vine wall: hold Up to climb, Down to climb down, Jump to leap off
 //   F  dorsal-fin rock (scenery)
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
 //   G  goal flag       S  secret exit (only appears in levels with a secret)

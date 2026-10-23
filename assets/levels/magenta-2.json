@@ -1,7 +1,7 @@
 {
  "rows": [
-  "....................................................................................................................",
-  "....................................................................................................................",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "....................................................................................................................",
   "....................................................................................................................",
   "....................................................................................................................",
@@ -41,8 +41,8 @@
   }
  ],
  "level": "magenta",
- "title": "Crystal Ledges",
- "idea": "Floating ledges up the mountain",
+ "title": "Crystal Caverns",
+ "idea": "Floating crystal ledges in a cave",
  "beats": [
   {
    "c": 0,
@@ -60,5 +60,7 @@
    "c": 98,
    "text": "Show it off"
   }
- ]
+ ],
+ "setting": "caverns",
+ "sky": "#3b3340"
 }

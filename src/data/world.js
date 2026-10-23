@@ -150,7 +150,7 @@ const CHAINS = {
     ['Ride the Falls', 300, 545], ['Fin Rock', 345, 500],
   ],
   magenta: [
-    ['Foothills', 420, 260], ['Crystal Ledges', 345, 240], ['Mountain Stream', 275, 230],
+    ['Foothills', 420, 260], ['Crystal Caverns', 345, 240], ['Underground River', 275, 230],
     ['Switchback', 200, 265], ['Mt. Tanzan', 235, 345],
   ],
   squvannahs: [
@@ -158,12 +158,12 @@ const CHAINS = {
     ['Flood Season', 440, 335], ['Loosestrife Bloom', 420, 400],
   ],
   seafoam: [
-    ['Sandbar Hop', 865, 595], ['Shell Cove Swim', 925, 575], ['Driftwood', 990, 585],
+    ['Sandbar Hop', 865, 595], ['Shell Cove Swim', 925, 575], ['Night Waves', 990, 585],
     ['Foam Mounds', 1050, 555], ['Low Tide', 960, 450],
   ],
   cumulus: [
-    ['Forest Floor', 440, 505], ['Canopy', 520, 550], ['Misty Falls', 610, 555],
-    ['Cloud Trees', 700, 545], ['Storm Canopy', 650, 450],
+    ['Forest Floor', 440, 505], ['Root Tangle', 520, 550], ['Misty Falls', 610, 555],
+    ['The Vine Wall', 700, 545], ['Storm Canopy', 650, 450],
   ],
 };
 

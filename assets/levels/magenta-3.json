@@ -1,7 +1,7 @@
 {
  "rows": [
-  "............................................................................................................................",
-  "............................................................................................................................",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+  "RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
   "............................................................................................................................",
   "............................................................................................................................",
   "...................................................................................WW..T....................................",
@@ -41,8 +41,8 @@
   }
  ],
  "level": "magenta",
- "title": "Mountain Stream",
- "idea": "Waterfalls up the cliffs",
+ "title": "Underground River",
+ "idea": "Waterfalls up the cliffs of a cave",
  "beats": [
   {
    "c": 0,
@@ -60,5 +60,7 @@
    "c": 107,
    "text": "Show it off"
   }
- ]
+ ],
+ "setting": "caverns",
+ "sky": "#3b3340"
 }

@@ -8,8 +8,8 @@
 //   jump     as far as a running, full-height jump really carries her (up to
 //            2 tiles up; about 3 across at 2 up, 4 at 1 up or level, 5
 //            when landing lower); also straight up through a platform
-//   current  into the uphill waterfall, which carries you up; step out onto
-//            anything within 3 tiles of it on the way
+//   current  into the uphill waterfall (or up a vine wall), which carries
+//            you up; step out onto anything within 3 tiles of it on the way
 //   drop     step off a ledge and fall, or drop down through a platform
 //   swim     along the water's surface; hop out onto a bank up to 2 tiles up
 //   door     through a pair of hidden doors
@@ -46,7 +46,8 @@ export function makeNav(rows) {
   };
   const solid = (r, c) => SOLID.has(ch(r, c));
   const water = (r, c) => ch(r, c) === '~';
-  const current = (r, c) => ch(r, c) === 'W';
+  // Uphill waterfalls and vine walls both take you up.
+  const current = (r, c) => ch(r, c) === 'W' || ch(r, c) === 'V';
   const floorAt = (r, c) => solid(r, c) || ch(r, c) === '=';
   const stand = (r, c) => r >= 0 && r < R && !solid(r, c) && !water(r, c) && floorAt(r + 1, c);
   const surface = (r, c) => water(r, c) && !water(r - 1, c) && !solid(r - 1, c);
