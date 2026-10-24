@@ -8,9 +8,9 @@
 // apps. Each slot's position is stored in the <metadata> block, so a
 // painted sheet can be cut back into an art set later.
 
-import { TILE_PX as TILE } from './legend.js?v=c217d2d';
-import { solidRole, platformRole } from '../src/data/artsets.js?v=c217d2d';
-import { MAP_W, MAP_H } from '../src/data/world.js?v=c217d2d';
+import { TILE_PX as TILE } from './legend.js?v=3ec3c80';
+import { solidRole, platformRole } from '../src/data/artsets.js?v=3ec3c80';
+import { MAP_W, MAP_H } from '../src/data/world.js?v=3ec3c80';
 
 const SOLID = '#sR';
 const FONT = 'Nunito, Arial, sans-serif';
