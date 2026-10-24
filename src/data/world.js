@@ -13,6 +13,7 @@ export const START_NODE = 'dorsal-1';
 export const BIOMES = {
   dorsal: {
     name: 'Dorsal Cove',
+    zebonky: { id: 'sharmadillo', name: 'Sharmadillo' },   // the cove's Zebonky (the user, 2026-10-24)
     x: 232, y: 545,
     kind: 'level',
     hasSecret: false,
@@ -27,6 +28,7 @@ export const BIOMES = {
   },
   cumulus: {
     name: 'Cumulus Rainforest',
+    zebonky: { id: 'chimpanzeetah', name: 'Chimpanzeetah' }, // Charlie lives here
     x: 612, y: 432,
     kind: 'level',
     // Plays this saved drawing (assets/levels/<layout>.json) from the map.
@@ -43,6 +45,7 @@ export const BIOMES = {
   },
   seafoam: {
     name: 'Seafoam Shores',
+    zebonky: { id: 'axolotter', name: 'Axolotter' },         // home of the Axolotters
     x: 950, y: 455,
     kind: 'level',
     hasSecret: false,
@@ -71,6 +74,7 @@ export const BIOMES = {
   },
   squvannahs: {
     name: 'Squvannahs',
+    zebonky: { id: 'squffalo', name: 'Squffalo' },           // named after the Squffalo
     x: 528, y: 340,
     kind: 'level',
     hasSecret: false,
@@ -85,6 +89,7 @@ export const BIOMES = {
   },
   magenta: {
     name: 'Magenta Mountains',
+    zebonky: { id: 'unicorpion', name: 'Unicorpion' },       // Unity and her cuddleherd live in the Crystal Caverns, deep in the Magenta Mountains (the user)
     x: 272, y: 240,
     kind: 'level',
     hasSecret: true,
@@ -166,6 +171,10 @@ const CHAINS = {
     ['The Vine Wall', 700, 545], ['Storm Canopy', 650, 450],
   ],
 };
+
+// The playable biomes, in the order the map lists them, and their level ids.
+export const PLAY_BIOMES = Object.keys(CHAINS);
+export const biomeLevels = (b) => CHAINS[b].map((_, i) => `${b}-${i + 1}`);
 
 export const LEVELS = {};
 Object.entries(CHAINS).forEach(([biome, chain]) => {

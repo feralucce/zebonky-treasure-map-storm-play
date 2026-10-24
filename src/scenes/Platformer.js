@@ -2,16 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3ec3c80';
-import { TILE, layoutFor } from '../data/levels.js?v=3ec3c80';
-import { state } from '../state.js?v=3ec3c80';
-import { COLORS, heading, text } from '../theme.js?v=3ec3c80';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3ec3c80';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3ec3c80';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=3ec3c80';
-import { makeNav } from '../pathing.js?v=3ec3c80';
-import { startQuestionRun } from '../data/questions.js?v=3ec3c80';
-import { audio, musicButton, soundButton } from '../audio.js?v=3ec3c80';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4fcf886';
+import { TILE, layoutFor } from '../data/levels.js?v=4fcf886';
+import { state } from '../state.js?v=4fcf886';
+import { COLORS, heading, text } from '../theme.js?v=4fcf886';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4fcf886';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4fcf886';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=4fcf886';
+import { makeNav } from '../pathing.js?v=4fcf886';
+import { startQuestionRun } from '../data/questions.js?v=4fcf886';
+import { audio, musicButton, soundButton } from '../audio.js?v=4fcf886';
+import { Companion } from '../companion.js?v=4fcf886';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -212,6 +213,14 @@ export class PlatformerScene extends Phaser.Scene {
     const isWater = (r, c) => at(r, c) === '~' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
 
     this.pitSigns(rows, cols, isSolid, isWater);
+    // Banks: ground beside water. They draw in front of the water, which
+    // runs a little way in under them, so the shore is the ledge's own
+    // edge instead of a square cut (the user, 2026-10-24).
+    this.bankCells = new Set();
+    rows.forEach((row, r) => [...row].forEach((ch, c) => {
+      if (SOLID_TEXTURES[ch] && (isWater(r, c - 1) || isWater(r, c + 1))) this.bankCells.add(`${c},${r}`);
+    }));
+    const BANK_TUCK = 14;
 
     rows.forEach((row, r) => {
       [...row].forEach((ch, c) => {
@@ -246,8 +255,15 @@ export class PlatformerScene extends Phaser.Scene {
           const wFiles = wa && (surface ? wa.top : wa.body);
           const wKey = wFiles && wFiles.length && texKey(this.artName, pick(wFiles, c, r));
           if (this.blocks) this.block(x, y, TILE, BLOCK_COLORS['~'], 0.45).setDepth(5);
-          else if (wKey && this.textures.exists(wKey)) this.add.image(x, y, wKey).setDepth(5).setAlpha(wa.alpha ?? 0.75);
-          else this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
+          else {
+            const img = wKey && this.textures.exists(wKey)
+              ? this.add.image(x, y, wKey).setDepth(5).setAlpha(wa.alpha ?? 0.75)
+              : this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
+            // In under the bank on either side.
+            const tl = isSolid(r, c - 1) ? BANK_TUCK : 0;
+            const tr = isSolid(r, c + 1) ? BANK_TUCK : 0;
+            if (tl || tr) img.setDisplaySize(TILE + tl + tr, TILE).setX(x + (tr - tl) / 2);
+          }
           this.water.add(`${c},${r}`);
           if (surface) this.surfaceRow[c] = r;
           if (ch === 'T') treasureSpots.push({ x, y });
@@ -315,11 +331,12 @@ export class PlatformerScene extends Phaser.Scene {
     this.start = start;
     this.safe = { ...start };
 
-    // Player: the explorer. Her body box is narrower than the picture so
-    // hat brims and hair don't snag on ledges.
+    // Player: the explorer chosen on the map (data/characters.js). Her body
+    // box is narrower than the picture so hat brims and hair don't snag on ledges.
+    this.cid = state.character().id;
     this.makeExplorerAnims();
-    this.player = this.physics.add.sprite(start.x, start.y - 16, 'explorer-idle', 0);
-    const ex = this.cache.json.get('explorer');
+    this.player = this.physics.add.sprite(start.x, start.y - 16, `${this.cid}-idle`, 0);
+    const ex = this.cache.json.get(this.cid);
     this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
     this.player.setMaxVelocity(RUN_SPEED, 1400);
     this.player.setDragX(ACCEL * 1.4);
@@ -335,7 +352,8 @@ export class PlatformerScene extends Phaser.Scene {
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
-    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => this.openSecretDoor());
+    // The bonus level door opens on Up (or the door button), like a hidden door.
+    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => { this.atSecret = true; });
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
@@ -351,9 +369,15 @@ export class PlatformerScene extends Phaser.Scene {
     this.children.list.slice(before).forEach((o) => o.setDepth && o.setDepth(22));
 
     // Held keys can get stuck while the quiz has the level paused.
+    // The companion Zebonky, if they've earned one, rolls along behind her.
+    this.companion = state.data.companion ? new Companion(this, state.data.companion) : null;
+
     this.events.on('resume', () => {
       this.input.keyboard.resetKeys();
       this.touch = { left: false, right: false, jump: false };
+      // One just earned (its biome's last question, answered in the quiz):
+      // it joins right here, sparkling in beside her.
+      if (!this.companion && state.data.companion) this.companion = new Companion(this, state.data.companion, true);
     });
 
     // Leaving the level (or pausing it for a quiz) stops the paddling.
@@ -368,12 +392,17 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   makeExplorerAnims() {
-    const rates = { idle: 3, walk: 8 };   // walk: four steps, about two strides a second
+    // Her walk: four steps, about two strides a second. A character's
+    // manifest can set its own walk speed and footstep frames.
+    const ex = this.cache.json.get(this.cid);
+    this.stepFrames = ex.steps || [0, 2];
+    const rates = { idle: 3, walk: ex.walkRate || 8 };
     Object.entries(rates).forEach(([name, rate]) => {
-      if (this.anims.exists(`explorer-${name}`)) return;
+      const key = `${this.cid}-${name}`;
+      if (this.anims.exists(key)) return;
       this.anims.create({
-        key: `explorer-${name}`,
-        frames: this.anims.generateFrameNumbers(`explorer-${name}`),
+        key,
+        frames: this.anims.generateFrameNumbers(key),
         frameRate: rate,
         repeat: -1,
       });
@@ -386,7 +415,16 @@ export class PlatformerScene extends Phaser.Scene {
     this.wild = [];
     this.guide = null;
     const art = zebonkyArt(this, this.artName);
-    this.foodTex = art && art.food ? texKey(art.name, art.food) : 'treasure';
+    // The biome's own food (Chris's, assets/food/), from the level's art set;
+    // else the Zebonky's art set's.
+    const own = this.cache.json.get(`artset:${this.artName}`);
+    const ownFood = own && own.food && texKey(this.artName, own.food);
+    this.foodTex = ownFood && this.textures.exists(ownFood) ? ownFood
+      : art && art.food ? texKey(art.name, art.food) : 'treasure';
+    // Chris's "good vibe" sparkle, in this food's colours, for the pickups
+    // and the guide (the user, 2026-10-24); else the drawn gold star.
+    const vibe = own && own.food && texKey(this.artName, own.food.replace(/([^/]+)\.png$/, 'sparkle_$1.png'));
+    this.sparkTex = vibe && this.textures.exists(vibe) ? vibe : null;
     if (!art) return;
     ensureAnims(this, art);
 
@@ -603,16 +641,16 @@ export class PlatformerScene extends Phaser.Scene {
     const glow = this.add.image(it.x, it.y, 'pickup-glow').setDepth(it.depth - 0.2)
       .setAlpha(0.9);
     this.tweens.add({ targets: glow, scale: 1.2, alpha: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    const sparks = this.add.particles(it.x, it.y + 8, 'pickup-spark', {
+    const sparks = this.add.particles(it.x, it.y + 8, this.sparkTex || 'pickup-spark', {
       lifespan: 1400,
       frequency: 110,
       quantity: 1,
       x: { min: -20, max: 20 },
       speedY: { min: -55, max: -28 },
       speedX: { min: -10, max: 10 },
-      scale: { start: 1.8, end: 0.5 },
+      scale: this.sparkTex ? { start: 1, end: 0.3 } : { start: 1.8, end: 0.5 },
       alpha: { start: 1, end: 0 },
-      rotate: { min: 0, max: 45 },
+      rotate: this.sparkTex ? 0 : { min: 0, max: 45 },
     }).setDepth(it.depth - 0.1);
     it.shine = [glow, sparks];
   }
@@ -879,6 +917,8 @@ export class PlatformerScene extends Phaser.Scene {
     const img = openL || openR
       ? this.add.image(x, y, this.skinEdgeTile(skin, src, frameName, sx, sy, openL, openR, openT, openB))
       : this.add.image(x, y, src, frameName);
+    // A bank (beside water) draws in front of the water tucked under it.
+    if (this.bankCells && this.bankCells.has(`${c},${r}`)) img.setDepth(6);
     // A little darker each row down from the third, so there's no hard line.
     let depth = 0;
     while (depth < 6 && isSolid(r - depth - 1, c)) depth++;
@@ -896,7 +936,7 @@ export class PlatformerScene extends Phaser.Scene {
         const m = c % skin.moss_tiles;
         moss = this.add.image(left, top, mk, this.skinFrame(mk, `m${m}`, m * TILE, 0, TILE, mh));
       }
-      moss.setOrigin(0, 0).setDepth(0.5);
+      moss.setOrigin(0, 0).setDepth(this.bankCells && this.bankCells.has(`${c},${r}`) ? 6.5 : 0.5);
     }
     return true;
   }
@@ -1166,8 +1206,23 @@ export class PlatformerScene extends Phaser.Scene {
       if (plants.length && isSolid(r, c) && open(r - 1) && this.grounded.has(`${c},${r}`)
           && tileHash(c + 211, r + 17) < (d.ground_chance || 0)) {
         const h = tileHash(c + 5, r + 211);
-        this.add.image(x + (h - 0.5) * 24, r * TILE + 10, k(pick(plants, c + 3, r)))
-          .setOrigin(0.5, 1).setScale(0.8 + h * 0.4).setFlipX(h > 0.5).setDepth(-1);
+        const key = k(pick(plants, c + 3, r));
+        const scale = 0.8 + h * 0.4;
+        const w = this.textures.get(key).getSourceImage().width * scale;
+        // The whole plant stands on this stretch of ground: slide it in
+        // from a ledge's end, or leave it out if the stretch is too short.
+        const surface = (cc) => isSolid(r, cc) && (r === 0 || at(r - 1, cc) === '.');
+        let lo = c;
+        let hi = c;
+        while (lo > 0 && surface(lo - 1)) lo--;
+        while (hi < row.length - 1 && surface(hi + 1)) hi++;
+        const left = lo * TILE + w / 2;
+        const right = (hi + 1) * TILE - w / 2;
+        if (left <= right) {
+          const px = Phaser.Math.Clamp(x + (h - 0.5) * 24, left, right);
+          this.add.image(px, r * TILE + 10, key)
+            .setOrigin(0.5, 1).setScale(scale).setFlipX(h > 0.5).setDepth(-1);
+        }
       }
       if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1)
           && tileHash(c + 307, r + 41) < (d.hang_chance || 0)) {
@@ -1477,6 +1532,28 @@ export class PlatformerScene extends Phaser.Scene {
       }
       this.spentBolts = bolts.map((b) => this.add.image(12, 8, 'zbar-spent').setOrigin(0)
         .setCrop(b.x - 2, 0, b.w + 4, bar.height).setScrollFactor(0).setDepth(21).setVisible(false));
+      // The bar's portrait is the explorer's face. Another character covers
+      // it with her own head and shoulders, from her first idle frame.
+      if (this.cid !== 'explorer') {
+        const cx = 12 + 45;
+        const cy = 8 + 42;
+        const key = `${this.cid}-portrait`;
+        if (!this.textures.exists(key)) {
+          const D = 62;
+          const tex = this.textures.createCanvas(key, D, D);
+          const ctx = tex.getContext();
+          ctx.imageSmoothingEnabled = false;
+          ctx.fillStyle = '#e8cf98';
+          ctx.beginPath();
+          ctx.arc(D / 2, D / 2, D / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.clip();
+          // Head and shoulders: the top of the first idle frame, doubled.
+          ctx.drawImage(this.textures.get(`${this.cid}-idle`).getSourceImage(), 14, 2, 43, 43, -12, -2, 86, 86);
+          tex.refresh();
+        }
+        this.add.image(cx, cy, key).setScrollFactor(0).setDepth(21);
+      }
     }
 
     // Level name and the five crates.
@@ -1586,6 +1663,7 @@ export class PlatformerScene extends Phaser.Scene {
 
     // Zebonkies and food.
     this.wild.forEach((z) => z.update(time, p));
+    if (this.companion) this.companion.update();
     if (this.guide) this.guide.update(time, p);
     this.tossed.getChildren().forEach((f) => {
       if (!f.landed && f.body.blocked.down) {
@@ -1597,14 +1675,18 @@ export class PlatformerScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(k.X) || Phaser.Input.Keyboard.JustDown(k.F) || this.touchToss) this.tossFood();
     this.touchToss = false;
 
-    // Hidden door underfoot: Up (or the door button) goes through instead of jumping.
+    // Hidden door underfoot, or standing at the bonus level door: Up (or the
+    // door button) goes through instead of jumping.
     const door = onFloor ? this.doorUnder(p) : null;
-    this.doorHint.setVisible(!!door);
-    this.btnDoor.setVisible(!!door);
-    if (door) {
+    const atSecret = this.atSecret;
+    this.atSecret = false;
+    this.doorHint.setVisible(!!door || atSecret);
+    this.btnDoor.setVisible(!!door || atSecret);
+    if (door || atSecret) {
       this.doorHint.setPosition(p.x, p.y - 62);
       const up = Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W) || this.touchDoor;
       this.touchDoor = false;
+      if (up && atSecret) { this.openSecretDoor(); return; }
       if (up) { this.goThroughDoor(door); return; }
     }
     this.touchDoor = false;
@@ -1692,6 +1774,12 @@ export class PlatformerScene extends Phaser.Scene {
       p.setMaxVelocity(RUN_SPEED, 1400);
       this.boostUntil = time + 450;
       this.wasInWater = false;
+      // At the top of the falls, Jump hops her off, up onto a ledge beside it.
+      if (wantsJump && !this.current.has(`${c},${r - 1}`)) {
+        p.setVelocityY(-JUMP_SPEED);
+        audio.sfx(this, 'jump');
+        this.jumpPressedAt = -1000;
+      }
     } else if (inWater) {
       // Water holds you up: you rise to the surface on your own and float
       // there, head and shoulders out, bobbing a little. Down dives.
@@ -1738,6 +1826,17 @@ export class PlatformerScene extends Phaser.Scene {
 
     const canJump = !inWater && !onVine && time - this.lastGrounded <= COYOTE_MS;
     if (canJump && wantsJump && !dropped) {
+      // Pressed against a wall, she sits a pixel inside it, and going up
+      // she'd catch the corner of the wall tile above as a ceiling (no jump
+      // at the foot of a ledge). Step her clear of the wall first.
+      const b = p.body;
+      const wall = (x) => this.physics.overlapRect(x, b.top + 6, 2, b.height - 12, false, true).length > 0;
+      const nudge = wall(b.right - 1) ? -2 : wall(b.left - 1) ? 2 : 0;
+      if (nudge) {
+        p.x += nudge;
+        b.x += nudge;
+        p.setVelocityX(0);
+      }
       p.setVelocityY(-JUMP_SPEED);
       audio.sfx(this, 'jump');
       this.lastGrounded = -1000;
@@ -1755,24 +1854,24 @@ export class PlatformerScene extends Phaser.Scene {
       const vy = p.body.velocity.y;
       const f = vy < -450 ? 1 : vy < -150 ? 2 : vy < 150 ? 3 : vy < 450 ? 4 : 5;
       p.anims.stop();
-      p.setTexture('explorer-jump', f);
+      p.setTexture(`${this.cid}-jump`, f);
     } else if ((down && Math.abs(p.body.velocity.x) <= 30) || time < (this.crouchUntil || 0)) {
       p.anims.stop();
-      p.setTexture('explorer-crouch', 2);
+      p.setTexture(`${this.cid}-crouch`, 2);
     } else if (Math.abs(p.body.velocity.x) > 30) {
-      if (p.anims.currentAnim?.key !== 'explorer-walk' || !p.anims.isPlaying) p.play('explorer-walk');
-      // A footstep as each heel lands (walk frames 0 and 2), never the same
+      if (p.anims.currentAnim?.key !== `${this.cid}-walk` || !p.anims.isPlaying) p.play(`${this.cid}-walk`);
+      // A footstep as each heel lands (her walk frames 0 and 2), never the same
       // sound twice in a row.
       const frame = p.anims.currentFrame ? p.anims.currentFrame.index - 1 : -1;
-      if (frame !== this.walkFrame && (frame === 0 || frame === 2) && !inWater && p.body.blocked.down) {
+      if (frame !== this.walkFrame && this.stepFrames.includes(frame) && !inWater && p.body.blocked.down) {
         let n;
         do n = Phaser.Math.Between(0, 4); while (n === this.lastStep);
         this.lastStep = n;
         audio.sfx(this, `step-${n}`, { detune: Phaser.Math.Between(-80, 80) });
       }
       this.walkFrame = frame;
-    } else if (p.anims.currentAnim?.key !== 'explorer-idle' || !p.anims.isPlaying) {
-      p.play('explorer-idle');
+    } else if (p.anims.currentAnim?.key !== `${this.cid}-idle` || !p.anims.isPlaying) {
+      p.play(`${this.cid}-idle`);
     }
 
     // Fell in a pit: pop back to the last solid ground, one Z-bolt down.

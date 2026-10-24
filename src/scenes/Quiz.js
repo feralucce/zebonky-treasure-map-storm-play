@@ -2,11 +2,12 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3ec3c80';
-import { drawQuestion } from '../data/questions.js?v=3ec3c80';
-import { state } from '../state.js?v=3ec3c80';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=3ec3c80';
-import { audio } from '../audio.js?v=3ec3c80';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4fcf886';
+import { drawQuestion } from '../data/questions.js?v=4fcf886';
+import { state } from '../state.js?v=4fcf886';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=4fcf886';
+import { audio } from '../audio.js?v=4fcf886';
+import { showCompanionCard } from '../companionCard.js?v=4fcf886';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -202,6 +203,15 @@ ${this.q.fact}`);
     this.cameras.main.flash(250, 255, 236, 150);
     if (this.readBtn) this.readBtn.setVisible(false);
     if (this.hintBtn) this.hintBtn.setVisible(false);
+
+    // The last question of a biome finished before: its Zebonky joins now.
+    const b = LEVELS[this.levelId] && LEVELS[this.levelId].biome;
+    if (b && state.data.biomeDone && state.data.biomeDone[b] && state.biomeEvent(b) === 'reward') {
+      state.data.joinedIn = b;
+      state.save();
+      this.time.delayedCall(900, () => showCompanionCard(this, b, 'reward', () => this.close(true)));
+      return;
+    }
 
     this.time.delayedCall(500, () => {
       const cont = makeButton(this, MAP_W / 2 + 330, (MAP_H + 560) / 2 - 36, 'Continue', () => this.close(true), {

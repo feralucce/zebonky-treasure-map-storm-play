@@ -2,8 +2,9 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=3ec3c80';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=3ec3c80';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=4fcf886';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=4fcf886';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=4fcf886';
 
 const KEY = 'zebonky-tms-save-v1';
 
@@ -16,6 +17,13 @@ function fresh() {
     walked: [],     // paths walked at least once: only these show paw prints
     tamed: {},      // levelId -> true once every wild Zebonky in it was tamed
     difficulty: DEFAULT_DIFFICULTY,  // the map's slider: junior, explorer or pioneer
+    // What the player looks like: the character, and later the parts of the
+    // look (data/characters.js LOOK_SLOTS); null = that character's own.
+    look: { character: DEFAULT_CHARACTER, hair: null, hat: null, outfit: null, shoes: null },
+    view: null,         // the biome the map is zoomed into, or null for the whole map
+    biomeDone: {},      // biome -> true once its finish has been shown (zoomed out for)
+    companions: [],     // biomes whose Zebonky has joined (every question answered)
+    companion: null,    // the biome whose Zebonky travels with them
   };
 }
 
@@ -47,10 +55,25 @@ export const state = {
     }
   },
 
-  // Progress goes; the difficulty is a setting, so it stays.
+  // Progress goes; the difficulty and the look are settings, so they stay.
   reset() {
-    const { difficulty } = this.data;
-    this.data = { ...fresh(), difficulty };
+    const { difficulty, look } = this.data;
+    this.data = { ...fresh(), difficulty, look };
+    this.save();
+  },
+
+  // The player's look; a save from before looks existed gets the default.
+  look() {
+    return { ...fresh().look, ...(this.data.look || {}) };
+  },
+
+  // The chosen character: { id, name, manifest, ... } from data/characters.js.
+  character() {
+    return characterById(this.look().character);
+  },
+
+  setLook(part, value) {
+    this.data.look = { ...this.look(), [part]: value };
     this.save();
   },
 
@@ -67,6 +90,16 @@ export const state = {
   // Replace this device's progress with a loaded one (save code, file, link).
   replaceWith(data) {
     this.data = { ...fresh(), ...data };
+    // A save code carries levels and treasure, not biome finishes: biomes
+    // finished on the other device count as finished, with their companions.
+    PLAY_BIOMES.forEach((b) => {
+      if (!this.biomeComplete(b)) return;
+      this.data.biomeDone = { ...(this.data.biomeDone || {}), [b]: true };
+      if (this.biomeQuestionsDone(b) && !(this.data.companions || []).includes(b)) {
+        this.data.companions = [...(this.data.companions || []), b];
+        if (!this.data.companion) this.data.companion = b;
+      }
+    });
     if (!LEVELS[this.data.at] || !this.isNodeOpen(this.data.at)) this.data.at = START_NODE;
     this.save();
   },
@@ -157,6 +190,50 @@ export const state = {
   // A level earns its check mark when every quiz treasure in it is collected.
   isChecked(id) {
     return LEVELS[id].items.every((it) => this.hasTreasure(id, it.id));
+  },
+
+  // ---------- biomes and companions ----------
+
+  // Every level in the biome played through.
+  biomeComplete(b) {
+    return biomeLevels(b).every((id) => this.isCleared(id));
+  },
+
+  // Every question in the biome answered (every crate's treasure in).
+  biomeQuestionsDone(b) {
+    return biomeLevels(b).every((id) => this.isChecked(id));
+  },
+
+  // What the map should do on arriving back from a level in biome b:
+  // 'reward' (its Zebonky joins), 'questions' (finished, but not every
+  // question answered), or null (stay in the biome). Records it.
+  biomeEvent(b) {
+    const d = this.data;
+    d.biomeDone = d.biomeDone || {};
+    d.companions = d.companions || [];
+    let event = null;
+    if (this.biomeComplete(b) && !d.biomeDone[b]) {
+      d.biomeDone[b] = true;
+      event = this.biomeQuestionsDone(b) ? 'reward' : 'questions';
+    } else if (d.biomeDone[b] && this.biomeQuestionsDone(b) && !d.companions.includes(b)) {
+      event = 'reward';
+    }
+    if (event === 'reward') {
+      d.companions = [...d.companions, b];
+      if (!d.companion) d.companion = b;
+    }
+    if (event) this.save();
+    return event;
+  },
+
+  setView(b) {
+    this.data.view = b;
+    this.save();
+  },
+
+  setCompanion(b) {
+    this.data.companion = b;
+    this.save();
   },
 
   // Called by a level when the player reaches an exit.

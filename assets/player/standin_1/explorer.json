@@ -1,0 +1,29 @@
+{
+ "frameWidth": 71,
+ "frameHeight": 96,
+ "label": "Stand-in 1",
+ "standin": true,
+ "walkRate": 12,
+ "steps": [
+  1,
+  5
+ ],
+ "anims": {
+  "idle": {
+   "file": "idle.png",
+   "frames": 5
+  },
+  "walk": {
+   "file": "walk.png",
+   "frames": 8
+  },
+  "jump": {
+   "file": "jump.png",
+   "frames": 8
+  },
+  "crouch": {
+   "file": "crouch.png",
+   "frames": 5
+  }
+ }
+}

@@ -249,7 +249,7 @@
   "alpha": 0.62
  },
  "vines": "vn_wall.png",
- "food": "../rainforest/food_bananas.png",
+ "food": "../../food/grubberry.png",
  "sky": "#02a9fd",
  "background": [
   {
@@ -292,5 +292,29 @@
    "pt_rock_small_b.png"
   ],
   "ground_chance": 0.22
+ },
+ "zebonky": {
+  "name": "Sharmadillo (stand-in)",
+  "frameWidth": 163,
+  "frameHeight": 128,
+  "anims": {
+   "idle": {
+    "file": "zebonky_idle.png",
+    "frames": 1
+   },
+   "walk": {
+    "file": "zebonky_walk.png",
+    "frames": 8
+   },
+   "run": {
+    "file": "zebonky_run.png",
+    "frames": 8
+   },
+   "jump": {
+    "file": "zebonky_jump.png",
+    "frames": 4
+   }
+  },
+  "standin": true
  }
 }

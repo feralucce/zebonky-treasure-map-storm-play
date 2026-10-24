@@ -1,14 +1,65 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3ec3c80';
-import { testParams, DRAWN } from '../data/levels.js?v=3ec3c80';
-import { playableLevelId } from '../data/world.js?v=3ec3c80';
+import { ARTSETS, texKey } from '../data/artsets.js?v=4fcf886';
+import { testParams, DRAWN } from '../data/levels.js?v=4fcf886';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=4fcf886';
+import { CHARACTERS } from '../data/characters.js?v=4fcf886';
+import { COLORS, heading, text } from '../theme.js?v=4fcf886';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
   }
 
+  // The loading splash: a progress bar that only ever moves forward (the
+  // file count grows as the art set lists come in), and a note that the
+  // beta loads slower than the finished game will.
+  buildSplash() {
+    const cx = MAP_W / 2;
+    const cy = MAP_H / 2;
+    const w = 620;
+    const g = this.add.graphics();
+    g.fillStyle(COLORS.ink, 1);
+    g.fillRoundedRect(cx - w / 2 - 40 + 6, cy - 150 + 8, w + 80, 300, 26);
+    g.fillStyle(COLORS.parchment, 1);
+    g.fillRoundedRect(cx - w / 2 - 40, cy - 150, w + 80, 300, 26);
+    g.lineStyle(4, COLORS.ink, 1);
+    g.strokeRoundedRect(cx - w / 2 - 40, cy - 150, w + 80, 300, 26);
+    this.add.text(cx, cy - 100, 'Getting Zebonkia ready...', heading(34)).setOrigin(0.5);
+    const bar = this.add.graphics();
+    const pct = this.add.text(cx, cy + 22, '0%', heading(20)).setOrigin(0.5);
+    this.add.text(cx, cy + 82, 'This game is in beta, so it loads slower now than it will when it\'s finished.',
+      text(17, '#6b4a2e', { align: 'center', wordWrap: { width: w } })).setOrigin(0.5);
+    let shown = 0;
+    const draw = (v) => {
+      shown = Math.max(shown, v);
+      bar.clear();
+      bar.fillStyle(COLORS.ink, 1);
+      bar.fillRoundedRect(cx - w / 2, cy - 32, w, 30, 15);
+      bar.fillStyle(0xe8cf98, 1);
+      bar.fillRoundedRect(cx - w / 2 + 4, cy - 28, w - 8, 22, 11);
+      if (shown > 0.01) {
+        bar.fillStyle(COLORS.green, 1);
+        bar.fillRoundedRect(cx - w / 2 + 4, cy - 28, Math.max(22, (w - 8) * shown), 22, 11);
+      }
+      pct.setText(`${Math.round(shown * 100)}%`);
+    };
+    draw(0);
+    this.load.on('progress', (v) => {
+      // Lists add files as they arrive, so judge by files done of files known.
+      const total = this.load.totalToLoad || 1;
+      draw(Math.min(v, this.load.totalComplete / total));
+    });
+  }
+
   preload() {
+    this.buildSplash();
     this.load.image('map', 'assets/z_map.png');
+    // Each biome's close-up, for the map's zoom (tools/make_biome_closeups.py).
+    this.load.json('closeups', 'assets/map/closeups.json');
+    this.load.once('filecomplete-json-closeups', (key, type, data) => {
+      Object.entries(data).forEach(([b, c]) => this.load.image(`closeup-${b}`, `assets/map/${c.file}`));
+    });
+    // The biomes' Zebonkies, shown when one joins as a companion.
+    Object.values(BIOMES).forEach((b) => b.zebonky && this.load.image(`zebonky-${b.zebonky.id}`, `assets/zebonkies/${b.zebonky.id}.png`));
 
     // Concept art: simple rounded-box SVGs, drawn at their native size.
     [
@@ -29,12 +80,15 @@ export class BootScene extends Phaser.Scene {
     this.load.image('zbar-spent', 'assets/hud/zbar_spent.png');
     this.load.json('zbar', 'assets/hud/zbar.json');
 
-    // The explorer (player): one strip of frames per animation.
-    this.load.json('explorer', 'assets/player/explorer.json');
-    this.load.once('filecomplete-json-explorer', (key, type, data) => {
-      Object.entries(data.anims).forEach(([name, a]) => {
-        this.load.spritesheet(`explorer-${name}`, `assets/player/${a.file}`,
-          { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
+    // The explorers (players): one strip of frames per animation, for every
+    // character in the selector.
+    CHARACTERS.forEach((c) => {
+      this.load.json(c.id, c.manifest);
+      this.load.once(`filecomplete-json-${c.id}`, (key, type, data) => {
+        Object.entries(data.anims).forEach(([name, a]) => {
+          this.load.spritesheet(`${c.id}-${name}`, `${c.base}${a.file}`,
+            { frameWidth: data.frameWidth, frameHeight: data.frameHeight });
+        });
       });
     });
 
@@ -59,6 +113,8 @@ export class BootScene extends Phaser.Scene {
         });
         (data.foreground || []).forEach((f) => add(f.file));
         add(data.food);
+        // Chris's "good vibe" sparkle in the colours of this food (tools/make_food.py).
+        if (data.food && data.food.includes('/food/')) add(data.food.replace(/([^/]+)\.png$/, 'sparkle_$1.png'));
         // Water (surface and body) and the vine wall, from Chris's biome sets.
         if (data.water) [...(data.water.top || []), ...(data.water.body || []), data.water.falls].forEach(add);
         add(data.vines);

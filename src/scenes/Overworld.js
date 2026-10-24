@@ -1,17 +1,28 @@
-// The Zebonkia overworld, played like the Super Mario World map:
-// walk between level dots along open paths, press Enter (or tap the dot
-// you're standing on) to go into a level.
+// The Zebonkia overworld, played like the Super Mario World map.
+// The whole map shows the biomes: tap an open one and the map zooms into
+// its close-up, with its five level dots. There she walks between dots
+// along open paths; Enter (or tapping the dot she's on) plays a level.
+// After a level she stays in the biome, until it's finished: then the map
+// zooms back out, and the biome's Zebonky joins her if every question in it
+// was answered (or a note says that's what earns it). A biome finished
+// before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H } from '../data/world.js?v=3ec3c80';
-import { state, pathKey } from '../state.js?v=3ec3c80';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=3ec3c80';
-import { audio } from '../audio.js?v=3ec3c80';
-import { starsFor, rewardTotals } from '../rewards.js?v=3ec3c80';
-import { DIFFICULTIES } from '../data/difficulty.js?v=3ec3c80';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=4fcf886';
+import { state, pathKey } from '../state.js?v=4fcf886';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=4fcf886';
+import { audio } from '../audio.js?v=4fcf886';
+import { starsFor, rewardTotals } from '../rewards.js?v=4fcf886';
+import { DIFFICULTIES } from '../data/difficulty.js?v=4fcf886';
+import { showCompanionCard } from '../companionCard.js?v=4fcf886';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
 const PAW_SIZE = 16;        // px across one paw print
+const ZOOM_MS = 900;        // the zoom into and out of a biome
+
+// Zoomed into a biome, the map is drawn K times bigger; dots, prints and
+// the explorer are drawn 1/K the size so they stay the same on screen.
+let K = 1;
 
 // Points along a gently bent path from one level dot to another.
 function pathPoints(p) {
@@ -46,7 +57,8 @@ function pathLength(pts) {
 // Evenly spaced dots along a point list.
 function dotsAlong(pts) {
   const out = [];
-  let carry = DOT_SPACING / 2;
+  const spacing = DOT_SPACING / K;
+  let carry = spacing / 2;
   for (let i = 1; i < pts.length; i++) {
     const a = pts[i - 1];
     const b = pts[i];
@@ -55,7 +67,7 @@ function dotsAlong(pts) {
     while (d <= seg) {
       const t = d / seg;
       out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
-      d += DOT_SPACING;
+      d += spacing;
     }
     carry = d - seg;
   }
@@ -71,7 +83,7 @@ function pawsAlong(pts) {
     const a = dots[Math.max(0, i - 1)];
     const b = dots[Math.min(dots.length - 1, i + 1)];
     const ang = Math.atan2(b.y - a.y, b.x - a.x);
-    const side = i % 2 ? 3.5 : -3.5;
+    const side = (i % 2 ? 3.5 : -3.5) / K;
     return {
       x: d.x - Math.sin(ang) * side,
       y: d.y + Math.cos(ang) * side,
@@ -114,31 +126,69 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   create() {
+    K = 1;
     this.walking = false;
+    this.view = null;           // the biome zoomed into, or null for the whole map
     this.at = state.data.at;
     // Paths opened by the level just played: their new dots pop in with an
     // animation. A path's paw prints only appear as she first walks it.
     const fresh = state.takeNewPaths();
     this.pending = new Set(fresh.map(pathKey));
 
-    this.add.image(0, 0, 'map').setOrigin(0);
+    // Everything on the map lives in one container, so zooming into a
+    // biome is one scale and move. The panels and buttons stay outside it.
+    this.world = this.add.container(0, 0);
+    this.world.add(this.add.image(0, 0, 'map').setOrigin(0));
+    this.closeupRects = this.cache.json.get('closeups') || {};
+    this.closeups = {};
+    Object.entries(this.closeupRects).forEach(([b, r]) => {
+      const im = this.add.image(r.x, r.y, `closeup-${b}`).setOrigin(0).setDisplaySize(r.w, r.h).setAlpha(0);
+      this.world.add(im);
+      this.closeups[b] = im;
+    });
 
     makePawTexture(this);
     this.pathLayer = this.add.container(0, 0);
     this.nodeLayer = this.add.container(0, 0);
-    this.drawOpenPaths();
+    this.badgeLayer = this.add.container(0, 0);
+    this.world.add([this.pathLayer, this.nodeLayer, this.badgeLayer]);
     this.buildNodes();
+    this.buildBadges();
     this.buildPlayer();
+    this.world.add(this.player);
     this.buildPanel();
     this.buildHud();
     this.buildDifficulty();
     this.bindInput();
+    // Back from the character selector: show whoever was chosen.
+    const redraw = () => this.drawPlayerFigure();
+    this.events.on('resume', redraw);
+    this.events.once('shutdown', () => this.events.off('resume', redraw));
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
-    this.updatePanel();
 
-    if (fresh.length) {
+    // Back from a level in a biome: stay in it, unless it's just been
+    // finished (or its last question answered): then zoom out and say so.
+    const b = state.data.view;
+    const event = b ? state.biomeEvent(b) : null;
+    // A companion that joined in the level (its last question answered
+    // there) has had its card already: the map just zooms out.
+    const joined = b && state.data.joinedIn === b;
+    if (joined) state.data.joinedIn = null;
+    if (b) this.showBiome(b);
+    else this.showWorld();
+    this.fresh = fresh;
+    if (event || joined) {
+      this.walking = true;
+      this.time.delayedCall(700, () => this.zoomOut(event ? () => this.celebrate(b, event) : () => {
+        this.walking = false;
+        if (this.fresh.length) this.revealPaths(this.fresh);
+        this.fresh = [];
+      }));
+    } else if (fresh.length) {
       this.time.delayedCall(450, () => this.revealPaths(fresh));
+    } else {
+      this.pulseNext();
     }
 
     // Opened from a save link: ask before replacing this device's progress.
@@ -149,6 +199,206 @@ export class OverworldScene extends Phaser.Scene {
         ? { mode: 'confirm', loadData: res.data }
         : { mode: 'note', note: res.reason || "That save link doesn't work." }));
     }
+  }
+
+  // ---------- whole map and biome close-ups ----------
+
+  // A biome is open once any of its level dots is.
+  biomeOpen(b) {
+    return biomeLevels(b).some((id) => state.isNodeOpen(id) && this.isRevealed(id));
+  }
+
+  // The level to play next in a biome: its first open dot not yet played,
+  // else where she stands (if in it), else its first level.
+  nextLevel(b) {
+    const ids = biomeLevels(b);
+    const next = ids.find((id) => state.isNodeOpen(id) && this.isRevealed(id) && !state.isCleared(id));
+    if (next) return next;
+    return LEVELS[this.at] && LEVELS[this.at].biome === b ? this.at : ids[0];
+  }
+
+  // The whole map: biome badges, no level dots.
+  showWorld() {
+    K = 1;
+    this.view = null;
+    state.setView(null);
+    this.world.setScale(1).setPosition(0, 0);
+    Object.values(this.closeups).forEach((im) => im.setAlpha(0));
+    this.pathLayer.setVisible(false);
+    this.nodeLayer.setVisible(false);
+    this.player.setVisible(false);
+    this.badgeLayer.setVisible(true);
+    this.refreshBadges();
+    this.updatePanel();
+  }
+
+  // Zoomed into biome b: its close-up, its dots and trails, the explorer.
+  showBiome(b) {
+    const r = this.closeupRects[b];
+    if (!r) {
+      this.showWorld();
+      return;
+    }
+    K = MAP_W / r.w;
+    this.view = b;
+    state.setView(b);
+    this.world.setScale(K).setPosition(-r.x * K, -r.y * K);
+    Object.entries(this.closeups).forEach(([k, im]) => im.setAlpha(k === b ? 1 : 0));
+    this.badgeLayer.setVisible(false);
+    this.pathLayer.setVisible(true);
+    this.nodeLayer.setVisible(true);
+    if (!LEVELS[this.at] || LEVELS[this.at].biome !== b) {
+      this.at = this.nextLevel(b);
+      state.data.at = this.at;
+      state.save();
+    }
+    const lvl = LEVELS[this.at];
+    this.player.setPosition(lvl.x, lvl.y).setScale(1 / K).setVisible(true);
+    this.drawOpenPaths();
+    this.refreshNodes();
+    this.updatePanel();
+  }
+
+  // The camera glides from the whole map into the biome's close-up.
+  zoomIn(b) {
+    const r = this.closeupRects[b];
+    if (!r || this.walking) return;
+    this.walking = true;
+    audio.sfx(this, 'step');
+    if (this.badgePulse) this.badgePulse.stop();
+    this.badgeLayer.setVisible(false);
+    const k = MAP_W / r.w;
+    this.tweens.add({ targets: this.closeups[b], alpha: 1, duration: ZOOM_MS * 0.8, delay: ZOOM_MS * 0.2 });
+    this.tweens.add({
+      targets: this.world,
+      scale: k,
+      x: -r.x * k,
+      y: -r.y * k,
+      duration: ZOOM_MS,
+      ease: 'Sine.InOut',
+      onComplete: () => {
+        this.showBiome(b);
+        this.walking = false;
+        this.pulseNext();
+      },
+    });
+  }
+
+  // Back out to the whole map; then onDone (a splash, say).
+  zoomOut(onDone) {
+    const b = this.view;
+    this.walking = true;
+    if (this.pulse) this.pulse.stop();
+    this.pathLayer.setVisible(false);
+    this.nodeLayer.setVisible(false);
+    this.player.setVisible(false);
+    if (b) this.tweens.add({ targets: this.closeups[b], alpha: 0, duration: ZOOM_MS * 0.8 });
+    this.tweens.add({
+      targets: this.world,
+      scale: 1,
+      x: 0,
+      y: 0,
+      duration: ZOOM_MS,
+      ease: 'Sine.InOut',
+      onComplete: () => {
+        this.showWorld();
+        this.walking = false;
+        if (onDone) {
+          this.walking = true;
+          onDone();
+        }
+      },
+    });
+  }
+
+  // The next level to play gently pulses.
+  pulseNext() {
+    if (this.pulse) this.pulse.stop();
+    this.pulse = null;
+    if (!this.view) return;
+    const id = biomeLevels(this.view).find((l) => state.isNodeOpen(l) && this.isRevealed(l) && !state.isCleared(l));
+    const c = id && this.nodes[id];
+    if (!c) return;
+    c.setScale(1 / K);
+    this.pulse = this.tweens.add({ targets: c, scale: 1.3 / K, duration: 520, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  }
+
+  // One badge per playable biome on the whole map: open ones can be
+  // tapped; the one she's working through pulses; finished ones get a tick.
+  buildBadges() {
+    this.badges = {};
+    PLAY_BIOMES.forEach((b) => {
+      const ids = biomeLevels(b);
+      // Centred among its level dots, in its part of the map.
+      const x = ids.reduce((t, id) => t + LEVELS[id].x, 0) / ids.length;
+      const y = ids.reduce((t, id) => t + LEVELS[id].y, 0) / ids.length;
+      const c = this.add.container(x, y);
+      c.g = this.add.graphics();
+      c.add(c.g);
+      c.setSize(64, 64);
+      c.setInteractive({ useHandCursor: true });
+      c.on('pointerup', () => this.onBadgeTapped(b));
+      c.color = BIOMES[b].color;
+      this.badgeLayer.add(c);
+      this.badges[b] = c;
+    });
+  }
+
+  refreshBadges() {
+    if (this.badgePulse) this.badgePulse.stop();
+    this.badgePulse = null;
+    const here = LEVELS[this.at] ? LEVELS[this.at].biome : null;
+    let current = null;
+    Object.entries(this.badges).forEach(([b, c]) => {
+      const open = this.biomeOpen(b);
+      c.setVisible(open).setScale(1);
+      if (!open) return;
+      const done = state.biomeComplete(b);
+      const g = c.g;
+      g.clear();
+      g.fillStyle(COLORS.ink, 0.9);
+      g.fillCircle(0, 4, 27);
+      g.fillStyle(c.color, 1);
+      g.fillCircle(0, 0, 25);
+      g.lineStyle(4, COLORS.ink, 1);
+      g.strokeCircle(0, 0, 25);
+      g.lineStyle(3, 0xffffff, 0.8);
+      g.strokeCircle(0, 0, 19);
+      if (done) {
+        g.lineStyle(6, 0xffffff, 1);
+        g.beginPath();
+        g.moveTo(-10, 0);
+        g.lineTo(-3, 8);
+        g.lineTo(11, -8);
+        g.strokePath();
+      } else {
+        g.fillStyle(0xffffff, 1);
+        g.fillTriangle(-6, -10, -6, 10, 11, 0);    // "go in"
+        if (!current || b === here) current = b;
+      }
+    });
+    if (current) {
+      this.badgePulse = this.tweens.add({
+        targets: this.badges[current], scale: 1.18, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut',
+      });
+    }
+    this.currentBiome = current;
+  }
+
+  onBadgeTapped(b) {
+    if (this.walking || this.view) return;
+    this.zoomIn(b);
+  }
+
+  // After a finished biome, back on the whole map: the companion card
+  // (companionCard.js). Closing it shows what the finish opened.
+  celebrate(b, event) {
+    showCompanionCard(this, b, event, () => {
+      this.walking = false;
+      this.refreshBadges();
+      if (this.fresh.length) this.revealPaths(this.fresh);
+      this.fresh = [];
+    });
   }
 
   openSaveMenu(data = { mode: 'main' }) {
@@ -175,7 +425,7 @@ export class OverworldScene extends Phaser.Scene {
   drawOpenPaths() {
     this.pathLayer.removeAll(true);
     const drawn = new Set();
-    this.shownPaths().forEach((p) => {
+    this.shownPaths().filter((p) => this.inView(p.from) && this.inView(p.to)).forEach((p) => {
       // A path listed both ways is drawn once.
       if (drawn.has(`${p.to}>${p.from}`)) return;
       drawn.add(pathKey(p));
@@ -185,7 +435,7 @@ export class OverworldScene extends Phaser.Scene {
 
   pawPrint(d, p) {
     const img = this.add.image(d.x, d.y, 'paw-sil').setRotation(d.rot);
-    img.setDisplaySize(PAW_SIZE, PAW_SIZE);
+    img.setDisplaySize(PAW_SIZE / K, PAW_SIZE / K);
     if (p.exit === 'secret') img.setTint(0x8a1f1f);
     return img;
   }
@@ -195,16 +445,19 @@ export class OverworldScene extends Phaser.Scene {
     this.walking = true; // hold input while the dots appear
     let delay = 0;
     paths.forEach((p) => {
+      const here = this.inView(p.to);
       this.time.delayedCall(delay, () => {
         this.pending.delete(pathKey(p));
         this.refreshNodes();
-        this.popNode(p.to);
+        if (!this.view) this.refreshBadges();
+        if (here) this.popNode(p.to);
       });
-      delay += 350;
+      if (here) delay += 350;
     });
     this.time.delayedCall(delay + 100, () => {
       this.walking = false;
       this.updatePanel();
+      this.pulseNext();
     });
   }
 
@@ -219,6 +472,11 @@ export class OverworldScene extends Phaser.Scene {
 
   // ---------- level dots ----------
 
+  // Is this level in the biome on screen?
+  inView(id) {
+    return !!this.view && !!LEVELS[id] && LEVELS[id].biome === this.view;
+  }
+
   buildNodes() {
     this.nodes = {};
     Object.entries(LEVELS).forEach(([id, lvl]) => {
@@ -232,15 +490,46 @@ export class OverworldScene extends Phaser.Scene {
       this.nodeLayer.add(c);
       this.nodes[id] = c;
     });
-    this.refreshNodes();
+    // A biome finished before has one more dot: back out to the whole map.
+    const exit = this.add.container(0, 0);
+    exit.g = this.add.graphics();
+    exit.add([exit.g, this.add.text(0, 2, 'Map', heading(14, '#ffffff')).setOrigin(0.5)]);
+    exit.setSize(52, 52).setInteractive({ useHandCursor: true });
+    exit.on('pointerup', () => this.leaveBiome());
+    this.nodeLayer.add(exit);
+    this.exitNode = exit;
+  }
+
+  leaveBiome() {
+    if (this.walking || !this.view) return;
+    this.zoomOut();
   }
 
   refreshNodes() {
+    // The way back out: by the biome's first level, once the biome is done.
+    const ex = this.exitNode;
+    const done = this.view && state.data.biomeDone && state.data.biomeDone[this.view];
+    ex.setVisible(!!done);
+    if (done) {
+      const first = LEVELS[biomeLevels(this.view)[0]];
+      const r = this.closeupRects[this.view];
+      const ox = first.x - r.x < r.w / 2 ? -1 : 1;
+      ex.setPosition(first.x + ox * 46 / K, first.y - 40 / K).setScale(1 / K);
+      const g = ex.g;
+      g.clear();
+      g.fillStyle(COLORS.ink, 1);
+      g.fillCircle(0, 3, 25);
+      g.fillStyle(0x6b4a2e, 1);
+      g.fillCircle(0, 0, 22);
+      g.lineStyle(3, COLORS.ink, 1);
+      g.strokeCircle(0, 0, 22);
+    }
     Object.entries(this.nodes).forEach(([id, c]) => {
       const lvl = LEVELS[id];
-      const open = state.isNodeOpen(id) && this.isRevealed(id);
+      const open = this.inView(id) && state.isNodeOpen(id) && this.isRevealed(id);
       c.setVisible(open);
       if (!open) return;
+      c.setScale(1 / K);
       const g = c.g;
       g.clear();
 
@@ -300,7 +589,7 @@ export class OverworldScene extends Phaser.Scene {
   popNode(id) {
     const c = this.nodes[id];
     c.setScale(0);
-    this.tweens.add({ targets: c, scale: 1, duration: 380, ease: 'Back.Out' });
+    this.tweens.add({ targets: c, scale: 1 / K, duration: 380, ease: 'Back.Out' });
   }
 
   // ---------- player token ----------
@@ -310,31 +599,33 @@ export class OverworldScene extends Phaser.Scene {
     const p = this.add.container(lvl.x, lvl.y);
     const shadow = this.add.ellipse(0, 4, 30, 10, COLORS.ink, 0.35);
     const body = this.add.container(0, 0);
-    const g = this.add.graphics();
-    // Placeholder explorer: head, hat brim, hat crown, band.
-    g.fillStyle(COLORS.ink, 1);
-    g.fillCircle(0, -26, 14);
-    g.fillStyle(0xf2c9a0, 1);
-    g.fillCircle(0, -26, 11.5);
-    g.fillStyle(COLORS.ink, 1);
-    g.fillCircle(-4, -25, 2);
-    g.fillCircle(4, -25, 2);
-    g.fillEllipse(0, -36, 36, 12);
-    g.fillStyle(0xd9a441, 1);
-    g.fillEllipse(0, -37, 32, 8);
-    g.fillStyle(COLORS.ink, 1);
-    g.fillRoundedRect(-11, -52, 22, 16, 7);
-    g.fillStyle(0xd9a441, 1);
-    g.fillRoundedRect(-9, -50, 18, 13, 6);
-    g.fillStyle(0x8a4b25, 1);
-    g.fillRect(-9, -41, 18, 4);
-    body.add(g);
     p.add([shadow, body]);
     this.player = p;
     this.playerBody = body;
+    this.drawPlayerFigure();
     this.bob = this.tweens.add({
       targets: body, y: -5, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut',
     });
+  }
+
+  // The chosen explorer, standing on her dot (redrawn when the selector
+  // changes her). Her idle strip plays small; feet on the dot.
+  drawPlayerFigure() {
+    const cid = state.character().id;
+    if (!this.anims.exists(`${cid}-idle`)) {
+      this.anims.create({ key: `${cid}-idle`, frames: this.anims.generateFrameNumbers(`${cid}-idle`), frameRate: 3, repeat: -1 });
+    }
+    this.playerBody.removeAll(true);
+    const fig = this.add.sprite(0, 6, `${cid}-idle`, 0).setOrigin(0.5, 1).setScale(0.62);
+    fig.play(`${cid}-idle`);
+    this.playerBody.add(fig);
+    this.playerFig = fig;
+  }
+
+  openCharacterMenu() {
+    if (this.walking) return;
+    this.scene.pause();
+    this.scene.launch('CharacterMenu');
   }
 
   // ---------- info panel ----------
@@ -364,6 +655,14 @@ export class OverworldScene extends Phaser.Scene {
   }
 
   updatePanel() {
+    this.playBtn.setVisible(!!this.view);
+    if (!this.view) {
+      this.panelTitle.setText('Zebonkia');
+      this.panelStatus.setText('Tap a glowing circle to explore');
+      const n = (state.data.companions || []).length;
+      this.panelHint.setText(n ? `Companions: ${n}` : 'Answer every question in an area to earn a companion');
+      return;
+    }
     const id = this.at;
     const lvl = LEVELS[id];
     const have = state.treasureFor(id).length;
@@ -414,6 +713,12 @@ export class OverworldScene extends Phaser.Scene {
       padding: { x: 10, y: 4 },
     })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     save.on('pointerup', () => this.openSaveMenu());
+    // The character selector: who you play as (and, later, what they wear).
+    const look = this.add.text(save.x - save.width - 12, y + 70, 'Explorer', text(14, '#ffffff', {
+      backgroundColor: COLORS.greenCss,
+      padding: { x: 10, y: 4 },
+    })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+    look.on('pointerup', () => this.openCharacterMenu());
 
     let armed = false;
     reset.on('pointerup', () => {
@@ -509,14 +814,19 @@ export class OverworldScene extends Phaser.Scene {
     Object.entries(dirs).forEach(([key, v]) => {
       kb.on(`keydown-${key}`, () => this.tryStep(v[0], v[1]));
     });
-    kb.on('keydown-ENTER', () => this.enterLevel());
-    kb.on('keydown-SPACE', () => this.enterLevel());
+    const go = () => {
+      if (this.view) this.enterLevel();
+      else if (this.currentBiome) this.onBadgeTapped(this.currentBiome);
+    };
+    kb.on('keydown-ENTER', go);
+    kb.on('keydown-SPACE', go);
   }
 
   // Open neighbours of a node, with the point list oriented away from it.
   neighbours(id) {
     const out = [];
     this.usablePaths()
+      .filter((p) => this.inView(p.from) && this.inView(p.to))
       .forEach((p) => {
         if (p.from === id) out.push({ to: p.to, p, pts: pathPoints(p) });
         if (p.to === id) out.push({ to: p.from, p, pts: pathPoints(p).reverse() });
@@ -526,7 +836,7 @@ export class OverworldScene extends Phaser.Scene {
 
   // Keyboard: pick the open path whose first stretch best matches the direction.
   tryStep(dx, dy) {
-    if (this.walking) return;
+    if (this.walking || !this.view) return;
     let best = null;
     let bestScore = 0.35;
     this.neighbours(this.at).forEach((n) => {
@@ -588,7 +898,7 @@ export class OverworldScene extends Phaser.Scene {
     const paws = state.hasWalked(step.p) ? [] : pawsAlong(pts);
     let stamped = 0;
     const stampUpTo = (d) => {
-      while (stamped < paws.length && DOT_SPACING * (stamped + 1.5) <= d) {
+      while (stamped < paws.length && (DOT_SPACING / K) * (stamped + 1.5) <= d) {
         this.stampPaw(paws[stamped], step.p);
         stamped++;
       }
@@ -597,7 +907,7 @@ export class OverworldScene extends Phaser.Scene {
     this.tweens.add({
       targets: prog,
       d: total,
-      duration: (total / WALK_SPEED) * 1000,
+      duration: (total * K / WALK_SPEED) * 1000,
       ease: 'Linear',
       onUpdate: () => {
         let i = 1;
@@ -621,14 +931,14 @@ export class OverworldScene extends Phaser.Scene {
           this.walkRoute(rest);
         } else {
           this.walking = false;
-          this.tweens.add({ targets: this.nodes[this.at], scale: 1.15, duration: 120, yoyo: true });
+          this.tweens.add({ targets: this.nodes[this.at], scale: 1.15 / K, duration: 120, yoyo: true });
         }
       },
     });
   }
 
   enterLevel() {
-    if (this.walking) return;
+    if (this.walking || !this.view) return;
     this.walking = true;
     const lvl = LEVELS[this.at];
     const label = this.add.text(MAP_W / 2, MAP_H / 2, lvl.name, heading(64, COLORS.yellowCss, {

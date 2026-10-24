@@ -105,7 +105,7 @@
   "alpha": 0.62
  },
  "vines": "vn_wall.png",
- "food": "../rainforest/food_bananas.png",
+ "food": "../../food/bananler.png",
  "sky": "#147e6f",
  "background": [
   {

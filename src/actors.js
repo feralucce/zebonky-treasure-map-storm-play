@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=3ec3c80';
-import { texKey } from './data/artsets.js?v=3ec3c80';
+import { TILE } from './data/levels.js?v=4fcf886';
+import { texKey } from './data/artsets.js?v=4fcf886';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -105,21 +105,60 @@ export class WildZebonky {
   // Harmless right now: fed for good, or still seeing stars.
   get harmless() { return this.isFed || this.scene.time.now < this.dazedUntil; }
 
+  // Fed: a burst of hearts, then it dashes off to the right and is gone.
+  // (The biome's companion is the Zebonky that travels with her; a trail
+  // of followers was dropped, the user, 2026-10-24.)
   feed() {
     if (this.isFed) return;
     this.isFed = true;
-    this.state = 'follow';
+    this.state = 'leave';
     this.target = null;
     this.sprite.setVelocityX(0);
     this.sprite.setAngle(0);
     play(this.sprite, this.art, 'idle');
     this.scene.floatText(this.sprite.x, this.sprite.y - 80, 'Yum!');
-    // A little heart now and then, so it reads as friendly.
-    // A burst of hearts when it eats, then a few now and then while it
-    // follows along.
     this.hearts(9);
-    this.heartTimer = this.scene.time.addEvent({ delay: 1400, loop: true, callback: () => this.hearts(3) });
+    this.leaveAt = this.scene.time.now + 1100;
     if (this.scene.onZebonkyFed) this.scene.onZebonkyFed(this);
+  }
+
+  // Off it goes, running right and leaping gaps, until it's out of sight.
+  leave(time) {
+    const s = this.sprite;
+    if (time < this.leaveAt) {
+      this.move(0);
+      return;
+    }
+    // On to the right the safe way: it leaps only gaps it can land across
+    // and ledges it can reach, and never runs into a pit or water (the
+    // user, 2026-10-24). Where it can't go on, it fades away in hearts.
+    if (!this.move(CHARGE_SPEED * 1.4, 'run', true)) {
+      this.goAway(true);
+      return;
+    }
+    // Out of sight, or not getting anywhere: gone.
+    const view = this.scene.cameras.main.worldView;
+    if (s.x > view.right + 150 || time > this.leaveAt + 8000) {
+      this.goAway();
+      return;
+    }
+    if (!this.leftFrom || time - this.leftFrom.t > 900) {
+      if (this.leftFrom && s.x - this.leftFrom.x < 30) this.goAway(true);
+      this.leftFrom = { x: s.x, t: time };
+    }
+  }
+
+  goAway(fade = false) {
+    this.gone = true;
+    const s = this.sprite;
+    s.setVelocity(0, 0);
+    s.body.enable = false;
+    if (!fade) {
+      s.setVisible(false);
+      return;
+    }
+    this.hearts(5);
+    this.scene.tweens.add({ targets: s, alpha: 0, duration: 450, onComplete: () => s.setVisible(false) });
   }
 
   // A rising stream of red and pink hearts, staggered and drifting.
@@ -252,12 +291,12 @@ export class WildZebonky {
 
   update(time, player) {
     const s = this.sprite;
+    if (this.gone) return;
     // Fell out of the level: back on the edge it fell from (or, when fed,
     // back beside the player), like the explorer.
     if (s.y > this.scene.worldH + 200) {
       if (!this.isFed) this.reappear(this.safe.x, this.safe.y);
-      else if (player.body.blocked.down || player.body.touching.down) this.catchUp(player);
-      else { s.setVelocity(0, 0); s.body.setGravityY(-this.scene.physics.world.gravity.y); }  // wait, out of sight
+      else this.goAway();
       return;
     }
     // Leaping out of the water: keep pushing toward the bank (touching the
@@ -268,7 +307,8 @@ export class WildZebonky {
     }
     // In water: float up and paddle for the shore.
     if (this.scene.isWaterAt(s.x, s.y - 30)) {
-      this.swim(player);
+      if (this.isFed && time > this.leaveAt) this.goAway(true);   // leaving: it slips away
+      else this.swim(player);
       return;
     }
     s.body.setGravityY(0);
@@ -276,7 +316,7 @@ export class WildZebonky {
     if (this.scene.floorUnder(s.x, s.y)) this.safe = { x: s.x, y: s.y };
 
     if (this.isFed) {
-      this.follow(player);
+      this.leave(time);
       return;
     }
     if (time < this.dazedUntil || time < this.stunnedUntil) {
@@ -430,6 +470,7 @@ export class WildZebonky {
   // Pop up on floor beside a spot (feet at feetY): behind if there's floor
   // there, else in front, else right at the spot.
   catchUpAt(x0, feetY, facingLeft) {
+    if (this.gone || this.isFed) return;
     const scene = this.scene;
     const back = facingLeft ? 1 : -1;
     this.stuckSince = 0;
@@ -475,13 +516,17 @@ export class GuideZebonky {
     const x = s.x + Phaser.Math.Between(-62, 62);
     const y = s.y - Phaser.Math.Between(4, 118);
     const big = Phaser.Math.Between(9, 15);
-    const colour = Phaser.Math.RND.pick([0xfff3a0, 0xffffff, 0xffd84a, 0xaef0ff]);
-    const star = this.scene.add.star(x, y, 4, big * 0.32, big, colour)
-      .setStrokeStyle(2, 0x6b4a10).setDepth(5).setScale(0.2).setAngle(Phaser.Math.Between(0, 45));
+    // Chris's "good vibe" sparkle in the biome food's colours, if the level has it.
+    const tex = this.scene.sparkTex;
+    const star = tex
+      ? this.scene.add.image(x, y, tex).setDepth(5).setScale(0.2)
+      : this.scene.add.star(x, y, 4, big * 0.32, big, Phaser.Math.RND.pick([0xfff3a0, 0xffffff, 0xffd84a, 0xaef0ff]))
+        .setStrokeStyle(2, 0x6b4a10).setDepth(5).setScale(0.2).setAngle(Phaser.Math.Between(0, 45));
+    const full = tex ? big / 14 : 1;
     // Twinkle: pop in, then shrink away as it drifts up.
-    this.scene.tweens.add({ targets: star, scale: 1, duration: 180, ease: 'Back.Out' });
+    this.scene.tweens.add({ targets: star, scale: full, duration: 180, ease: 'Back.Out' });
     this.scene.tweens.add({
-      targets: star, y: y - 30, alpha: 0, angle: star.angle + 90, scale: 0.3, delay: 180, duration: 650,
+      targets: star, y: y - 30, alpha: 0, angle: tex ? 0 : star.angle + 90, scale: 0.3 * full, delay: 180, duration: 650,
       onComplete: () => star.destroy(),
     });
   }
@@ -494,8 +539,11 @@ export class GuideZebonky {
     // A circle around it: close in any direction (beside, above, below).
     const near = Math.hypot(player.x - s.x, player.body.bottom - s.y) < GUIDE_NEAR;
     if (!near) return;
-    if (this.index < this.points.length - 1) this.travelTo(this.index + 1);
-    else {
+    if (this.index < this.points.length - 1) {
+      // Every time it sets off: "This way!" (the user, 2026-10-24).
+      this.scene.floatText(s.x, s.y - 120, 'This way!', 30);
+      this.travelTo(this.index + 1);
+    } else {
       this.revealed = true;
       this.onLastStop(this);
     }
