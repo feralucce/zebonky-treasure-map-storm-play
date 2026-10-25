@@ -6,9 +6,9 @@
 //                      answered; doing that earns its Zebonky.
 // onClose runs when the card's button is pressed.
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=db079be';
-import { COLORS, heading, text, makeButton } from './theme.js?v=db079be';
-import { showCompanionPicker } from './companionPicker.js?v=db079be';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=6506ff3';
+import { COLORS, heading, text, makeButton } from './theme.js?v=6506ff3';
+import { showCompanionPicker } from './companionPicker.js?v=6506ff3';
 
 export function showCompanionCard(scene, b, event, onClose) {
   // A Zebonky joins: the companion picker, the new one revealed
@@ -38,7 +38,7 @@ export function showCompanionCard(scene, b, event, onClose) {
   layer.add(scene.add.text(MAP_W / 2, y0 + 50, `${info.name} explored!`, heading(34)).setOrigin(0.5));
   layer.add(scene.add.image(MAP_W / 2, y0 + 210, `zebonky-${z.id}`).setScale(0.6).setTint(0x2b1d12).setAlpha(0.55));
   layer.add(scene.add.text(MAP_W / 2, y0 + 340,
-    `Answer every question in ${info.name} and the ${z.name} will join you as a companion!`,
+    `Answer every question in ${info.name} and its Zebonky will join you as a companion!`,
     text(22, COLORS.inkCss, { align: 'center', wordWrap: { width: W - 90 } })).setOrigin(0.5, 0));
   layer.add(makeButton(scene, MAP_W / 2, y0 + H - 50, 'OK', close, { width: 160, height: 52, size: 22 }));
   return layer;

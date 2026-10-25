@@ -5,10 +5,10 @@
 // (showCompanionPicker, with the new one revealed) and by the explorer
 // screen's Companion tab (companionGrid).
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=db079be';
-import { state } from './state.js?v=db079be';
-import { COLORS, heading, text, makeButton } from './theme.js?v=db079be';
-import { audio } from './audio.js?v=db079be';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=6506ff3';
+import { state } from './state.js?v=6506ff3';
+import { COLORS, heading, text, makeButton } from './theme.js?v=6506ff3';
+import { audio } from './audio.js?v=6506ff3';
 
 
 // Biomes with a Zebonky, in the order they're met on the map.
@@ -19,7 +19,7 @@ const colour = (img) => img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY).s
 
 // The row of tiles, centred on cx at y (top). `reveal`: a biome whose tile
 // starts as a silhouette and turns into its Zebonky. Returns the container.
-export function companionGrid(scene, cx, y, { reveal = null, onPick = null, tile: TILE = 150 } = {}) {
+export function companionGrid(scene, cx, y, { reveal = null, onPick = null, onReveal = null, tile: TILE = 150 } = {}) {
   const GAP = Math.round(TILE / 9);
   const grid = scene.add.container(0, 0);
   const have = state.data.companions || [];
@@ -68,7 +68,11 @@ export function companionGrid(scene, cx, y, { reveal = null, onPick = null, tile
       const s = pic.scale;
       scene.tweens.add({
         targets: pic, scale: s * 1.25, duration: 260, yoyo: true, ease: 'Sine.InOut',
-        onYoyo: () => { show(true); audio.sfx(scene, 'right'); },
+        onYoyo: () => {
+          show(true);
+          audio.sfx(scene, 'right');
+          if (onReveal) onReveal(b);
+        },
       });
     };
     t.biome = b;
@@ -100,11 +104,13 @@ export function showCompanionPicker(scene, b, onClose) {
   g.lineStyle(4, COLORS.ink, 1);
   g.strokeRoundedRect(x0, y0, W, H, 26);
   layer.add(g);
+  // Its name shows only as its tile is revealed (the user, 2026-10-25).
   const who = z.who ? `${z.who} the ${z.name}` : `The ${z.name}`;
-  layer.add(scene.add.text(MAP_W / 2, y0 + 48, `${who} joins you!`, heading(34)).setOrigin(0.5));
+  const title = scene.add.text(MAP_W / 2, y0 + 48, 'A new companion joins you!', heading(34)).setOrigin(0.5);
+  layer.add(title);
   layer.add(scene.add.text(MAP_W / 2, y0 + 94,
     'Your companions. Tap one to have it travel with you.', text(19)).setOrigin(0.5));
-  layer.add(companionGrid(scene, MAP_W / 2, y0 + 140, { reveal: b }));
+  layer.add(companionGrid(scene, MAP_W / 2, y0 + 140, { reveal: b, onReveal: () => title.setText(`${who} joins you!`) }));
   layer.add(makeButton(scene, MAP_W / 2, y0 + H - 50, 'Hooray!', () => {
     layer.destroy();
     if (onClose) onClose();
