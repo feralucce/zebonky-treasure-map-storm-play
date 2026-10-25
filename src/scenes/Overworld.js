@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=ca55e20';
-import { state, pathKey } from '../state.js?v=ca55e20';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=ca55e20';
-import { audio } from '../audio.js?v=ca55e20';
-import { starsFor, rewardTotals } from '../rewards.js?v=ca55e20';
-import { showCompanionCard } from '../companionCard.js?v=ca55e20';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=ca55e20';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=dda62f5';
+import { state, pathKey } from '../state.js?v=dda62f5';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=dda62f5';
+import { audio } from '../audio.js?v=dda62f5';
+import { starsFor, rewardTotals } from '../rewards.js?v=dda62f5';
+import { showCompanionCard } from '../companionCard.js?v=dda62f5';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=dda62f5';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -159,6 +159,11 @@ export class OverworldScene extends Phaser.Scene {
     this.buildPanel();
     this.buildHud();
     this.buildDifficulty();
+    if (state.inspectAll) {
+      this.add.text(MAP_W / 2, 18, 'Inspection mode: every level open, nothing saved', text(17, '#ffffff', {
+        backgroundColor: 'rgba(255,59,107,0.85)', padding: { x: 12, y: 6 },
+      })).setOrigin(0.5, 0).setDepth(30);
+    }
     this.bindInput();
     // Back from the character selector: show whoever was chosen.
     const redraw = () => this.drawPlayerFigure();
@@ -734,6 +739,8 @@ export class OverworldScene extends Phaser.Scene {
       padding: { x: 10, y: 4 },
     })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     look.on('pointerup', () => this.openCharacterMenu());
+    // Inspection mode saves nothing, so no Save or Reset.
+    if (state.inspectAll) { save.setVisible(false); reset.setVisible(false); look.setX(MAP_W - 26); }
 
     let armed = false;
     reset.on('pointerup', () => {

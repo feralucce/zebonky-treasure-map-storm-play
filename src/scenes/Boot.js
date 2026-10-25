@@ -1,8 +1,9 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=ca55e20';
-import { testParams, DRAWN } from '../data/levels.js?v=ca55e20';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=ca55e20';
-import { CHARACTERS } from '../data/characters.js?v=ca55e20';
-import { COLORS, heading, text } from '../theme.js?v=ca55e20';
+import { ARTSETS, texKey } from '../data/artsets.js?v=dda62f5';
+import { testParams, DRAWN } from '../data/levels.js?v=dda62f5';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=dda62f5';
+import { CHARACTERS } from '../data/characters.js?v=dda62f5';
+import { state } from '../state.js?v=dda62f5';
+import { COLORS, heading, text } from '../theme.js?v=dda62f5';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -166,10 +167,13 @@ export class BootScene extends Phaser.Scene {
       test.levelId = DRAWN[test.layoutId].level;
     }
     if (test) test.levelId = playableLevelId(test.levelId);
-    // index.html?inspect=1 (or ?inspect=<level id>): the dressing tool.
+    // index.html?inspect=1: inspection mode, the whole game with every level
+    // open and no explorer (?inspect=<level id> goes straight to that level).
     const inspect = new URLSearchParams(window.location.search).get('inspect');
     if (inspect) {
-      this.scene.start('Level', { levelId: inspect === '1' ? 'dorsal-1' : playableLevelId(inspect), inspect: true });
+      state.startInspection();
+      if (inspect === '1') this.scene.start('Overworld');
+      else this.scene.start('Level', { levelId: playableLevelId(inspect), inspect: true });
       return;
     }
     if (test) this.scene.start('Level', test);

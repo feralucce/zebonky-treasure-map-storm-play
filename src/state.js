@@ -2,10 +2,10 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=ca55e20';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=ca55e20';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=ca55e20';
-import { bankFor, questionKey } from './data/questions.js?v=ca55e20';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=dda62f5';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=dda62f5';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=dda62f5';
+import { bankFor, questionKey } from './data/questions.js?v=dda62f5';
 
 const KEY = 'zebonky-tms-save-v1';
 
@@ -66,6 +66,18 @@ export const state = {
 
   // Set while the level designer is test-playing a drawing.
   noSave: false,
+
+  // Inspection mode (index.html?inspect=1, the user, 2026-10-25): the whole
+  // game as normal, every level open, without the explorer and without
+  // touching the saved game.
+  inspectAll: false,
+
+  startInspection() {
+    this.inspectAll = true;
+    this.noSave = true;
+    const keys = PATHS.map(pathKey);
+    this.data = { ...fresh(), difficulty: this.data.difficulty, look: this.data.look, revealed: keys, walked: keys };
+  },
 
   save() {
     if (this.noSave) return;
@@ -139,6 +151,7 @@ export const state = {
   // A normal path opens however the level was finished (a secret door
   // still counts as playing it); a secret path needs the secret.
   isPathOpen(p) {
+    if (this.inspectAll) return true;
     const c = this.data.cleared[p.from];
     if (!c) return false;
     return p.exit === 'secret' ? !!c.secret : !!(c.normal || c.secret);

@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=ca55e20';
-import { TILE, layoutFor } from '../data/levels.js?v=ca55e20';
-import { state } from '../state.js?v=ca55e20';
-import { COLORS, heading, text } from '../theme.js?v=ca55e20';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=ca55e20';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=ca55e20';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=ca55e20';
-import { makeNav } from '../pathing.js?v=ca55e20';
-import { startQuestionRun } from '../data/questions.js?v=ca55e20';
-import { audio, musicButton, soundButton } from '../audio.js?v=ca55e20';
-import { Companion } from '../companion.js?v=ca55e20';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=dda62f5';
+import { TILE, layoutFor } from '../data/levels.js?v=dda62f5';
+import { state } from '../state.js?v=dda62f5';
+import { COLORS, heading, text } from '../theme.js?v=dda62f5';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=dda62f5';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=dda62f5';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=dda62f5';
+import { makeNav } from '../pathing.js?v=dda62f5';
+import { startQuestionRun } from '../data/questions.js?v=dda62f5';
+import { audio, musicButton, soundButton } from '../audio.js?v=dda62f5';
+import { Companion } from '../companion.js?v=dda62f5';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -83,13 +83,6 @@ const SOLID_TEXTURES = {
   R: ['rock-top', 'rock'],
 };
 
-// The dressing tool's levels: one per art set.
-const INSPECT_LEVELS = [
-  ['dorsal-1', 'Dorsal Cove'], ['cumulus-1', 'Rainforest floor'], ['cumulus-5', 'Rainforest canopy'],
-  ['seafoam-1', 'Seafoam Shores'], ['squvannahs-1', 'Squvannahs'], ['magenta-1', 'Magenta Mountains'],
-  ['magenta-2', 'Crystal Caverns'],
-];
-
 export class PlatformerScene extends Phaser.Scene {
   constructor() {
     super('Level');
@@ -102,7 +95,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.demo = !!data.demo;
     // Inspect mode (index.html?inspect=1): the dressing tool. The level's art
     // only, with a free-moving marker instead of the explorer.
-    this.inspect = !!data.inspect;
+    this.inspect = !!data.inspect || state.inspectAll;
     // A designer test run (or an inspection) never touches saved progress.
     state.noSave = this.test || this.inspect;
     this.inDoor = false;
@@ -396,7 +389,7 @@ export class PlatformerScene extends Phaser.Scene {
     });
 
     // Treasures are numbered left to right, so the first one met asks question 1.
-    if (!this.inspect) treasureSpots.sort((a, b) => a.x - b.x).forEach((t, i) => this.spawnTreasure(t.x, t.y, i));
+    treasureSpots.sort((a, b) => a.x - b.x).forEach((t, i) => this.spawnTreasure(t.x, t.y, i));
     this.start = start;
     this.safe = { ...start };
 
@@ -415,14 +408,9 @@ export class PlatformerScene extends Phaser.Scene {
     // Platforms hold the player except for a moment after Down + Jump.
     this.dropUntil = 0;
     this.physics.add.collider(this.player, this.platforms, null, () => this.time.now >= this.dropUntil);
-    if (this.inspect) {
-      this.wild = [];
-      this.guide = null;
-    } else {
-      this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
-    }
+    this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
     this.buildDressing(rows, at, isSolid, worldW, worldH);
-    if (!this.inspect) this.buildPickups(foodSpots, pawSpots);
+    this.buildPickups(foodSpots, pawSpots);
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
@@ -439,12 +427,12 @@ export class PlatformerScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,ESC,R,X,F,J,K');
     if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
+    this.buildHud(lvl);
     if (this.inspect) {
       this.startInspect(lvl);
       return;
     }
 
-    this.buildHud(lvl);
     // The buttons stay in front of the foreground leaves.
     const before = this.children.list.length;
     this.buildTouchControls();
@@ -1830,11 +1818,13 @@ export class PlatformerScene extends Phaser.Scene {
     return false;
   }
 
-  // ---------- inspect mode (the dressing tool) ----------
+  // ---------- inspect mode ----------
 
-  // No explorer: a round marker that flies anywhere (Up and Down too, no
-  // gravity, through walls), the camera on it. 1-7 jump to one level per art
-  // set; the marker's tile column and row show for notes.
+  // Inspection mode: the level as normal (crates, Zebonkies, food, HUD), but
+  // no explorer: a pink and white marker flies anywhere instead (Up and Down
+  // too, no gravity, through walls) and the camera follows it. Drag the
+  // scene or use the arrows or WASD; Shift is faster. The panel shows the
+  // marker's tile column and row, for notes. Esc or Map goes back to the map.
   startInspect(lvl) {
     this.player.setVisible(false);
     this.player.body.enable = false;
@@ -1845,31 +1835,17 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.stopFollow();
     this.cameras.main.startFollow(m, true, 0.18, 0.18);
     this.cameras.main.setDeadzone(0, 0);
-    this.inspectKeys = this.input.keyboard.addKeys('SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN');
-    INSPECT_LEVELS.forEach(([id], i) => {
-      this.inspectKeys[['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'][i]]
-        .on('down', () => this.scene.restart({ levelId: id, inspect: true }));
-    });
-    const panel = this.add.text(14, 12, '', text(17, '#ffffff', {
-      backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 12, y: 8 }, lineSpacing: 4,
+    this.inspectKeys = this.input.keyboard.addKeys('SHIFT');
+    const panel = this.add.text(14, 112, '', text(16, '#ffffff', {
+      backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 10, y: 6 }, lineSpacing: 2,
     })).setScrollFactor(0).setDepth(40);
     this.inspectPanel = () => {
       const c = Math.floor(m.x / TILE);
       const r = Math.floor(m.y / TILE);
-      panel.setText(`Dressing inspection: ${lvl ? lvl.name : this.levelId} (${this.artName})   Column ${c}, row ${r}\n`
-        + 'Drag the scene, or use the arrows or WASD (Shift is faster). Tap a set, or press 1 to 7.');
+      panel.setText(`Inspection: column ${c}, row ${r}
+Drag, or arrows / WASD (Shift is faster)`);
     };
     this.inspectPanel();
-    // The sets as buttons too, for a tablet (Chris's inspection link).
-    let bx = 14;
-    INSPECT_LEVELS.forEach(([id, name], i) => {
-      const on = id === this.levelId;
-      const b = this.add.text(bx, 12 + panel.height + 8, `${i + 1} ${name}`, text(15, on ? '#2b1d12' : '#ffffff', {
-        backgroundColor: on ? '#ffc93c' : 'rgba(43,29,18,0.8)', padding: { x: 10, y: 6 },
-      })).setScrollFactor(0).setDepth(40).setInteractive({ useHandCursor: true });
-      b.on('pointerup', () => this.scene.restart({ levelId: id, inspect: true }));
-      bx += b.width + 8;
-    });
     // Dragging moves the scene under the finger (or mouse).
     this.input.on('pointermove', (pt) => {
       if (!pt.isDown) return;
@@ -1896,6 +1872,11 @@ export class PlatformerScene extends Phaser.Scene {
   update(time, delta) {
     if (this.inspect) {
       this.inspectUpdate(delta);
+      // Everything else runs as normal around the marker.
+      const p = this.player;
+      p.body.reset(this.marker.x, this.marker.y);
+      this.wild.forEach((z) => z.update(time, p));
+      if (this.guide) this.guide.update(time, p);
       return;
     }
     if (this.done || this.inDoor || !this.player.body.enable) return;
