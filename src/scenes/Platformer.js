@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b424426';
-import { TILE, layoutFor } from '../data/levels.js?v=b424426';
-import { state } from '../state.js?v=b424426';
-import { COLORS, heading, text } from '../theme.js?v=b424426';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b424426';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b424426';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=b424426';
-import { makeNav } from '../pathing.js?v=b424426';
-import { startQuestionRun } from '../data/questions.js?v=b424426';
-import { audio, musicButton, soundButton } from '../audio.js?v=b424426';
-import { Companion } from '../companion.js?v=b424426';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=ca55e20';
+import { TILE, layoutFor } from '../data/levels.js?v=ca55e20';
+import { state } from '../state.js?v=ca55e20';
+import { COLORS, heading, text } from '../theme.js?v=ca55e20';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=ca55e20';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=ca55e20';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=ca55e20';
+import { makeNav } from '../pathing.js?v=ca55e20';
+import { startQuestionRun } from '../data/questions.js?v=ca55e20';
+import { audio, musicButton, soundButton } from '../audio.js?v=ca55e20';
+import { Companion } from '../companion.js?v=ca55e20';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -897,11 +897,11 @@ export class PlatformerScene extends Phaser.Scene {
     return this.isFloor(Math.floor((feetY + 4) / TILE), Math.floor(x / TILE));
   }
 
-  floatText(x, y, msg, size = 26) {
+  floatText(x, y, msg, size = 26, duration = 900) {
     const t = this.add.text(x, y, msg, heading(size, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 7,
     })).setOrigin(0.5).setDepth(9);
-    this.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 900, ease: 'Cubic.Out', onComplete: () => t.destroy() });
+    this.tweens.add({ targets: t, y: y - 40, alpha: 0, duration, ease: duration > 900 ? 'Sine.In' : 'Cubic.Out', onComplete: () => t.destroy() });
   }
 
   // ---------- art set ----------

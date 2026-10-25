@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=b424426';
-import { texKey } from './data/artsets.js?v=b424426';
+import { TILE } from './data/levels.js?v=ca55e20';
+import { texKey } from './data/artsets.js?v=ca55e20';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -541,7 +541,8 @@ export class GuideZebonky {
     if (!near) return;
     if (this.index < this.points.length - 1) {
       // Every time it sets off: "This way!" (the user, 2026-10-24).
-      this.scene.floatText(s.x, s.y - 120, 'This way!', 30);
+      // It fades over a few seconds, so it can be read (the user, 2026-10-25).
+      this.scene.floatText(s.x, s.y - 120, 'This way!', 30, 3000);
       this.travelTo(this.index + 1);
     } else {
       this.revealed = true;
