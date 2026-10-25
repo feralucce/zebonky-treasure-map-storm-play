@@ -2,12 +2,12 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9045f29';
-import { drawQuestion } from '../data/questions.js?v=9045f29';
-import { state } from '../state.js?v=9045f29';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=9045f29';
-import { audio } from '../audio.js?v=9045f29';
-import { showCompanionCard } from '../companionCard.js?v=9045f29';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=e3b2610';
+import { drawQuestion } from '../data/questions.js?v=e3b2610';
+import { state } from '../state.js?v=e3b2610';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=e3b2610';
+import { audio } from '../audio.js?v=e3b2610';
+import { showCompanionCard } from '../companionCard.js?v=e3b2610';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -46,6 +46,7 @@ export class QuizScene extends Phaser.Scene {
     this.itemIndex = data.itemIndex;
     this.onDone = data.onDone;
     this.parentKey = data.parentKey;
+    this.setQuestion = data.question; // a given question (layout checks)
     this.missCharged = false;  // Pioneer: this question's Z-bolt already taken
     this.answered = false;
     this.tried = new Set(); // wrong answers already picked
@@ -57,7 +58,7 @@ export class QuizScene extends Phaser.Scene {
     const item = lvl.items[this.itemIndex];
     this.band = state.difficulty();
     this.hintsLeft = this.band.hints;
-    const q = drawQuestion(this.levelId, this.band.id);
+    const q = this.setQuestion || drawQuestion(this.levelId, this.band.id);
     audio.sfx(this, 'crate');
     this.item = item;
     this.q = q;
@@ -76,31 +77,53 @@ export class QuizScene extends Phaser.Scene {
     card.add(g);
 
     card.add(this.add.text(x + 40, y + 30, 'Mystery crate', text(20, '#6b3a1a')));
-    // Junior and Pioneer banks are still copies of the Explorer questions.
-    if (this.band.testingNote) {
+    // Junior and Pioneer banks are still copies of the Explorer questions,
+    // except in biomes whose real banks are in (their questions have an id).
+    if (this.band.testingNote && !q.id) {
       card.add(this.add.text(x + w - 40, y + 32, this.band.testingNote, text(14, '#6b3a1a', {
         fontStyle: 'italic', align: 'right', wordWrap: { width: 420 },
       })).setOrigin(1, 0));
     }
-    card.add(this.add.text(x + 40, y + 62, q.q, heading(32, COLORS.inkCss, {
-      wordWrap: { width: w - 80 },
-      lineSpacing: 6,
-    })));
+    // Long questions and answers (the Pioneer banks) fit by measuring: the
+    // answers start under the question's real height, each row of buttons
+    // is as tall as its longest answer, and if it still won't fit above the
+    // Hint and Read buttons, everything steps down a font size and tries again.
+    const bw = (w - 100) / 2;
+    const room = y + h - 70;
+    let qText;
+    let layout;
+    for (const [qs, as] of [[32, 24], [28, 21], [24, 18]]) {
+      if (qText) qText.destroy();
+      qText = this.add.text(x + 40, y + 62, q.q, heading(qs, COLORS.inkCss, { wordWrap: { width: w - 80 }, lineSpacing: 6 }));
+      const heights = this.choices.map((choice, i) => {
+        const t = this.add.text(0, 0, `${LETTERS[i]}.  ${choice}`, text(as, COLORS.inkCss, { wordWrap: { width: bw - 40 } }));
+        const th = t.height;
+        t.destroy();
+        return Math.max(70, th + 22);
+      });
+      const rowH = [Math.max(heights[0], heights[1] || 0), Math.max(heights[2] || 0, heights[3] || 0)];
+      const top = Math.max(y + 270 - 35, y + 62 + qText.height + 24);
+      const bottom = top + rowH[0] + 22 + rowH[1];
+      layout = { as, rowH, top, bottom };
+      if (bottom + 84 <= room) break;           // room for the result's lines
+    }
+    card.add(qText);
 
     // Answer buttons, 2 x 2
     this.answerBtns = this.choices.map((choice, i) => {
       const col = i % 2;
       const row = Math.floor(i / 2);
-      const bx = x + 40 + col * ((w - 100) / 2 + 20) + (w - 100) / 4;
-      const by = y + 270 + row * 92;
-      const btn = this.makeAnswer(bx, by, (w - 100) / 2, `${LETTERS[i]}.  ${choice}`, () => this.pick(i));
+      const bx = x + 40 + col * (bw + 20) + bw / 2;
+      const rh = layout.rowH[row];
+      const by = layout.top + (row ? layout.rowH[0] + 22 : 0) + rh / 2;
+      const btn = this.makeAnswer(bx, by, bw, `${LETTERS[i]}.  ${choice}`, () => this.pick(i), rh, layout.as);
       card.add(btn);
       return btn;
     });
 
-    this.result = this.add.text(MAP_W / 2, y + 448, '', text(22, COLORS.inkCss, {
+    this.result = this.add.text(MAP_W / 2, layout.bottom + 14, '', text(22, COLORS.inkCss, {
       align: 'center', wordWrap: { width: w - 80 },
-    })).setOrigin(0.5);
+    })).setOrigin(0.5, 0);
     card.add(this.result);
 
     // Read-aloud for early readers, using the browser's built-in voice.
@@ -134,11 +157,10 @@ export class QuizScene extends Phaser.Scene {
     this.card = card;
   }
 
-  makeAnswer(cx, cy, w, label, onClick) {
-    const h = 70;
+  makeAnswer(cx, cy, w, label, onClick, h = 70, size = 24) {
     const c = this.add.container(cx, cy);
     const g = this.add.graphics();
-    const t = this.add.text(-w / 2 + 22, 0, label, text(24, COLORS.inkCss, {
+    const t = this.add.text(-w / 2 + 22, 0, label, text(size, COLORS.inkCss, {
       wordWrap: { width: w - 40 },
     })).setOrigin(0, 0.5);
     c.add([g, t]);

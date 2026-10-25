@@ -15,8 +15,17 @@
 
 // This is the Explorer bank. Junior Explorer and Pioneer have their own
 // (questions_junior.js, questions_pioneer.js), copies of this one for now.
-import { JUNIOR_QUESTIONS } from './questions_junior.js?v=9045f29';
-import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=9045f29';
+import { JUNIOR_QUESTIONS } from './questions_junior.js?v=e3b2610';
+import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=e3b2610';
+import dorsalJunior from './questions/dorsal_junior.js?v=e3b2610';
+import dorsalExplorer from './questions/dorsal_explorer.js?v=e3b2610';
+import dorsalPioneer from './questions/dorsal_pioneer.js?v=e3b2610';
+import cumulusJunior from './questions/cumulus_junior.js?v=e3b2610';
+import cumulusExplorer from './questions/cumulus_explorer.js?v=e3b2610';
+import cumulusPioneer from './questions/cumulus_pioneer.js?v=e3b2610';
+import squvannahsJunior from './questions/squvannahs_junior.js?v=e3b2610';
+import squvannahsExplorer from './questions/squvannahs_explorer.js?v=e3b2610';
+import squvannahsPioneer from './questions/squvannahs_pioneer.js?v=e3b2610';
 
 export const QUESTIONS = {
   dorsal: [
@@ -1433,6 +1442,17 @@ export function startQuestionRun(levelId) {
 
 // Each difficulty band has its own bank (data/difficulty.js).
 const BANKS = { junior: JUNIOR_QUESTIONS, explorer: QUESTIONS, pioneer: PIONEER_QUESTIONS };
+
+// Biomes whose real banks are in (tools/import_questions.py, from
+// docs/quiz/): each band's list replaces that biome's placeholder copies.
+const IMPORTED = {
+  dorsal: { junior: dorsalJunior, explorer: dorsalExplorer, pioneer: dorsalPioneer },
+  cumulus: { junior: cumulusJunior, explorer: cumulusExplorer, pioneer: cumulusPioneer },
+  squvannahs: { junior: squvannahsJunior, explorer: squvannahsExplorer, pioneer: squvannahsPioneer },
+};
+Object.entries(IMPORTED).forEach(([biome, bands]) => {
+  Object.entries(bands).forEach(([band, list]) => { BANKS[band][biome] = list; });
+});
 
 export function drawQuestion(levelId, band = 'explorer') {
   // A biome's levels (dorsal-1 ... dorsal-5) share the biome's questions.
