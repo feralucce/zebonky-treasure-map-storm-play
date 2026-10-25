@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3b90e23';
-import { TILE, layoutFor } from '../data/levels.js?v=3b90e23';
-import { state } from '../state.js?v=3b90e23';
-import { COLORS, heading, text } from '../theme.js?v=3b90e23';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3b90e23';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3b90e23';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=3b90e23';
-import { makeNav } from '../pathing.js?v=3b90e23';
-import { startQuestionRun } from '../data/questions.js?v=3b90e23';
-import { audio, musicButton, soundButton } from '../audio.js?v=3b90e23';
-import { Companion } from '../companion.js?v=3b90e23';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=db079be';
+import { TILE, layoutFor } from '../data/levels.js?v=db079be';
+import { state } from '../state.js?v=db079be';
+import { COLORS, heading, text } from '../theme.js?v=db079be';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=db079be';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=db079be';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=db079be';
+import { makeNav } from '../pathing.js?v=db079be';
+import { startQuestionRun } from '../data/questions.js?v=db079be';
+import { audio, musicButton, soundButton } from '../audio.js?v=db079be';
+import { Companion } from '../companion.js?v=db079be';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -493,6 +493,11 @@ export class PlatformerScene extends Phaser.Scene {
     const ownFood = own && own.food && texKey(this.artName, own.food);
     this.foodTex = ownFood && this.textures.exists(ownFood) ? ownFood
       : art && art.food ? texKey(art.name, art.food) : 'treasure';
+    // A biome whose Zebonky eats more than one food (`foods`, the user,
+    // 2026-10-25: "Axel eats both"): the food spots take turns. Any one
+    // not loaded yet is left out.
+    this.foodTexes = [this.foodTex, ...((own && own.foods) || []).map((f) => texKey(this.artName, f))
+      .filter((k) => k !== this.foodTex && this.textures.exists(k))];
     // Chris's "good vibe" sparkle, in this food's colours, for the pickups
     // and the guide (the user, 2026-10-24); else the drawn gold star.
     const vibe = own && own.food && texKey(this.artName, own.food.replace(/([^/]+)\.png$/, 'sparkle_$1.png'));
@@ -612,8 +617,8 @@ export class PlatformerScene extends Phaser.Scene {
 
   buildPickups(foodSpots, pawSpots) {
     this.pickups = this.physics.add.staticGroup();
-    foodSpots.forEach(({ x, y }) => {
-      const f = this.pickups.create(x, y, this.foodTex).setDepth(3);
+    foodSpots.forEach(({ x, y }, i) => {
+      const f = this.pickups.create(x, y, this.foodTexes[i % this.foodTexes.length]).setDepth(3);
       f.kind = 'food';
       this.tweens.add({ targets: f, y: y - 6, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       this.pickupShine(f);

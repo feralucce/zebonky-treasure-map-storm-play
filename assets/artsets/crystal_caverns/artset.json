@@ -150,6 +150,30 @@
   ],
   "ground_chance": 0.22
  },
+ "zebonky": {
+  "name": "Unicorpion (stand-in)",
+  "frameWidth": 163,
+  "frameHeight": 128,
+  "anims": {
+   "idle": {
+    "file": "zebonky_idle.png",
+    "frames": 4
+   },
+   "walk": {
+    "file": "zebonky_walk.png",
+    "frames": 8
+   },
+   "run": {
+    "file": "zebonky_run.png",
+    "frames": 8
+   },
+   "jump": {
+    "file": "zebonky_jump.png",
+    "frames": 4
+   }
+  },
+  "standin": true
+ },
  "foreground": [
   {
    "file": "fg_plants.png",

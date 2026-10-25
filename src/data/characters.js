@@ -28,6 +28,7 @@ export function characterById(id) {
 // layered frames (body, hair and hat apart) and for gift-box items.
 export const LOOK_SLOTS = [
   { id: 'character', name: 'Explorer', ready: true },
+  { id: 'companion', name: 'Companion', ready: true },
   { id: 'hair', name: 'Hair', ready: false },
   { id: 'hat', name: 'Hat', ready: false },
   { id: 'outfit', name: 'Outfit', ready: false },

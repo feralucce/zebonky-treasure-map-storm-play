@@ -110,6 +110,9 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/clampod.png",
+ "foods": [
+  "../../food/clampod.png"
+ ],
  "sky": "#02aafd",
  "background": [
   {
@@ -151,6 +154,30 @@
    "pt_leaf_cluster_b.png"
   ],
   "ground_chance": 0.22
+ },
+ "zebonky": {
+  "name": "Axolotter (stand-in)",
+  "frameWidth": 163,
+  "frameHeight": 128,
+  "anims": {
+   "idle": {
+    "file": "zebonky_idle.png",
+    "frames": 4
+   },
+   "walk": {
+    "file": "zebonky_walk.png",
+    "frames": 8
+   },
+   "run": {
+    "file": "zebonky_run.png",
+    "frames": 8
+   },
+   "jump": {
+    "file": "zebonky_jump.png",
+    "frames": 4
+   }
+  },
+  "standin": true
  },
  "foreground": [
   {

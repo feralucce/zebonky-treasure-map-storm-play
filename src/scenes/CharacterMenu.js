@@ -5,11 +5,12 @@
 // so far, the rest are ready for layered art (hair, hat, outfit, shoes) and
 // say "Soon". The stand-ins carry a note that they are temporary.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=3b90e23';
-import { state } from '../state.js?v=3b90e23';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=3b90e23';
-import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=3b90e23';
-import { audio } from '../audio.js?v=3b90e23';
+import { MAP_W, MAP_H } from '../data/world.js?v=db079be';
+import { state } from '../state.js?v=db079be';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=db079be';
+import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=db079be';
+import { audio } from '../audio.js?v=db079be';
+import { companionGrid } from '../companionPicker.js?v=db079be';
 
 const CARD_W = 980;
 const CARD_H = 640;
@@ -83,23 +84,23 @@ export class CharacterMenuScene extends Phaser.Scene {
     const y = this.y0 + 92;
     this.tabs = {};
     LOOK_SLOTS.forEach((slot, i) => {
-      const tx = x + i * 126;
+      const tx = x + i * 104;
       const t = this.add.container(tx, y);
       const bg = this.add.graphics();
-      const label = this.add.text(56, 20, slot.name, text(17, slot.ready ? COLORS.inkCss : '#9c8462')).setOrigin(0.5);
+      const label = this.add.text(49, 20, slot.name, text(15, slot.ready ? COLORS.inkCss : '#9c8462')).setOrigin(0.5);
       t.add([bg, label]);
-      if (!slot.ready) t.add(this.add.text(56, 42, 'Soon', text(12, '#9c8462')).setOrigin(0.5));
-      t.setSize(112, 50);
+      if (!slot.ready) t.add(this.add.text(49, 42, 'Soon', text(12, '#9c8462')).setOrigin(0.5));
+      t.setSize(98, 50);
       t.draw = (on) => {
         bg.clear();
         bg.fillStyle(on ? COLORS.green : 0xe8cf98, slot.ready ? 1 : 0.6);
-        bg.fillRoundedRect(0, 0, 112, 50, 12);
+        bg.fillRoundedRect(0, 0, 98, 50, 12);
         bg.lineStyle(3, COLORS.ink, slot.ready ? 1 : 0.4);
-        bg.strokeRoundedRect(0, 0, 112, 50, 12);
+        bg.strokeRoundedRect(0, 0, 98, 50, 12);
         label.setColor(on ? '#ffffff' : (slot.ready ? COLORS.inkCss : '#9c8462'));
       };
       if (slot.ready) {
-        t.setInteractive(new Phaser.Geom.Rectangle(0, 0, 112, 50), Phaser.Geom.Rectangle.Contains);
+        t.setInteractive(new Phaser.Geom.Rectangle(0, 0, 98, 50), Phaser.Geom.Rectangle.Contains);
         t.input.cursor = 'pointer';
         t.on('pointerup', () => this.showTab(slot.id));
       }
@@ -150,6 +151,21 @@ export class CharacterMenuScene extends Phaser.Scene {
         wordWrap: { width: CARD_W - 370 },
       })));
     }
+  }
+
+  // The companions: every biome's Zebonky, the unlocked ones to pick from,
+  // the rest silhouettes (companionPicker.js).
+  tab_companion() {
+    const x = this.x0 + 330;
+    const y = this.y0 + 170;
+    const w = CARD_W - 370;
+    this.tabLayer.add(companionGrid(this, x + w / 2, y, { tile: 108 }));
+    const n = (state.data.companions || []).length;
+    this.tabLayer.add(this.add.text(x, y + 150, n
+      ? 'Tap a companion to have it travel with you. Answer every question in an area to unlock its Zebonky.'
+      : 'Answer every question in an area to unlock its Zebonky as a companion.', text(17, '#6b4a2e', {
+      wordWrap: { width: w },
+    })));
   }
 
   drawTiles() {

@@ -1,8 +1,8 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3b90e23';
-import { testParams, DRAWN } from '../data/levels.js?v=3b90e23';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3b90e23';
-import { CHARACTERS } from '../data/characters.js?v=3b90e23';
-import { COLORS, heading, text } from '../theme.js?v=3b90e23';
+import { ARTSETS, texKey } from '../data/artsets.js?v=db079be';
+import { testParams, DRAWN } from '../data/levels.js?v=db079be';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=db079be';
+import { CHARACTERS } from '../data/characters.js?v=db079be';
+import { COLORS, heading, text } from '../theme.js?v=db079be';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -113,6 +113,7 @@ export class BootScene extends Phaser.Scene {
         });
         (data.foreground || []).forEach((f) => add(f.file));
         add(data.food);
+        (data.foods || []).forEach(add);
         // Chris's "good vibe" sparkle in the colours of this food (tools/make_food.py).
         if (data.food && data.food.includes('/food/')) add(data.food.replace(/([^/]+)\.png$/, 'sparkle_$1.png'));
         // Water (surface and body) and the vine wall, from Chris's biome sets.
