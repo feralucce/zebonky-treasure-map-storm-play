@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6506ff3';
-import { TILE, layoutFor } from '../data/levels.js?v=6506ff3';
-import { state } from '../state.js?v=6506ff3';
-import { COLORS, heading, text } from '../theme.js?v=6506ff3';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6506ff3';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6506ff3';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=6506ff3';
-import { makeNav } from '../pathing.js?v=6506ff3';
-import { startQuestionRun } from '../data/questions.js?v=6506ff3';
-import { audio, musicButton, soundButton } from '../audio.js?v=6506ff3';
-import { Companion } from '../companion.js?v=6506ff3';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=ee72514';
+import { TILE, layoutFor } from '../data/levels.js?v=ee72514';
+import { state } from '../state.js?v=ee72514';
+import { COLORS, heading, text } from '../theme.js?v=ee72514';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=ee72514';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=ee72514';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=ee72514';
+import { makeNav } from '../pathing.js?v=ee72514';
+import { startQuestionRun } from '../data/questions.js?v=ee72514';
+import { audio, musicButton, soundButton } from '../audio.js?v=ee72514';
+import { Companion } from '../companion.js?v=ee72514';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;

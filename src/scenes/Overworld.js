@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=6506ff3';
-import { state, pathKey } from '../state.js?v=6506ff3';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=6506ff3';
-import { audio } from '../audio.js?v=6506ff3';
-import { starsFor, rewardTotals } from '../rewards.js?v=6506ff3';
-import { DIFFICULTIES } from '../data/difficulty.js?v=6506ff3';
-import { showCompanionCard } from '../companionCard.js?v=6506ff3';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=ee72514';
+import { state, pathKey } from '../state.js?v=ee72514';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=ee72514';
+import { audio } from '../audio.js?v=ee72514';
+import { starsFor, rewardTotals } from '../rewards.js?v=ee72514';
+import { DIFFICULTIES } from '../data/difficulty.js?v=ee72514';
+import { showCompanionCard } from '../companionCard.js?v=ee72514';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -692,7 +692,9 @@ export class OverworldScene extends Phaser.Scene {
 
   buildHud() {
     const t = rewardTotals();
-    const w = 330;
+    // Stars only for now: points (rewards.js) are still counted, but off the
+    // map until currency is decided (the user, 2026-10-25).
+    const w = 150;
     const x = MAP_W - w - 22;
     const y = 22;
     const g = this.add.graphics();
@@ -702,8 +704,7 @@ export class OverworldScene extends Phaser.Scene {
     g.fillRoundedRect(x, y, w, 52, 16);
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, 52, 16);
-    this.add.text(x + 18, y + 26, `★ ${t.stars}/${t.maxStars}`, heading(22, '#b8860b')).setOrigin(0, 0.5);
-    this.add.text(x + 150, y + 26, `${t.points.toLocaleString()} points`, text(22)).setOrigin(0, 0.5);
+    this.add.text(x + w / 2, y + 26, `★ ${t.stars}/${t.maxStars}`, heading(22, '#b8860b')).setOrigin(0.5);
     // No music on the map for now; a level's music fades out on the way back.
     audio.stopMusic();
 
@@ -740,7 +741,7 @@ export class OverworldScene extends Phaser.Scene {
 
   // ---------- difficulty slider ----------
 
-  // Three stops under the points panel: Junior Explorer, Explorer, Pioneer.
+  // Three stops under the stars panel: Junior Explorer, Explorer, Pioneer.
   // Tap a stop or drag the knob; it snaps to the nearest stop and saves.
   buildDifficulty() {
     const w = 330;

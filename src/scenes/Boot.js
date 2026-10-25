@@ -1,8 +1,8 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=6506ff3';
-import { testParams, DRAWN } from '../data/levels.js?v=6506ff3';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=6506ff3';
-import { CHARACTERS } from '../data/characters.js?v=6506ff3';
-import { COLORS, heading, text } from '../theme.js?v=6506ff3';
+import { ARTSETS, texKey } from '../data/artsets.js?v=ee72514';
+import { testParams, DRAWN } from '../data/levels.js?v=ee72514';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=ee72514';
+import { CHARACTERS } from '../data/characters.js?v=ee72514';
+import { COLORS, heading, text } from '../theme.js?v=ee72514';
 
 export class BootScene extends Phaser.Scene {
   constructor() {

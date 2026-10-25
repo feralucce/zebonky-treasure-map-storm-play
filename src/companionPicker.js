@@ -5,10 +5,10 @@
 // (showCompanionPicker, with the new one revealed) and by the explorer
 // screen's Companion tab (companionGrid).
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=6506ff3';
-import { state } from './state.js?v=6506ff3';
-import { COLORS, heading, text, makeButton } from './theme.js?v=6506ff3';
-import { audio } from './audio.js?v=6506ff3';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=ee72514';
+import { state } from './state.js?v=ee72514';
+import { COLORS, heading, text, makeButton } from './theme.js?v=ee72514';
+import { audio } from './audio.js?v=ee72514';
 
 
 // Biomes with a Zebonky, in the order they're met on the map.
