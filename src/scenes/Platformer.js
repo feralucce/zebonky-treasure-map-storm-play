@@ -2,20 +2,28 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=97eab88';
-import { TILE, layoutFor } from '../data/levels.js?v=97eab88';
-import { state } from '../state.js?v=97eab88';
-import { COLORS, heading, text } from '../theme.js?v=97eab88';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=97eab88';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=97eab88';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=97eab88';
-import { makeNav } from '../pathing.js?v=97eab88';
-import { startQuestionRun } from '../data/questions.js?v=97eab88';
-import { audio, musicButton, soundButton } from '../audio.js?v=97eab88';
-import { Companion } from '../companion.js?v=97eab88';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f8aae8a';
+import { TILE, layoutFor } from '../data/levels.js?v=f8aae8a';
+import { state } from '../state.js?v=f8aae8a';
+import { COLORS, heading, text } from '../theme.js?v=f8aae8a';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f8aae8a';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f8aae8a';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=f8aae8a';
+import { makeNav } from '../pathing.js?v=f8aae8a';
+import { startQuestionRun } from '../data/questions.js?v=f8aae8a';
+import { audio, musicButton, soundButton } from '../audio.js?v=f8aae8a';
+import { Companion } from '../companion.js?v=f8aae8a';
 
-const RUN_SPEED = 300;
-const ACCEL = 2400;
+// Walking and running (the user, 2026-10-25): she builds up to speed
+// instead of starting at full speed, Run (X, Shift, K or the touch button)
+// goes faster, and letting go she slides a little before stopping. Walking
+// tops out at the speed the levels' jumps are built for (pathing.js), so
+// running is a bonus, never needed.
+const RUN_SPEED = 300;        // walking top speed
+const SPRINT_SPEED = 420;     // with Run held
+const ACCEL = 1100;           // about a quarter second to walking speed
+const TURN_ACCEL = 2600;      // pushing against her own speed: a quick skid round
+const SLIDE_DRAG = 1300;      // let go at walking speed: a slide of about half a tile
 const JUMP_SPEED = 790;       // about 2.5 tiles high
 const COYOTE_MS = 100;        // can still jump just after running off a ledge
 const JUMP_BUFFER_MS = 130;   // a jump pressed just before landing still counts
@@ -114,7 +122,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.done = false;
     this.lastGrounded = 0;
     this.jumpPressedAt = -1000;
-    this.touch = { left: false, right: false, jump: false };
+    this.touch = { left: false, right: false, jump: false, run: false };
   }
 
   create() {
@@ -402,7 +410,7 @@ export class PlatformerScene extends Phaser.Scene {
     const ex = this.cache.json.get(this.cid);
     this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
     this.player.setMaxVelocity(RUN_SPEED, 1400);
-    this.player.setDragX(ACCEL * 1.4);
+    this.player.setDragX(SLIDE_DRAG);
     this.player.setCollideWorldBounds(true);
 
     this.physics.add.collider(this.player, this.solids);
@@ -426,7 +434,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
 
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,ESC,R,X,F');
+    // Keys, chosen so three can be held at once on most keyboards (cheap ones
+    // can't read some combinations, like Left + Space + X): arrows with Z
+    // jump, X run, C throw; or WASD with J jump, K run, L throw. Space,
+    // Shift and F work too.
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,ESC,R,X,F,C,J,K,L,SHIFT');
     if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
     if (this.inspect) {
@@ -446,7 +458,7 @@ export class PlatformerScene extends Phaser.Scene {
 
     this.events.on('resume', () => {
       this.input.keyboard.resetKeys();
-      this.touch = { left: false, right: false, jump: false };
+      this.touch = { left: false, right: false, jump: false, run: false };
       // One just earned (its biome's last question, answered in the quiz):
       // it joins right here, sparkling in beside her.
       if (!this.companion && state.companion()) this.companion = new Companion(this, state.companion(), true);
@@ -1768,6 +1780,10 @@ export class PlatformerScene extends Phaser.Scene {
     };
     hold(this.add.image(80, y, 'btn-left'), 'left');
     hold(this.add.image(190, y, 'btn-right'), 'right');
+    // Run: hold it with Left or Right.
+    const run = this.add.circle(300, y, 44, COLORS.parchment).setStrokeStyle(4, COLORS.ink);
+    hold(run, 'run');
+    this.add.text(300, y, 'Run', heading(22)).setOrigin(0.5).setScrollFactor(0);
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
     // Toss food.
     const toss = this.add.circle(MAP_W - 210, y, 44, COLORS.parchment).setStrokeStyle(4, COLORS.ink)
@@ -1834,14 +1850,31 @@ export class PlatformerScene extends Phaser.Scene {
     const panel = this.add.text(14, 12, '', text(17, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 12, y: 8 }, lineSpacing: 4,
     })).setScrollFactor(0).setDepth(40);
-    const sets = INSPECT_LEVELS.map(([, name], i) => `${i + 1} ${name}`).join('   ');
     this.inspectPanel = () => {
       const c = Math.floor(m.x / TILE);
       const r = Math.floor(m.y / TILE);
-      panel.setText(`Dressing inspection: ${lvl ? lvl.name : this.levelId} (${this.artName})\n`
-        + `Arrows or WASD move the marker anywhere; Shift is faster. Column ${c}, row ${r}\n${sets}`);
+      panel.setText(`Dressing inspection: ${lvl ? lvl.name : this.levelId} (${this.artName})   Column ${c}, row ${r}\n`
+        + 'Drag the scene, or use the arrows or WASD (Shift is faster). Tap a set, or press 1 to 7.');
     };
     this.inspectPanel();
+    // The sets as buttons too, for a tablet (Chris's inspection link).
+    let bx = 14;
+    INSPECT_LEVELS.forEach(([id, name], i) => {
+      const on = id === this.levelId;
+      const b = this.add.text(bx, 12 + panel.height + 8, `${i + 1} ${name}`, text(15, on ? '#2b1d12' : '#ffffff', {
+        backgroundColor: on ? '#ffc93c' : 'rgba(43,29,18,0.8)', padding: { x: 10, y: 6 },
+      })).setScrollFactor(0).setDepth(40).setInteractive({ useHandCursor: true });
+      b.on('pointerup', () => this.scene.restart({ levelId: id, inspect: true }));
+      bx += b.width + 8;
+    });
+    // Dragging moves the scene under the finger (or mouse).
+    this.input.on('pointermove', (pt) => {
+      if (!pt.isDown) return;
+      const zoom = this.cameras.main.zoom;
+      m.x = Phaser.Math.Clamp(m.x - (pt.x - pt.prevPosition.x) / zoom, 0, this.physics.world.bounds.width);
+      m.y = Phaser.Math.Clamp(m.y - (pt.y - pt.prevPosition.y) / zoom, 0, this.worldH);
+      this.inspectPanel();
+    });
   }
 
   inspectUpdate(delta) {
@@ -1878,7 +1911,7 @@ export class PlatformerScene extends Phaser.Scene {
       }
       if (f.y > this.worldH + 200) f.destroy();
     });
-    if (Phaser.Input.Keyboard.JustDown(k.X) || Phaser.Input.Keyboard.JustDown(k.F) || this.touchToss) this.tossFood();
+    if ([k.C, k.L, k.F].some((key) => Phaser.Input.Keyboard.JustDown(key)) || this.touchToss) this.tossFood();
     this.touchToss = false;
 
     // Hidden door underfoot, or standing at the bonus level door: Up (or the
@@ -1918,21 +1951,23 @@ export class PlatformerScene extends Phaser.Scene {
     this.touchGrab = false;
 
     // Flying off a Zebonky's back keeps its speed until landing.
-    p.setDragX(time < this.flingUntil && !onFloor ? 0 : ACCEL * 1.4);
+    p.setDragX(time < this.flingUntil && !onFloor ? 0 : SLIDE_DRAG);
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
     const down = k.DOWN.isDown || k.S.isDown;
     const up = k.UP.isDown || k.W.isDown;
-    // Jump is Space or Z (or the touch button). Up is for hidden doors.
-    const jumpHeld = k.SPACE.isDown || k.Z.isDown || this.touch.jump;
-    const jumpPressed = [k.SPACE, k.Z].some((key) => Phaser.Input.Keyboard.JustDown(key));
+    // Jump is Z, J or Space (or the touch button). Up is for hidden doors.
+    const jumpHeld = k.SPACE.isDown || k.Z.isDown || k.J.isDown || this.touch.jump;
+    const jumpPressed = [k.SPACE, k.Z, k.J].some((key) => Phaser.Input.Keyboard.JustDown(key));
+    this.running = k.X.isDown || k.K.isDown || k.SHIFT.isDown || this.touch.run;
 
+    const vx = p.body.velocity.x;
     if (left && !right) {
-      p.setAccelerationX(-ACCEL);
+      p.setAccelerationX(vx > 20 ? -TURN_ACCEL : -ACCEL);
       p.setFlipX(true);
     } else if (right && !left) {
-      p.setAccelerationX(ACCEL);
+      p.setAccelerationX(vx < -20 ? TURN_ACCEL : ACCEL);
       p.setFlipX(false);
     } else {
       p.setAccelerationX(0);
@@ -2061,7 +2096,9 @@ export class PlatformerScene extends Phaser.Scene {
       this.wasInWater = true;
     } else {
       p.body.setGravityY(0);
-      p.setMaxVelocity(RUN_SPEED, 1400);
+      // Letting go of Run eases her back to walking speed, no sudden stop.
+      const ease = Math.max(RUN_SPEED, Math.abs(p.body.velocity.x) - 900 * (this.game.loop.delta / 1000));
+      p.setMaxVelocity(this.running ? SPRINT_SPEED : Math.min(SPRINT_SPEED, ease), 1400);
       this.wasInWater = false;
     }
     if (!inWater) audio.loop(this, 'swim', false);
@@ -2111,6 +2148,8 @@ export class PlatformerScene extends Phaser.Scene {
       p.setTexture(`${this.cid}-crouch`, 2);
     } else if (Math.abs(p.body.velocity.x) > 30) {
       if (p.anims.currentAnim?.key !== `${this.cid}-walk` || !p.anims.isPlaying) p.play(`${this.cid}-walk`);
+      // Her steps quicken with her speed: slow as she sets off, fast at a run.
+      p.anims.timeScale = Phaser.Math.Clamp(Math.abs(p.body.velocity.x) / RUN_SPEED, 0.55, 1.4);
       // A footstep as each heel lands (her walk frames 0 and 2), never the same
       // sound twice in a row.
       const frame = p.anims.currentFrame ? p.anims.currentFrame.index - 1 : -1;
@@ -2122,6 +2161,7 @@ export class PlatformerScene extends Phaser.Scene {
       }
       this.walkFrame = frame;
     } else if (p.anims.currentAnim?.key !== `${this.cid}-idle` || !p.anims.isPlaying) {
+      p.anims.timeScale = 1;
       p.play(`${this.cid}-idle`);
     }
 
