@@ -2,9 +2,10 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=fee5444';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=fee5444';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=fee5444';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=97eab88';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=97eab88';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=97eab88';
+import { bankFor, questionKey } from './data/questions.js?v=97eab88';
 
 const KEY = 'zebonky-tms-save-v1';
 
@@ -22,8 +23,14 @@ function fresh() {
     look: { character: DEFAULT_CHARACTER, hair: null, hat: null, outfit: null, shoes: null },
     view: null,         // the biome the map is zoomed into, or null for the whole map
     biomeDone: {},      // biome -> true once its finish has been shown (zoomed out for)
-    companions: [],     // biomes whose Zebonky has joined (every question answered)
-    companion: null,    // the biome whose Zebonky travels with them
+    // Per difficulty (the user, 2026-10-25): every question answered right,
+    // band -> biome -> [question keys]; and the companions it has earned,
+    // band -> [biomes], with the one chosen, band -> biome. A companion is
+    // earned by answering a biome's whole bank on that difficulty, and
+    // travels with them only while they play that difficulty.
+    answered: {},
+    companionsBy: {},
+    companionBy: {},
   };
 }
 
@@ -39,8 +46,22 @@ export const state = {
     } catch (e) {
       this.data = fresh();
     }
+    this.migrate();
     // An old save can stand on a level that's no longer open (the start moved).
     if (!LEVELS[this.data.at] || !this.isNodeOpen(this.data.at)) this.data.at = START_NODE;
+  },
+
+  // Saves from before companions were per difficulty: theirs stay with the
+  // difficulty the save was on.
+  migrate() {
+    const d = this.data;
+    if (Array.isArray(d.companions) && d.companions.length && !Object.keys(d.companionsBy || {}).length) {
+      const band = this.difficulty().id;
+      d.companionsBy = { [band]: [...d.companions] };
+      d.companionBy = { [band]: d.companion || d.companions[0] };
+    }
+    delete d.companions;
+    delete d.companion;
   },
 
   // Set while the level designer is test-playing a drawing.
@@ -90,15 +111,16 @@ export const state = {
   // Replace this device's progress with a loaded one (save code, file, link).
   replaceWith(data) {
     this.data = { ...fresh(), ...data };
-    // A save code carries levels and treasure, not biome finishes: biomes
-    // finished on the other device count as finished, with their companions.
+    this.migrate();
+    // A save code carries levels, treasure and answered questions, not biome
+    // finishes: biomes finished on the other device count as finished, with
+    // the companions their answered questions earned on each difficulty.
     PLAY_BIOMES.forEach((b) => {
       if (!this.biomeComplete(b)) return;
       this.data.biomeDone = { ...(this.data.biomeDone || {}), [b]: true };
-      if (this.biomeQuestionsDone(b) && !(this.data.companions || []).includes(b)) {
-        this.data.companions = [...(this.data.companions || []), b];
-        if (!this.data.companion) this.data.companion = b;
-      }
+      ['junior', 'explorer', 'pioneer'].forEach((band) => {
+        if (this.questionsDone(b, band)) this.addCompanion(b, band);
+      });
     });
     if (!LEVELS[this.data.at] || !this.isNodeOpen(this.data.at)) this.data.at = START_NODE;
     this.save();
@@ -199,9 +221,55 @@ export const state = {
     return biomeLevels(b).every((id) => this.isCleared(id));
   },
 
-  // Every question in the biome answered (every crate's treasure in).
+  // ---------- answered questions (per difficulty) ----------
+
+  answeredIn(b, band = this.difficulty().id) {
+    return ((this.data.answered || {})[band] || {})[b] || [];
+  },
+
+  markAnswered(b, q, band = this.difficulty().id) {
+    const k = questionKey(q);
+    const have = this.answeredIn(b, band);
+    if (have.includes(k)) return;
+    const a = this.data.answered || (this.data.answered = {});
+    a[band] = { ...(a[band] || {}), [b]: [...have, k] };
+    this.save();
+  },
+
+  // { done, total } for a biome's bank on a difficulty.
+  questionProgress(b, band = this.difficulty().id) {
+    const bank = bankFor(b, band);
+    const have = new Set(this.answeredIn(b, band));
+    return { done: bank.filter((q) => have.has(questionKey(q))).length, total: bank.length };
+  },
+
+  questionsDone(b, band = this.difficulty().id) {
+    const p = this.questionProgress(b, band);
+    return p.total > 0 && p.done >= p.total;
+  },
+
+  // Every question in the biome's bank answered, on the difficulty played now.
   biomeQuestionsDone(b) {
-    return biomeLevels(b).every((id) => this.isChecked(id));
+    return this.questionsDone(b);
+  },
+
+  // ---------- companions (per difficulty) ----------
+
+  companions(band = this.difficulty().id) {
+    return (this.data.companionsBy || {})[band] || [];
+  },
+
+  // The one travelling with them on this difficulty, or null.
+  companion(band = this.difficulty().id) {
+    const c = (this.data.companionBy || {})[band];
+    return this.companions(band).includes(c) ? c : null;
+  },
+
+  addCompanion(b, band = this.difficulty().id) {
+    const d = this.data;
+    if (this.companions(band).includes(b)) return;
+    d.companionsBy = { ...(d.companionsBy || {}), [band]: [...this.companions(band), b] };
+    if (!this.companion(band)) d.companionBy = { ...(d.companionBy || {}), [band]: b };
   },
 
   // What the map should do on arriving back from a level in biome b:
@@ -210,18 +278,16 @@ export const state = {
   biomeEvent(b) {
     const d = this.data;
     d.biomeDone = d.biomeDone || {};
-    d.companions = d.companions || [];
+    const has = this.companions().includes(b);
     let event = null;
     if (this.biomeComplete(b) && !d.biomeDone[b]) {
       d.biomeDone[b] = true;
-      event = this.biomeQuestionsDone(b) ? 'reward' : 'questions';
-    } else if (d.biomeDone[b] && this.biomeQuestionsDone(b) && !d.companions.includes(b)) {
+      event = this.biomeQuestionsDone(b) && !has ? 'reward' : (has ? null : 'questions');
+      if (!event) this.save();
+    } else if (d.biomeDone[b] && this.biomeQuestionsDone(b) && !has) {
       event = 'reward';
     }
-    if (event === 'reward') {
-      d.companions = [...d.companions, b];
-      if (!d.companion) d.companion = b;
-    }
+    if (event === 'reward') this.addCompanion(b);
     if (event) this.save();
     return event;
   },
@@ -231,8 +297,8 @@ export const state = {
     this.save();
   },
 
-  setCompanion(b) {
-    this.data.companion = b;
+  setCompanion(b, band = this.difficulty().id) {
+    this.data.companionBy = { ...(this.data.companionBy || {}), [band]: b };
     this.save();
   },
 

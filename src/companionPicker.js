@@ -1,14 +1,14 @@
 // The companion tracker (the user, 2026-10-25): every biome's Zebonky in
-// map order. The ones they've unlocked show in colour and can be picked to
+// map order, for the difficulty played now (each difficulty earns its own). The ones they've unlocked show in colour and can be picked to
 // travel with them; the rest are dark silhouettes with "???" until their
 // biome's every question is answered. Used by the joining moment
 // (showCompanionPicker, with the new one revealed) and by the explorer
 // screen's Companion tab (companionGrid).
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=fee5444';
-import { state } from './state.js?v=fee5444';
-import { COLORS, heading, text, makeButton } from './theme.js?v=fee5444';
-import { audio } from './audio.js?v=fee5444';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=97eab88';
+import { state } from './state.js?v=97eab88';
+import { COLORS, heading, text, makeButton } from './theme.js?v=97eab88';
+import { audio } from './audio.js?v=97eab88';
 
 
 // Biomes with a Zebonky, in the order they're met on the map.
@@ -22,7 +22,7 @@ const colour = (img) => img.clearTint().setTintMode(Phaser.TintModes.MULTIPLY).s
 export function companionGrid(scene, cx, y, { reveal = null, onPick = null, onReveal = null, tile: TILE = 150 } = {}) {
   const GAP = Math.round(TILE / 9);
   const grid = scene.add.container(0, 0);
-  const have = state.data.companions || [];
+  const have = state.companions();
   const n = COMPANION_BIOMES.length;
   const x0 = cx - (n * TILE + (n - 1) * GAP) / 2;
   const tiles = COMPANION_BIOMES.map((b, i) => {
@@ -45,7 +45,7 @@ export function companionGrid(scene, cx, y, { reveal = null, onPick = null, onRe
     };
     show(unlocked && b !== reveal);
     t.draw = () => {
-      const on = state.data.companion === b && have.includes(b);
+      const on = state.companion() === b;
       bg.clear();
       bg.fillStyle(on ? 0xd6f0dc : 0xf8ecd0, 1);
       bg.fillRoundedRect(0, 0, TILE, TILE, 16);
@@ -56,7 +56,7 @@ export function companionGrid(scene, cx, y, { reveal = null, onPick = null, onRe
       t.setInteractive(new Phaser.Geom.Rectangle(0, 0, TILE, TILE), Phaser.Geom.Rectangle.Contains);
       t.input.cursor = 'pointer';
       t.on('pointerup', () => {
-        if (state.data.companion === b) return;
+        if (state.companion() === b) return;
         state.setCompanion(b);
         audio.sfx(scene, 'step');
         tiles.forEach((o) => o.draw());

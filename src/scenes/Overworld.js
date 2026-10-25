@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=fee5444';
-import { state, pathKey } from '../state.js?v=fee5444';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=fee5444';
-import { audio } from '../audio.js?v=fee5444';
-import { starsFor, rewardTotals } from '../rewards.js?v=fee5444';
-import { showCompanionCard } from '../companionCard.js?v=fee5444';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=fee5444';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=97eab88';
+import { state, pathKey } from '../state.js?v=97eab88';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=97eab88';
+import { audio } from '../audio.js?v=97eab88';
+import { starsFor, rewardTotals } from '../rewards.js?v=97eab88';
+import { showCompanionCard } from '../companionCard.js?v=97eab88';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=97eab88';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -647,6 +647,9 @@ export class OverworldScene extends Phaser.Scene {
     this.panelTitle = this.add.text(20, 14, '', heading(26));
     this.panelStatus = this.add.text(20, 56, '', text(17));
     this.panelHint = this.add.text(20, 90, '', text(15, '#6b4a2e'));
+    // In a biome: how much of its question bank is answered on this
+    // difficulty (the whole bank earns its companion).
+    this.panelQs = this.add.text(20, 116, '', text(15, COLORS.inkCss, { fontStyle: 'bold' }));
     this.playBtn = makeButton(this, w - 70, h - 36, 'Play', () => this.enterLevel(), {
       width: 110, height: 48, size: 22,
     });
@@ -654,17 +657,18 @@ export class OverworldScene extends Phaser.Scene {
     this.mapBtn = makeButton(this, w - 56, 32, 'Map', () => this.leaveBiome(), {
       width: 88, height: 40, size: 19, fill: 0x6b4a2e,
     });
-    panel.add([g, this.panelTitle, this.panelStatus, this.panelHint, this.playBtn, this.mapBtn]);
+    panel.add([g, this.panelTitle, this.panelStatus, this.panelHint, this.panelQs, this.playBtn, this.mapBtn]);
     this.panel = panel;
   }
 
   updatePanel() {
     this.playBtn.setVisible(!!this.view);
     this.mapBtn.setVisible(!!this.view);
+    this.panelQs.setText('');
     if (!this.view) {
       this.panelTitle.setText('Zebonkia');
       this.panelStatus.setText('Tap a glowing circle to explore');
-      const n = (state.data.companions || []).length;
+      const n = state.companions().length;
       this.panelHint.setText(n ? `Companions: ${n}` : 'Answer every question in an area to earn a companion');
       return;
     }
@@ -686,6 +690,11 @@ export class OverworldScene extends Phaser.Scene {
     }
     if (lvl.kind === 'final') hint = 'The Z-Stone waits inside the volcano.';
     this.panelHint.setText(hint);
+    if (lvl.biome && lvl.kind === 'level') {
+      const p = state.questionProgress(lvl.biome);
+      const got = state.companions().includes(lvl.biome);
+      this.panelQs.setText(`Questions ${p.done}/${p.total}${got ? '  ·  Companion earned' : ''}`);
+    }
   }
 
   // ---------- HUD ----------
@@ -760,6 +769,7 @@ export class OverworldScene extends Phaser.Scene {
     showDifficultyMenu(this, () => {
       this.walking = false;
       this.difficultyLabel.setText(state.difficulty().name);
+      this.updatePanel();
     });
   }
 

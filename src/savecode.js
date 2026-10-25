@@ -5,8 +5,9 @@
 // Save link: the game's address with ?save=<about 40 letters>. The letters
 // are the save packed into bytes: a version, one byte per level (cleared,
 // bonus level door, which of the five crates, every Zebonky tamed), where
-// the player stands, and a check byte, so a damaged link is refused rather
-// than loaded wrong. The QR code is this link.
+// the player stands, every question answered right (one bit per question of
+// each biome's bank, for each difficulty), and a check byte, so a damaged
+// link is refused rather than loaded wrong. The QR code is this link.
 //
 // Save file: the whole save, exactly, as a small JSON file. Email sends it
 // with the device's share sheet (file attached) where it can, or opens the
@@ -16,10 +17,13 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE } from './data/world.js?v=fee5444';
-import { state, pathKey } from './state.js?v=fee5444';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=97eab88';
+import { state, pathKey } from './state.js?v=97eab88';
+import { bankFor, questionKey } from './data/questions.js?v=97eab88';
 
-const VERSION = 2;
+// 3 added the answered questions; a version 2 link still loads, without them.
+const VERSION = 3;
+const BANDS = ['junior', 'explorer', 'pioneer'];
 const FILE_TAG = 'zebonky-treasure-map-storm';
 const FILE_NAME = 'zebonky-treasure-map-save.json';
 const ORDER = Object.keys(LEVELS);
@@ -72,9 +76,38 @@ function fromB64(s) {
 const DIFF_CODE = { explorer: 0, junior: 1, pioneer: 2 };
 const DIFF_OF = ['explorer', 'junior', 'pioneer', 'explorer'];
 
+// The answered questions as bits: each band, each playable biome, one bit per
+// question of its bank in bank order.
+function answeredBytes(data) {
+  const bits = [];
+  BANDS.forEach((band) => PLAY_BIOMES.forEach((b) => {
+    const have = new Set(((data.answered || {})[band] || {})[b] || []);
+    bankFor(b, band).forEach((q) => bits.push(have.has(questionKey(q)) ? 1 : 0));
+  }));
+  const bytes = [];
+  for (let i = 0; i < bits.length; i += 8) {
+    bytes.push(bits.slice(i, i + 8).reduce((n, bit, j) => n | (bit << j), 0));
+  }
+  return bytes;
+}
+
+function readAnswered(bytes) {
+  const answered = {};
+  let i = 0;
+  BANDS.forEach((band) => PLAY_BIOMES.forEach((b) => {
+    const keys = bankFor(b, band).filter(() => {
+      const on = (bytes[i >> 3] >> (i & 7)) & 1;
+      i += 1;
+      return on;
+    }).map(questionKey);
+    if (keys.length) answered[band] = { ...(answered[band] || {}), [b]: keys };
+  }));
+  return answered;
+}
+
 export function packSave(data = state.data) {
   const at = Math.max(0, ORDER.indexOf(data.at)) | ((DIFF_CODE[data.difficulty] || 0) << 6);
-  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), at];
+  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), at, ...answeredBytes(data)];
   bytes.push(check(bytes));
   return toB64(bytes);
 }
@@ -83,8 +116,9 @@ export function packSave(data = state.data) {
 export function unpackSave(letters) {
   const bytes = letters && fromB64(String(letters));
   if (!bytes || bytes.length < 2) return { ok: false, reason: "That save link doesn't work." };
-  if (bytes[0] !== VERSION) return { ok: false, reason: 'That save is from another version of the game.' };
-  if (bytes.length !== ORDER.length + 3 || check(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) {
+  if (bytes[0] !== VERSION && bytes[0] !== 2) return { ok: false, reason: 'That save is from another version of the game.' };
+  const tally = bytes[0] === 2 ? 0 : answeredBytes(state.blank()).length;
+  if (bytes.length !== ORDER.length + 3 + tally || check(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) {
     return { ok: false, reason: "That save link doesn't work. It may have been cut short." };
   }
   const data = state.blank();
@@ -104,6 +138,7 @@ export function unpackSave(letters) {
   data.walked = open;
   data.at = ORDER[bytes[1 + ORDER.length] & 63] || START_NODE;
   data.difficulty = DIFF_OF[bytes[1 + ORDER.length] >> 6];
+  if (tally) data.answered = readAnswered(bytes.slice(2 + ORDER.length, 2 + ORDER.length + tally));
   return { ok: true, data };
 }
 

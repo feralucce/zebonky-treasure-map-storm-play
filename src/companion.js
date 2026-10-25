@@ -1,10 +1,10 @@
 // The companion Zebonky in a level: the biome Zebonky the player earned
-// (state.data.companion). FOR NOW it's the Zebonky's picture, small,
+// (state.companion(), per difficulty). FOR NOW it's the Zebonky's picture, small,
 // rolling along behind her; its own animation strips come later.
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=fee5444';
+import { BIOMES } from './data/world.js?v=97eab88';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen

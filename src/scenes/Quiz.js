@@ -2,12 +2,12 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=fee5444';
-import { drawQuestion } from '../data/questions.js?v=fee5444';
-import { state } from '../state.js?v=fee5444';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=fee5444';
-import { audio } from '../audio.js?v=fee5444';
-import { showCompanionCard } from '../companionCard.js?v=fee5444';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=97eab88';
+import { drawQuestion } from '../data/questions.js?v=97eab88';
+import { state } from '../state.js?v=97eab88';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=97eab88';
+import { audio } from '../audio.js?v=97eab88';
+import { showCompanionCard } from '../companionCard.js?v=97eab88';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -58,7 +58,8 @@ export class QuizScene extends Phaser.Scene {
     const item = lvl.items[this.itemIndex];
     this.band = state.difficulty();
     this.hintsLeft = this.band.hints;
-    const q = this.setQuestion || drawQuestion(this.levelId, this.band.id);
+    const biome = LEVELS[this.levelId] && LEVELS[this.levelId].biome;
+    const q = this.setQuestion || drawQuestion(this.levelId, this.band.id, biome ? state.answeredIn(biome) : []);
     audio.sfx(this, 'crate');
     this.item = item;
     this.q = q;
@@ -219,6 +220,10 @@ export class QuizScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: btn, scale: 1.06, duration: 140, yoyo: true, ease: 'Sine.Out' });
     state.giveTreasure(this.levelId, this.item.id);
+    // The tally for this difficulty: answered right, it counts toward the
+    // biome's companion.
+    const qb = LEVELS[this.levelId] && LEVELS[this.levelId].biome;
+    if (qb) state.markAnswered(qb, this.q);
     audio.sfx(this, 'correct');
     this.result.setText(`You got it! The ${this.item.name} is yours.
 ${this.q.fact}`);

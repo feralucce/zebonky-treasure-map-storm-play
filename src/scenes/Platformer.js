@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=fee5444';
-import { TILE, layoutFor } from '../data/levels.js?v=fee5444';
-import { state } from '../state.js?v=fee5444';
-import { COLORS, heading, text } from '../theme.js?v=fee5444';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=fee5444';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=fee5444';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=fee5444';
-import { makeNav } from '../pathing.js?v=fee5444';
-import { startQuestionRun } from '../data/questions.js?v=fee5444';
-import { audio, musicButton, soundButton } from '../audio.js?v=fee5444';
-import { Companion } from '../companion.js?v=fee5444';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=97eab88';
+import { TILE, layoutFor } from '../data/levels.js?v=97eab88';
+import { state } from '../state.js?v=97eab88';
+import { COLORS, heading, text } from '../theme.js?v=97eab88';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=97eab88';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=97eab88';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=97eab88';
+import { makeNav } from '../pathing.js?v=97eab88';
+import { startQuestionRun } from '../data/questions.js?v=97eab88';
+import { audio, musicButton, soundButton } from '../audio.js?v=97eab88';
+import { Companion } from '../companion.js?v=97eab88';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -442,14 +442,14 @@ export class PlatformerScene extends Phaser.Scene {
 
     // Held keys can get stuck while the quiz has the level paused.
     // The companion Zebonky, if they've earned one, rolls along behind her.
-    this.companion = state.data.companion ? new Companion(this, state.data.companion) : null;
+    this.companion = state.companion() ? new Companion(this, state.companion()) : null;
 
     this.events.on('resume', () => {
       this.input.keyboard.resetKeys();
       this.touch = { left: false, right: false, jump: false };
       // One just earned (its biome's last question, answered in the quiz):
       // it joins right here, sparkling in beside her.
-      if (!this.companion && state.data.companion) this.companion = new Companion(this, state.data.companion, true);
+      if (!this.companion && state.companion()) this.companion = new Companion(this, state.companion(), true);
     });
 
     // Leaving the level (or pausing it for a quiz) stops the paddling.

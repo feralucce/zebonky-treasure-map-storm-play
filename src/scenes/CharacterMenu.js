@@ -5,12 +5,12 @@
 // so far, the rest are ready for layered art (hair, hat, outfit, shoes) and
 // say "Soon". The stand-ins carry a note that they are temporary.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=fee5444';
-import { state } from '../state.js?v=fee5444';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=fee5444';
-import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=fee5444';
-import { audio } from '../audio.js?v=fee5444';
-import { companionGrid } from '../companionPicker.js?v=fee5444';
+import { MAP_W, MAP_H } from '../data/world.js?v=97eab88';
+import { state } from '../state.js?v=97eab88';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=97eab88';
+import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=97eab88';
+import { audio } from '../audio.js?v=97eab88';
+import { companionGrid } from '../companionPicker.js?v=97eab88';
 
 const CARD_W = 980;
 const CARD_H = 640;
@@ -160,10 +160,10 @@ export class CharacterMenuScene extends Phaser.Scene {
     const y = this.y0 + 170;
     const w = CARD_W - 370;
     this.tabLayer.add(companionGrid(this, x + w / 2, y, { tile: 108 }));
-    const n = (state.data.companions || []).length;
+    const n = state.companions().length;
     this.tabLayer.add(this.add.text(x, y + 150, n
-      ? 'Tap a companion to have it travel with you. Answer every question in an area to unlock its Zebonky.'
-      : 'Answer every question in an area to unlock its Zebonky as a companion.', text(17, '#6b4a2e', {
+      ? `Tap a companion to have it travel with you. Answer every ${state.difficulty().name} question in an area to unlock its Zebonky on this difficulty.`
+      : `Answer every ${state.difficulty().name} question in an area to unlock its Zebonky as a companion on this difficulty.`, text(17, '#6b4a2e', {
       wordWrap: { width: w },
     })));
   }
