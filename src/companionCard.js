@@ -6,9 +6,9 @@
 //                      answered; doing that earns its Zebonky.
 // onClose runs when the card's button is pressed.
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=e3b2610';
-import { COLORS, heading, text, makeButton } from './theme.js?v=e3b2610';
-import { showCompanionPicker } from './companionPicker.js?v=e3b2610';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=fee5444';
+import { COLORS, heading, text, makeButton } from './theme.js?v=fee5444';
+import { showCompanionPicker } from './companionPicker.js?v=fee5444';
 
 export function showCompanionCard(scene, b, event, onClose) {
   // A Zebonky joins: the companion picker, the new one revealed
