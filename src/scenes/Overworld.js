@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=dda62f5';
-import { state, pathKey } from '../state.js?v=dda62f5';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=dda62f5';
-import { audio } from '../audio.js?v=dda62f5';
-import { starsFor, rewardTotals } from '../rewards.js?v=dda62f5';
-import { showCompanionCard } from '../companionCard.js?v=dda62f5';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=dda62f5';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=afb17b7';
+import { state, pathKey } from '../state.js?v=afb17b7';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=afb17b7';
+import { audio } from '../audio.js?v=afb17b7';
+import { starsFor, rewardTotals } from '../rewards.js?v=afb17b7';
+import { showCompanionCard } from '../companionCard.js?v=afb17b7';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=afb17b7';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -338,14 +338,22 @@ export class OverworldScene extends Phaser.Scene {
       const x = ids.reduce((t, id) => t + LEVELS[id].x, 0) / ids.length;
       const y = ids.reduce((t, id) => t + LEVELS[id].y, 0) / ids.length;
       const c = this.add.container(x, y);
+      // A soft glow behind a badge that can be gone into (the user,
+      // 2026-10-25: "the circles aren't glowing").
+      c.halo = this.add.circle(0, 0, 40, 0xffe680, 0.6).setBlendMode(Phaser.BlendModes.ADD);
       c.g = this.add.graphics();
-      c.add(c.g);
+      c.add([c.halo, c.g]);
       c.setSize(64, 64);
       c.setInteractive({ useHandCursor: true });
       c.on('pointerup', () => this.onBadgeTapped(b));
       c.color = BIOMES[b].color;
       this.badgeLayer.add(c);
       this.badges[b] = c;
+    });
+    this.tweens.add({
+      targets: Object.values(this.badges).map((c) => c.halo),
+      scale: { from: 0.85, to: 1.35 }, alpha: { from: 0.75, to: 0.15 },
+      duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut',
     });
   }
 
@@ -359,6 +367,7 @@ export class OverworldScene extends Phaser.Scene {
       c.setVisible(open).setScale(1);
       if (!open) return;
       const done = state.biomeComplete(b);
+      c.halo.setVisible(!done || b === this.currentBiome);
       const g = c.g;
       g.clear();
       g.fillStyle(COLORS.ink, 0.9);
@@ -651,7 +660,7 @@ export class OverworldScene extends Phaser.Scene {
     g.strokeRoundedRect(0, 0, w, h, 18);
     this.panelTitle = this.add.text(20, 14, '', heading(26));
     this.panelStatus = this.add.text(20, 56, '', text(17));
-    this.panelHint = this.add.text(20, 90, '', text(15, '#6b4a2e'));
+    this.panelHint = this.add.text(20, 90, '', text(15, '#6b4a2e', { wordWrap: { width: w - 40 } }));
     // In a biome: how much of its question bank is answered on this
     // difficulty (the whole bank earns its companion).
     this.panelQs = this.add.text(20, 116, '', text(15, COLORS.inkCss, { fontStyle: 'bold' }));
