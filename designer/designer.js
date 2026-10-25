@@ -1,10 +1,10 @@
-import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js?v=9565416';
-import { readDrawing } from './read-drawing.js?v=9565416';
-import { ARTSETS, BLOCKS } from '../src/data/artsets.js?v=9565416';
-import { LEVELS } from '../src/data/world.js?v=9565416';
-import { TEST_LAYOUT_KEY } from '../src/data/levels.js?v=9565416';
-import { backgroundGuide, tileSheet, svgToImage } from './guides.js?v=9565416';
-import { readArtistFiles } from './artist.js?v=9565416';
+import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js?v=64b0c25';
+import { readDrawing } from './read-drawing.js?v=64b0c25';
+import { ARTSETS, BLOCKS } from '../src/data/artsets.js?v=64b0c25';
+import { LEVELS } from '../src/data/world.js?v=64b0c25';
+import { TEST_LAYOUT_KEY } from '../src/data/levels.js?v=64b0c25';
+import { backgroundGuide, tileSheet, svgToImage } from './guides.js?v=64b0c25';
+import { readArtistFiles } from './artist.js?v=64b0c25';
 
 const $ = (id) => document.getElementById(id);
 const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen

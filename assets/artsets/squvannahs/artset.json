@@ -102,9 +102,13 @@
    "../dorsal_cove/wt_body_6.png"
   ],
   "falls": "../dorsal_cove/wt_falls.png",
-  "alpha": 0.62
+  "alpha": 0.62,
+  "top_strip": "../dorsal_cove/wt_top_strip.png",
+  "body_strip": "../dorsal_cove/wt_body_strip.png"
  },
  "vines": "vn_wall.png",
+ "vine_strand": "vn_strand.png",
+ "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/haycorn.png",
  "sky": "#049cf9",
  "background": [
@@ -141,12 +145,22 @@
    "pt_grass_tuft_a.png",
    "pt_grass_tuft_b.png",
    "pt_grass_tuft_c.png",
-   "pt_rock_medium.png",
-   "pt_rock_small.png",
    "pt_spiky_plant_a.png",
    "pt_spiky_plant_b.png",
-   "pt_spiky_plant_c.png"
+   "pt_spiky_plant_c.png",
+   "pt_rock_small.png",
+   "pt_rock_medium.png"
   ],
   "ground_chance": 0.22
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_plants.png",
+   "scroll": 1.6,
+   "blur": 10,
+   "alpha": 0.8,
+   "bottom_drop": 36,
+   "mirror_repeat": true
+  }
+ ]
 }
