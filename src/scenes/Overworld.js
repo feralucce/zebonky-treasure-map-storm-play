@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=3d1500f';
-import { state, pathKey } from '../state.js?v=3d1500f';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=3d1500f';
-import { audio } from '../audio.js?v=3d1500f';
-import { starsFor, rewardTotals } from '../rewards.js?v=3d1500f';
-import { DIFFICULTIES } from '../data/difficulty.js?v=3d1500f';
-import { showCompanionCard } from '../companionCard.js?v=3d1500f';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=3b90e23';
+import { state, pathKey } from '../state.js?v=3b90e23';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=3b90e23';
+import { audio } from '../audio.js?v=3b90e23';
+import { starsFor, rewardTotals } from '../rewards.js?v=3b90e23';
+import { DIFFICULTIES } from '../data/difficulty.js?v=3b90e23';
+import { showCompanionCard } from '../companionCard.js?v=3b90e23';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -650,12 +650,17 @@ export class OverworldScene extends Phaser.Scene {
     this.playBtn = makeButton(this, w - 70, h - 36, 'Play', () => this.enterLevel(), {
       width: 110, height: 48, size: 22,
     });
-    panel.add([g, this.panelTitle, this.panelStatus, this.panelHint, this.playBtn]);
+    // Back out to the whole map, any time (the user, 2026-10-25). Escape too.
+    this.mapBtn = makeButton(this, w - 56, 32, 'Map', () => this.leaveBiome(), {
+      width: 88, height: 40, size: 19, fill: 0x6b4a2e,
+    });
+    panel.add([g, this.panelTitle, this.panelStatus, this.panelHint, this.playBtn, this.mapBtn]);
     this.panel = panel;
   }
 
   updatePanel() {
     this.playBtn.setVisible(!!this.view);
+    this.mapBtn.setVisible(!!this.view);
     if (!this.view) {
       this.panelTitle.setText('Zebonkia');
       this.panelStatus.setText('Tap a glowing circle to explore');
@@ -819,6 +824,7 @@ export class OverworldScene extends Phaser.Scene {
       else if (this.currentBiome) this.onBadgeTapped(this.currentBiome);
     };
     kb.on('keydown-ENTER', go);
+    kb.on('keydown-ESC', () => this.leaveBiome());
     kb.on('keydown-SPACE', go);
   }
 
