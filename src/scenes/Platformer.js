@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=64b0c25';
-import { TILE, layoutFor } from '../data/levels.js?v=64b0c25';
-import { state } from '../state.js?v=64b0c25';
-import { COLORS, heading, text } from '../theme.js?v=64b0c25';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=64b0c25';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=64b0c25';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=64b0c25';
-import { makeNav } from '../pathing.js?v=64b0c25';
-import { startQuestionRun } from '../data/questions.js?v=64b0c25';
-import { audio, musicButton, soundButton } from '../audio.js?v=64b0c25';
-import { Companion } from '../companion.js?v=64b0c25';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3d1500f';
+import { TILE, layoutFor } from '../data/levels.js?v=3d1500f';
+import { state } from '../state.js?v=3d1500f';
+import { COLORS, heading, text } from '../theme.js?v=3d1500f';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3d1500f';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3d1500f';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=3d1500f';
+import { makeNav } from '../pathing.js?v=3d1500f';
+import { startQuestionRun } from '../data/questions.js?v=3d1500f';
+import { audio, musicButton, soundButton } from '../audio.js?v=3d1500f';
+import { Companion } from '../companion.js?v=3d1500f';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -203,6 +203,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.water = new Set();
     this.current = new Set();
     this.vines = new Set();
+    this.signCells = new Set();
     this.surfaceRow = {};
     this.falls = [];
     // For picking tile art, ground runs on past the left and right walls, so
@@ -679,6 +680,7 @@ export class PlatformerScene extends Phaser.Scene {
       while (r > 0 && isSolid(r - 1, c - 1)) r--;
       if (!isSolid(r, c - 1)) continue;
       this.add.image((c - 1) * TILE + TILE / 2, r * TILE, 'pit-sign').setOrigin(0.5, 1).setDepth(2);
+      this.signCells.add(`${c - 1},${r - 1}`);
     }
   }
 
@@ -1322,8 +1324,15 @@ export class PlatformerScene extends Phaser.Scene {
         while (hi < row.length - 1 && surface(hi + 1)) hi++;
         const left = lo * TILE + w / 2;
         const right = (hi + 1) * TILE - w / 2;
-        if (left <= right) {
-          const px = Phaser.Math.Clamp(x + (h - 0.5) * 24, left, right);
+        const px = Phaser.Math.Clamp(x + (h - 0.5) * 24, left, right);
+        // Never over a sign, a door or the exit standing on this ground (the
+        // user, 2026-10-25: a crystal behind a warning sign).
+        let clear = true;
+        for (let cc = Math.floor((px - w / 2) / TILE) - 1; cc <= Math.floor((px + w / 2) / TILE) + 1; cc++) {
+          if ('<>^[]!SGD'.includes(at(r - 1, cc)) || '<>^[]!SGD'.includes(at(r - 2, cc))
+            || (this.signCells && this.signCells.has(`${cc},${r - 1}`))) clear = false;
+        }
+        if (left <= right && clear) {
           this.add.image(px, r * TILE + 10, key)
             .setOrigin(0.5, 1).setScale(scale).setFlipX(h > 0.5).setDepth(-1);
         }
