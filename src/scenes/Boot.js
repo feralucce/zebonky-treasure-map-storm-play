@@ -1,8 +1,8 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=4fcf886';
-import { testParams, DRAWN } from '../data/levels.js?v=4fcf886';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=4fcf886';
-import { CHARACTERS } from '../data/characters.js?v=4fcf886';
-import { COLORS, heading, text } from '../theme.js?v=4fcf886';
+import { ARTSETS, texKey } from '../data/artsets.js?v=6430c04';
+import { testParams, DRAWN } from '../data/levels.js?v=6430c04';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=6430c04';
+import { CHARACTERS } from '../data/characters.js?v=6430c04';
+import { COLORS, heading, text } from '../theme.js?v=6430c04';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -116,8 +116,11 @@ export class BootScene extends Phaser.Scene {
         // Chris's "good vibe" sparkle in the colours of this food (tools/make_food.py).
         if (data.food && data.food.includes('/food/')) add(data.food.replace(/([^/]+)\.png$/, 'sparkle_$1.png'));
         // Water (surface and body) and the vine wall, from Chris's biome sets.
-        if (data.water) [...(data.water.top || []), ...(data.water.body || []), data.water.falls].forEach(add);
+        if (data.water) [...(data.water.top || []), ...(data.water.body || []), data.water.falls,
+          data.water.top_strip, data.water.body_strip].forEach(add);
         add(data.vines);
+        add(data.vine_strand);
+        add(data.vine_strand_top);
         (data.platform_decor || []).forEach(add);
         const dr = data.dressing || {};
         [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);
@@ -162,6 +165,12 @@ export class BootScene extends Phaser.Scene {
       test.levelId = DRAWN[test.layoutId].level;
     }
     if (test) test.levelId = playableLevelId(test.levelId);
+    // index.html?inspect=1 (or ?inspect=<level id>): the dressing tool.
+    const inspect = new URLSearchParams(window.location.search).get('inspect');
+    if (inspect) {
+      this.scene.start('Level', { levelId: inspect === '1' ? 'dorsal-1' : playableLevelId(inspect), inspect: true });
+      return;
+    }
     if (test) this.scene.start('Level', test);
     else this.scene.start('Overworld');
   }

@@ -6,10 +6,10 @@
 //                      answered; doing that earns its Zebonky.
 // onClose runs when the card's button is pressed.
 
-import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=4fcf886';
-import { state } from './state.js?v=4fcf886';
-import { COLORS, heading, text, makeButton } from './theme.js?v=4fcf886';
-import { audio } from './audio.js?v=4fcf886';
+import { MAP_W, MAP_H, BIOMES } from './data/world.js?v=6430c04';
+import { state } from './state.js?v=6430c04';
+import { COLORS, heading, text, makeButton } from './theme.js?v=6430c04';
+import { audio } from './audio.js?v=6430c04';
 
 export function showCompanionCard(scene, b, event, onClose) {
   const info = BIOMES[b];

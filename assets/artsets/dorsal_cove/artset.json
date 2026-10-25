@@ -246,7 +246,9 @@
    "wt_body_6.png"
   ],
   "falls": "wt_falls.png",
-  "alpha": 0.62
+  "alpha": 0.62,
+  "top_strip": "wt_top_strip.png",
+  "body_strip": "wt_body_strip.png"
  },
  "vines": "vn_wall.png",
  "food": "../../food/grubberry.png",
@@ -316,5 +318,15 @@
    }
   },
   "standin": true
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_plants.png",
+   "scroll": 1.6,
+   "blur": 10,
+   "alpha": 0.8,
+   "bottom_drop": 36,
+   "mirror_repeat": true
+  }
+ ]
 }

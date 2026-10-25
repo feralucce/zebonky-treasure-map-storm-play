@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4fcf886';
-import { TILE, layoutFor } from '../data/levels.js?v=4fcf886';
-import { state } from '../state.js?v=4fcf886';
-import { COLORS, heading, text } from '../theme.js?v=4fcf886';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4fcf886';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4fcf886';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=4fcf886';
-import { makeNav } from '../pathing.js?v=4fcf886';
-import { startQuestionRun } from '../data/questions.js?v=4fcf886';
-import { audio, musicButton, soundButton } from '../audio.js?v=4fcf886';
-import { Companion } from '../companion.js?v=4fcf886';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6430c04';
+import { TILE, layoutFor } from '../data/levels.js?v=6430c04';
+import { state } from '../state.js?v=6430c04';
+import { COLORS, heading, text } from '../theme.js?v=6430c04';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6430c04';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6430c04';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=6430c04';
+import { makeNav } from '../pathing.js?v=6430c04';
+import { startQuestionRun } from '../data/questions.js?v=6430c04';
+import { audio, musicButton, soundButton } from '../audio.js?v=6430c04';
+import { Companion } from '../companion.js?v=6430c04';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -78,6 +78,13 @@ const SOLID_TEXTURES = {
   R: ['rock-top', 'rock'],
 };
 
+// The dressing tool's levels: one per art set.
+const INSPECT_LEVELS = [
+  ['dorsal-1', 'Dorsal Cove'], ['cumulus-1', 'Rainforest floor'], ['cumulus-5', 'Rainforest canopy'],
+  ['seafoam-1', 'Seafoam Shores'], ['squvannahs-1', 'Squvannahs'], ['magenta-1', 'Magenta Mountains'],
+  ['magenta-2', 'Crystal Caverns'],
+];
+
 export class PlatformerScene extends Phaser.Scene {
   constructor() {
     super('Level');
@@ -88,8 +95,11 @@ export class PlatformerScene extends Phaser.Scene {
     this.layoutId = data.layoutId || (LEVELS[data.levelId] && LEVELS[data.levelId].layout) || data.levelId;
     this.test = !!data.test;
     this.demo = !!data.demo;
-    // A designer test run never touches the player's saved progress.
-    state.noSave = this.test;
+    // Inspect mode (index.html?inspect=1): the dressing tool. The level's art
+    // only, with a free-moving marker instead of the explorer.
+    this.inspect = !!data.inspect;
+    // A designer test run (or an inspection) never touches saved progress.
+    state.noSave = this.test || this.inspect;
     this.inDoor = false;
     this.touchDoor = false;
     this.touchGrab = false;
@@ -254,8 +264,18 @@ export class PlatformerScene extends Phaser.Scene {
           const wa = !this.blocks && this.art && this.art.water;
           const wFiles = wa && (surface ? wa.top : wa.body);
           const wKey = wFiles && wFiles.length && texKey(this.artName, pick(wFiles, c, r));
+          // A water strip (one long picture per row) is laid across the pool
+          // as one piece, each tile showing its own slice of it.
+          const sKey = wa && (surface ? wa.top_strip : wa.body_strip) && texKey(this.artName, surface ? wa.top_strip : wa.body_strip);
           if (this.blocks) this.block(x, y, TILE, BLOCK_COLORS['~'], 0.45).setDepth(5);
-          else {
+          else if (sKey && this.textures.exists(sKey)) {
+            const tl = isSolid(r, c - 1) ? BANK_TUCK : 0;
+            const tr = isSolid(r, c + 1) ? BANK_TUCK : 0;
+            const sw = this.textures.get(sKey).getSourceImage().width;
+            this.add.tileSprite(x + (tr - tl) / 2, y, TILE + tl + tr, TILE, sKey)
+              .setTilePosition((((c * TILE - tl) % sw) + sw) % sw, 0)
+              .setDepth(5).setAlpha(wa.alpha ?? 0.75);
+          } else {
             const img = wKey && this.textures.exists(wKey)
               ? this.add.image(x, y, wKey).setDepth(5).setAlpha(wa.alpha ?? 0.75)
               : this.add.image(x, y, surface ? 'water-top' : 'water').setDepth(5).setAlpha(0.6);
@@ -269,8 +289,38 @@ export class PlatformerScene extends Phaser.Scene {
           if (ch === 'T') treasureSpots.push({ x, y });
         } else if (ch === 'V') {
           // Vine wall: the art set's vine tile, or a see-through green block.
+          // With a single strand (vine_strand), the whole climbable run shows
+          // one vine, hung against the wall beside it.
+          const sKey = !this.blocks && this.art && this.art.vine_strand && texKey(this.artName, this.art.vine_strand);
           const vKey = !this.blocks && this.art && this.art.vines && texKey(this.artName, this.art.vines);
-          if (vKey && this.textures.exists(vKey)) this.add.image(x, y, vKey).setDepth(1);
+          if (sKey && this.textures.exists(sKey)) {
+            // In the wall's top row the vine rounds the corner onto the
+            // ground (vine_strand_top, which reaches up into the row above);
+            // nothing is drawn higher.
+            const host = (rr) => {
+              let lo = c;
+              let hi = c;
+              while (at(rr, lo - 1) === 'V') lo--;
+              while (at(rr, hi + 1) === 'V') hi++;
+              if (isSolid(rr, hi + 1)) return { col: hi, flip: false, up: 0 };
+              if (isSolid(rr, lo - 1)) return { col: lo, flip: true, up: 0 };
+              if (at(rr + 1, c) === 'V') {
+                const below = host(rr + 1);
+                return { ...below, up: below.up + 1 };
+              }
+              return { col: Math.floor((lo + hi) / 2), flip: false, up: 0, free: true };
+            };
+            const h = host(r);
+            const tKey = this.art.vine_strand_top && texKey(this.artName, this.art.vine_strand_top);
+            const bendable = !h.free && tKey && this.textures.exists(tKey);
+            const topRow = h.up === 0 && !isSolid(r - 1, h.flip ? h.col - 1 : h.col + 1);
+            if (c !== h.col || (bendable && h.up > 0)) {
+              // Not this column, or above the bend.
+            } else if (bendable && topRow) {
+              this.add.image(h.flip ? x + TILE / 2 : x - TILE / 2, y + TILE / 2, tKey)
+                .setOrigin(h.flip ? 1 : 0, 1).setDepth(1).setFlipX(h.flip);
+            } else this.add.image(x, y, sKey).setDepth(1).setFlipX(h.flip);
+          } else if (vKey && this.textures.exists(vKey)) this.add.image(x, y, vKey).setDepth(1);
           else this.block(x, y, TILE, BLOCK_COLORS.V, 0.55).setDepth(1);
           this.vines.add(`${c},${r}`);
         } else if (ch === 'W' && this.blocks) {
@@ -327,7 +377,7 @@ export class PlatformerScene extends Phaser.Scene {
     });
 
     // Treasures are numbered left to right, so the first one met asks question 1.
-    treasureSpots.sort((a, b) => a.x - b.x).forEach((t, i) => this.spawnTreasure(t.x, t.y, i));
+    if (!this.inspect) treasureSpots.sort((a, b) => a.x - b.x).forEach((t, i) => this.spawnTreasure(t.x, t.y, i));
     this.start = start;
     this.safe = { ...start };
 
@@ -346,9 +396,14 @@ export class PlatformerScene extends Phaser.Scene {
     // Platforms hold the player except for a moment after Down + Jump.
     this.dropUntil = 0;
     this.physics.add.collider(this.player, this.platforms, null, () => this.time.now >= this.dropUntil);
-    this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
+    if (this.inspect) {
+      this.wild = [];
+      this.guide = null;
+    } else {
+      this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
+    }
     this.buildDressing(rows, at, isSolid, worldW, worldH);
-    this.buildPickups(foodSpots, pawSpots);
+    if (!this.inspect) this.buildPickups(foodSpots, pawSpots);
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
@@ -361,6 +416,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,ESC,R,X,F');
     if (this.test) this.keys.R.on('down', () => this.scene.restart());
     this.keys.ESC.on('down', () => this.leave());
+    if (this.inspect) {
+      this.startInspect(lvl);
+      return;
+    }
 
     this.buildHud(lvl);
     // The buttons stay in front of the foreground leaves.
@@ -1025,13 +1084,23 @@ export class PlatformerScene extends Phaser.Scene {
   buildBackdropPieces(layer, i, worldW, worldH) {
     const sf = layer.scroll ?? 0.3;
     const span = (worldW - MAP_W) * sf + MAP_W;
-    const y = worldH + BOTTOM_ROOM - (layer.offset || 0);
+    let y = worldH + BOTTOM_ROOM - (layer.offset || 0);
+    // A picture shorter than the level would show flat sky above it at the
+    // top. It scrolls slower up and down instead, just enough that the
+    // camera never sees past its top, and its bottom still meets the
+    // camera's lowest view.
+    const lowest = Math.max(worldH + BOTTOM_ROOM, MAP_H) - MAP_H;
+    let sfy = 1;
+    if (layer.h && layer.h < worldH + BOTTOM_ROOM && lowest > 0) {
+      sfy = Math.max(0, Math.min(1, (layer.h - MAP_H) / lowest));
+      y = MAP_H + lowest * sfy - (layer.offset || 0);
+    }
     for (let n = 0, x0 = 0; x0 < span; n++, x0 += layer.w) {
       layer.pieces.forEach((file, p) => {
         const key = texKey(this.artName, file);
         const x = x0 + p * layer.piece_w;
         if (x > span || !this.textures.exists(key)) return;
-        this.add.image(x, y, key).setOrigin(0, 1).setScrollFactor(sf, 1).setDepth(-10 + i);
+        this.add.image(x, y, key).setOrigin(0, 1).setScrollFactor(sf, sfy).setDepth(-10 + i);
       });
     }
   }
@@ -1653,9 +1722,57 @@ export class PlatformerScene extends Phaser.Scene {
     this.input.addPointer(2);
   }
 
+  // ---------- inspect mode (the dressing tool) ----------
+
+  // No explorer: a round marker that flies anywhere (Up and Down too, no
+  // gravity, through walls), the camera on it. 1-7 jump to one level per art
+  // set; the marker's tile column and row show for notes.
+  startInspect(lvl) {
+    this.player.setVisible(false);
+    this.player.body.enable = false;
+    const m = this.add.container(this.start.x, this.start.y - 40).setDepth(30);
+    m.add(this.add.circle(0, 0, 20, 0xff3b6b, 0.85).setStrokeStyle(4, 0xffffff));
+    m.add(this.add.circle(0, 0, 3, 0xffffff));
+    this.marker = m;
+    this.cameras.main.stopFollow();
+    this.cameras.main.startFollow(m, true, 0.18, 0.18);
+    this.cameras.main.setDeadzone(0, 0);
+    this.inspectKeys = this.input.keyboard.addKeys('SHIFT,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN');
+    INSPECT_LEVELS.forEach(([id], i) => {
+      this.inspectKeys[['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN'][i]]
+        .on('down', () => this.scene.restart({ levelId: id, inspect: true }));
+    });
+    const panel = this.add.text(14, 12, '', text(17, '#ffffff', {
+      backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 12, y: 8 }, lineSpacing: 4,
+    })).setScrollFactor(0).setDepth(40);
+    const sets = INSPECT_LEVELS.map(([, name], i) => `${i + 1} ${name}`).join('   ');
+    this.inspectPanel = () => {
+      const c = Math.floor(m.x / TILE);
+      const r = Math.floor(m.y / TILE);
+      panel.setText(`Dressing inspection: ${lvl ? lvl.name : this.levelId} (${this.artName})\n`
+        + `Arrows or WASD move the marker anywhere; Shift is faster. Column ${c}, row ${r}\n${sets}`);
+    };
+    this.inspectPanel();
+  }
+
+  inspectUpdate(delta) {
+    const k = this.keys;
+    const speed = (this.inspectKeys.SHIFT.isDown ? 1800 : 600) * (delta / 1000);
+    const dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
+    const dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.W.isDown ? 1 : 0);
+    const m = this.marker;
+    m.x = Phaser.Math.Clamp(m.x + dx * speed, 0, this.physics.world.bounds.width);
+    m.y = Phaser.Math.Clamp(m.y + dy * speed, 0, this.worldH);
+    if (dx || dy) this.inspectPanel();
+  }
+
   // ---------- movement ----------
 
   update(time, delta) {
+    if (this.inspect) {
+      this.inspectUpdate(delta);
+      return;
+    }
     if (this.done || this.inDoor || !this.player.body.enable) return;
     const p = this.player;
     const k = this.keys;
