@@ -9,8 +9,8 @@
 // star), never from replaying, so they can't be farmed and a save code can
 // rebuild them exactly.
 
-import { LEVELS } from './data/world.js?v=ee72514';
-import { state } from './state.js?v=ee72514';
+import { LEVELS } from './data/world.js?v=ee6c04e';
+import { state } from './state.js?v=ee6c04e';
 
 export const POINTS = { clear: 100, treasure: 20, bonus: 150, tamed: 100 };
 
