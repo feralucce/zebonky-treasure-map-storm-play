@@ -251,6 +251,8 @@
   "body_strip": "wt_body_strip.png"
  },
  "vines": "vn_wall.png",
+ "vine_strand": "vn_strand.png",
+ "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/grubberry.png",
  "sky": "#02a9fd",
  "background": [
