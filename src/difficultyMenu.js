@@ -4,11 +4,11 @@
 // (data/difficulty.js `about`). "Play this way" chooses it; Done or Escape
 // closes the screen.
 
-import { MAP_W, MAP_H } from './data/world.js?v=ee6c04e';
-import { DIFFICULTIES } from './data/difficulty.js?v=ee6c04e';
-import { state } from './state.js?v=ee6c04e';
-import { COLORS, heading, text, makeButton } from './theme.js?v=ee6c04e';
-import { audio } from './audio.js?v=ee6c04e';
+import { MAP_W, MAP_H } from './data/world.js?v=9045f29';
+import { DIFFICULTIES } from './data/difficulty.js?v=9045f29';
+import { state } from './state.js?v=9045f29';
+import { COLORS, heading, text, makeButton } from './theme.js?v=9045f29';
+import { audio } from './audio.js?v=9045f29';
 
 export function showDifficultyMenu(scene, onClose) {
   const layer = scene.add.container(0, 0).setDepth(60);
@@ -63,10 +63,14 @@ export function showDifficultyMenu(scene, onClose) {
     card.add(cg);
     card.add(scene.add.text(MAP_W / 2, cy + 36, d.name, heading(30)).setOrigin(0.5));
     card.add(scene.add.text(MAP_W / 2, cy + 74, d.blurb || '', text(18, '#6b4a2e')).setOrigin(0.5));
-    d.about.forEach((line, i) => {
-      card.add(scene.add.text(cx + 40, cy + 106 + i * 34, `•  ${line}`, text(19, COLORS.inkCss, {
-        wordWrap: { width: cw - 80 },
-      })));
+    // Each line under the real height of the one before, so a line that
+    // wraps (wider fonts on some screens) never runs into the next.
+    let ly = cy + 106;
+    d.about.forEach((line) => {
+      card.add(scene.add.text(cx + 40, ly, '•', text(19, COLORS.inkCss)));
+      const t = scene.add.text(cx + 62, ly, line, text(19, COLORS.inkCss, { wordWrap: { width: cw - 102 } }));
+      card.add(t);
+      ly += t.height + 10;
     });
     if (chosen) {
       card.add(scene.add.text(MAP_W / 2, cy + ch - 34, 'Playing this way', heading(20, COLORS.greenCss)).setOrigin(0.5));

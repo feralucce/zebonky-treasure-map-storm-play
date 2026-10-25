@@ -5,12 +5,12 @@
 // so far, the rest are ready for layered art (hair, hat, outfit, shoes) and
 // say "Soon". The stand-ins carry a note that they are temporary.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=ee6c04e';
-import { state } from '../state.js?v=ee6c04e';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=ee6c04e';
-import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=ee6c04e';
-import { audio } from '../audio.js?v=ee6c04e';
-import { companionGrid } from '../companionPicker.js?v=ee6c04e';
+import { MAP_W, MAP_H } from '../data/world.js?v=9045f29';
+import { state } from '../state.js?v=9045f29';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=9045f29';
+import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=9045f29';
+import { audio } from '../audio.js?v=9045f29';
+import { companionGrid } from '../companionPicker.js?v=9045f29';
 
 const CARD_W = 980;
 const CARD_H = 640;
