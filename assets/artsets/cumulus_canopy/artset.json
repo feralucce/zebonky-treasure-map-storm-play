@@ -103,9 +103,13 @@
    "../dorsal_cove/wt_body_6.png"
   ],
   "falls": "../dorsal_cove/wt_falls.png",
-  "alpha": 0.62
+  "alpha": 0.62,
+  "top_strip": "../dorsal_cove/wt_top_strip.png",
+  "body_strip": "../dorsal_cove/wt_body_strip.png"
  },
  "vines": "vn_wall.png",
+ "vine_strand": "vn_strand.png",
+ "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/bananler.png",
  "sky": "#4ea1fd",
  "background": [
@@ -147,15 +151,26 @@
   ],
   "ground_chance": 0.22,
   "hangers": [
-   "hg_left_cliff_art.png",
-   "hg_center_island_art.png",
-   "hg_small_island_art.png",
-   "hg_upper_right_ledge_art.png",
-   "hg_mid_right_ledge_art.png",
-   "hg_right_ledge_art.png",
-   "hg_center_right_island_art.png",
-   "hg_left_ledge_art.png"
+   "hg_vine_long_a.png",
+   "hg_vine_long_b.png",
+   "hg_vine_medium_a.png",
+   "hg_vine_medium_b.png",
+   "hg_vine_short_a.png",
+   "hg_vine_short_b.png"
   ],
   "hang_chance": 0.25
- }
+ },
+ "foreground": [
+  {
+   "file": "fg_plants.png",
+   "scroll": 1.6,
+   "blur": 10,
+   "alpha": 0.8,
+   "bottom_drop": 0,
+   "mirror_repeat": true,
+   "cover_top": 721,
+   "cover_bottom": 610,
+   "content_top": 0.7896
+  }
+ ]
 }

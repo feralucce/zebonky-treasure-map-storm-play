@@ -2,17 +2,17 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6430c04';
-import { TILE, layoutFor } from '../data/levels.js?v=6430c04';
-import { state } from '../state.js?v=6430c04';
-import { COLORS, heading, text } from '../theme.js?v=6430c04';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6430c04';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6430c04';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=6430c04';
-import { makeNav } from '../pathing.js?v=6430c04';
-import { startQuestionRun } from '../data/questions.js?v=6430c04';
-import { audio, musicButton, soundButton } from '../audio.js?v=6430c04';
-import { Companion } from '../companion.js?v=6430c04';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=0f40c52';
+import { TILE, layoutFor } from '../data/levels.js?v=0f40c52';
+import { state } from '../state.js?v=0f40c52';
+import { COLORS, heading, text } from '../theme.js?v=0f40c52';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=0f40c52';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=0f40c52';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=0f40c52';
+import { makeNav } from '../pathing.js?v=0f40c52';
+import { startQuestionRun } from '../data/questions.js?v=0f40c52';
+import { audio, musicButton, soundButton } from '../audio.js?v=0f40c52';
+import { Companion } from '../companion.js?v=0f40c52';
 
 const RUN_SPEED = 300;
 const ACCEL = 2400;
@@ -29,7 +29,6 @@ const SWIM_HOP_OUT = 990;     // a stroke near the surface pops you out onto lan
 // The Dorsal Cove waterfall flows uphill and carries you with it.
 const CURRENT_LIFT = 660;
 const CLIMB_SPEED = 260;      // up and down a vine wall
-const VINE_TOP_HOP = 600;     // the little hop over the top of a vine wall
 // Hidden doors: a short fade while you slip through.
 const DOOR_FADE_MS = 160;
 const ARTIST_BG_SCROLL = 0.3;  // the artist's background's parallax speed
@@ -297,27 +296,40 @@ export class PlatformerScene extends Phaser.Scene {
             // In the wall's top row the vine rounds the corner onto the
             // ground (vine_strand_top, which reaches up into the row above);
             // nothing is drawn higher.
-            const host = (rr) => {
+            // The side the vine hangs on: a wall (or a platform's end) beside
+            // it in this row, or the nearest row below, or else above (a
+            // vine climbing to a platform's end, the user, 2026-10-25).
+            const wallAt = (rr, cc) => isSolid(rr, cc) || at(rr, cc) === '=';
+            const sideOf = (rr) => {
               let lo = c;
               let hi = c;
               while (at(rr, lo - 1) === 'V') lo--;
               while (at(rr, hi + 1) === 'V') hi++;
-              if (isSolid(rr, hi + 1)) return { col: hi, flip: false, up: 0 };
-              if (isSolid(rr, lo - 1)) return { col: lo, flip: true, up: 0 };
-              if (at(rr + 1, c) === 'V') {
-                const below = host(rr + 1);
-                return { ...below, up: below.up + 1 };
+              if (wallAt(rr, hi + 1)) return { col: hi, flip: false };
+              if (wallAt(rr, lo - 1)) return { col: lo, flip: true };
+              return { col: Math.floor((lo + hi) / 2), flip: false, free: true };
+            };
+            const host = () => {
+              for (let rr = r; at(rr, c) === 'V'; rr++) {
+                const s0 = sideOf(rr);
+                if (!s0.free) return { ...s0, up: rr - r };
               }
-              return { col: Math.floor((lo + hi) / 2), flip: false, up: 0, free: true };
+              for (let rr = r - 1; at(rr, c) === 'V'; rr--) {
+                const s0 = sideOf(rr);
+                if (!s0.free) return { ...s0, up: rr - r };
+              }
+              return { ...sideOf(r), up: 0 };
             };
             const h = host(r);
             const tKey = this.art.vine_strand_top && texKey(this.artName, this.art.vine_strand_top);
             const bendable = !h.free && tKey && this.textures.exists(tKey);
-            const topRow = h.up === 0 && !isSolid(r - 1, h.flip ? h.col - 1 : h.col + 1);
+            const topRow = h.up === 0 && !wallAt(r - 1, h.flip ? h.col - 1 : h.col + 1);
             if (c !== h.col || (bendable && h.up > 0)) {
               // Not this column, or above the bend.
             } else if (bendable && topRow) {
-              this.add.image(h.flip ? x + TILE / 2 : x - TILE / 2, y + TILE / 2, tKey)
+              // A platform's grass sits lower than the ground's moss tufts.
+              const onPlank = at(r, h.flip ? h.col - 1 : h.col + 1) === '=';
+              this.add.image(h.flip ? x + TILE / 2 : x - TILE / 2, y + TILE / 2 + (onPlank ? 16 : 0), tKey)
                 .setOrigin(h.flip ? 1 : 0, 1).setDepth(1).setFlipX(h.flip);
             } else this.add.image(x, y, sKey).setDepth(1).setFlipX(h.flip);
           } else if (vKey && this.textures.exists(vKey)) this.add.image(x, y, vKey).setDepth(1);
@@ -1177,7 +1189,17 @@ export class PlatformerScene extends Phaser.Scene {
       const key = texKey(this.artName, layer.file);
       if (!this.textures.exists(key)) return;
       const src = this.textures.get(key).getSourceImage();
-      const scale = MAP_H / src.height;
+      // The second axis (`cover_top`, `cover_bottom`: screen y the plants
+      // reach up to at the level's top and at its bottom). The whole band
+      // is drawn just big enough that sliding it up never shows its bottom
+      // edge (the user, 2026-10-25: "just scale the whole band up").
+      const drop0 = layer.bottom_drop || 0;
+      const f = layer.content_top ?? 0.75;
+      const top0 = layer.cover_top ?? null;
+      const rise = top0 === null ? 0 : top0 - (layer.cover_bottom ?? top0);
+      const scale = top0 === null ? MAP_H / src.height
+        : (MAP_H + rise + 8 - top0) / (src.height * (1 - f));
+      const y0 = top0 === null ? 0 : top0 - drop0 - f * src.height * scale;
       // Blur is given in screen pixels; the picture may be painted larger.
       const tex = this.blurredTexture(key, (layer.blur ?? 6) / scale, !!layer.mirror_repeat);
       const w = src.width * scale;
@@ -1187,13 +1209,26 @@ export class PlatformerScene extends Phaser.Scene {
       // leaves sit lower without moving the branches at the top.
       const drop = layer.bottom_drop || 0;
       const half = src.height / 2;
+      const parts = [];
       for (let n = 0, x = 0; x < span; n++, x += w) {
-        [[0, 0], [half, drop]].forEach(([cropY, dy]) => {
-          this.add.image(x, dy, tex).setOrigin(0, 0).setScale(scale)
+        [[0, y0], [half, y0 + drop]].forEach(([cropY, dy]) => {
+          const img = this.add.image(x, dy, tex).setOrigin(0, 0).setScale(scale)
             .setCrop(0, cropY, src.width, half)
             .setScrollFactor(sf, 0).setDepth(15 + i).setAlpha(layer.alpha ?? 1)
             .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
+          parts.push([img, dy]);
         });
+      }
+      // The lower the camera goes, the higher it sits.
+      if (rise) {
+        const cam = this.cameras.main;
+        const slide = () => {
+          const most = cam.getBounds().height - cam.height;
+          const t = most > 0 ? Phaser.Math.Clamp(cam.scrollY / most, 0, 1) : 0;
+          parts.forEach(([img, dy]) => img.setY(dy - rise * t));
+        };
+        this.events.on('postupdate', slide);
+        this.events.once('shutdown', () => this.events.off('postupdate', slide));
       }
     });
   }
@@ -1295,9 +1330,25 @@ export class PlatformerScene extends Phaser.Scene {
       }
       if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1)
           && tileHash(c + 307, r + 41) < (d.hang_chance || 0)) {
-        const top = ch === '=' ? r * TILE + (this.art.platform_h || 28) - 6 : (r + 1) * TILE - 6;
-        this.add.image(x + (tileHash(c, r + 9) - 0.5) * 20, top, k(pick(hangers, c + 7, r)))
-          .setOrigin(0.5, 0).setDepth(-1);
+        // The whole hanger stays under the ledge, never past its ends. Under
+        // a platform it hangs in front, its mossy top on the grass's front
+        // edge (they're brighter than his platforms, the user, 2026-10-25);
+        // under ground it tucks up behind the dirt.
+        const front = ch === '=';
+        const top = front ? r * TILE + 20 : (r + 1) * TILE - 40;
+        const key = k(pick(hangers, c + 7, r));
+        const w = this.textures.get(key).getSourceImage().width;
+        const under = (cc) => (isSolid(r, cc) || at(r, cc) === '=') && open(r + 1) && cc >= 0 && cc < row.length;
+        let lo = c;
+        let hi = c;
+        while (under(lo - 1)) lo--;
+        while (under(hi + 1)) hi++;
+        const left = lo * TILE + w / 2 + 6;
+        const right = (hi + 1) * TILE - w / 2 - 6;
+        if (left <= right) {
+          const px = Phaser.Math.Clamp(x + (tileHash(c, r + 9) - 0.5) * 20, left, right);
+          this.add.image(px, top, key).setOrigin(0.5, 0).setDepth(front ? 0.6 : -1);
+        }
       }
     }));
   }
@@ -1722,6 +1773,30 @@ export class PlatformerScene extends Phaser.Scene {
     this.input.addPointer(2);
   }
 
+  // At a vine's top: onto the edge of the platform beside it (the side
+  // the vine hangs against first), feet on its top. False if there is none.
+  climbOntoEdge(lo, hi, r) {
+    const p = this.player;
+    const empty = (rr, cc) => !this.isFloor(rr, cc) && !this.vines.has(`${cc},${rr}`);
+    const floor = (rr, cc) => this.isFloor(rr, cc);
+    const sides = [hi + 1, lo - 1].sort((a, b) => (floor(r, b) || floor(r + 1, b)) - (floor(r, a) || floor(r + 1, a)));
+    for (const cc of sides) {
+      for (let rr = r - 2; rr <= r + 1; rr++) {
+        if (empty(rr, cc) && empty(rr - 1, cc) && floor(rr + 1, cc)) {
+          const x = cc * TILE + TILE / 2 + (cc > hi ? -12 : 12);
+          // Feet just above the floor's top (the body's bottom is this far
+          // below her middle), so she lands on it rather than in it.
+          const feet = p.body.offset.y + p.body.height - p.displayHeight * p.originY;
+          p.body.reset(x, (rr + 1) * TILE - feet - 2);
+          p.setVelocity(0, 0);
+          p.setFlipX(cc < lo);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // ---------- inspect mode (the dressing tool) ----------
 
   // No explorer: a round marker that flies anywhere (Up and Down too, no
@@ -1867,22 +1942,67 @@ export class PlatformerScene extends Phaser.Scene {
     const r = Math.floor(p.y / TILE);
     const inCurrent = this.current.has(`${c},${r}`);
     const inWater = !inCurrent && this.water.has(`${c},${r}`);
-    const onVine = !inCurrent && !inWater && this.vines.has(`${c},${r}`);
+    // Vines: she holds on (the user, 2026-10-25). Up or Down on a vine
+    // grabs it; then she stays on it, Up and Down climb, Jump leaps off
+    // (sideways with Left or Right). Climbing past the top puts her on the
+    // edge of the platform beside it; past the bottom, she lets go. Touch
+    // has no Up: holding Jump grabs and climbs, Left or Right steps off.
+    const touchClimb = this.touch.jump;
+    const vineAt = (cc, rr) => !inCurrent && !inWater && this.vines.has(`${cc},${rr}`);
+    if (!this.climbing && vineAt(c, r) && time > (this.climbFreeAt || 0) && (up || down || touchClimb)) {
+      this.climbing = true;
+      this.jumpPressedAt = -1000;
+    }
+    if (this.climbing && !vineAt(c, r)) this.climbing = false;
+    const onVine = !!this.climbing;
 
     if (onVine) {
-      // Climbing: Up (or holding Jump, for touch) climbs, Down climbs down,
-      // letting go holds her still. At the top she hops over onto whatever
-      // is beside it; walking sideways steps off.
       p.body.setGravityY(-this.physics.world.gravity.y);
       p.setMaxVelocity(RUN_SPEED, 1400);
-      const climb = up || jumpHeld;
+      p.setAccelerationX(0);
+      p.setVelocityX(0);
+      // Hold on at the vine's strand, clear of any wall beside it.
+      let lo = c;
+      let hi = c;
+      while (this.vines.has(`${lo - 1},${r}`)) lo--;
+      while (this.vines.has(`${hi + 1},${r}`)) hi++;
+      // The strand hangs against the wall or platform beside the vine
+      // (found as the vine's art finds it: this row, then down, then up).
+      const hw = p.body.width / 2 + 1;
+      let side = 0;
+      for (const dir of [1, -1]) {
+        for (let rr = r; !side && this.vines.has(`${c},${rr}`); rr += dir) {
+          if (this.isFloor(rr, hi + 1)) side = 1;
+          else if (this.isFloor(rr, lo - 1)) side = -1;
+        }
+      }
+      const strandX = side > 0 ? (hi + 1) * TILE : side < 0 ? lo * TILE : ((lo + hi + 1) / 2) * TILE;
+      p.x = Phaser.Math.Clamp(strandX, lo * TILE + hw, (hi + 1) * TILE - hw);
+      const climbUp = up || touchClimb;
       const atTop = !this.vines.has(`${c},${r - 1}`);
-      let vy = 0;
-      if (climb) vy = atTop ? -VINE_TOP_HOP : -CLIMB_SPEED;
-      else if (down) vy = CLIMB_SPEED;
-      p.setVelocityY(climb && atTop ? vy : Phaser.Math.Linear(p.body.velocity.y, vy, 0.3));
-      if (climb && atTop) this.boostUntil = time + 400;
-      this.jumpPressedAt = -1000; // Jump climbs here, it doesn't jump
+      const atBottom = !this.vines.has(`${c},${r + 1}`);
+      const leap = jumpPressed && !touchClimb;
+      const stepOff = touchClimb && (left || right);
+      if (leap || stepOff) {
+        this.climbing = false;
+        this.climbFreeAt = time + 350;
+        p.setVelocityY(leap ? -JUMP_SPEED * 0.85 : 0);
+        p.setVelocityX(right ? RUN_SPEED : left ? -RUN_SPEED : 0);
+        if (leap) audio.sfx(this, 'jump');
+        this.jumpPressedAt = -1000;
+      } else if (climbUp && atTop && p.body.top <= r * TILE + 4 && this.climbOntoEdge(lo, hi, r)) {
+        this.climbing = false;
+        this.climbFreeAt = time + 350;
+      } else if (down && atBottom && p.body.bottom >= (r + 1) * TILE - 2) {
+        this.climbing = false;
+        this.climbFreeAt = time + 350;
+      } else {
+        let vy = 0;
+        if (climbUp) vy = atTop && p.body.top <= r * TILE + 4 ? 0 : -CLIMB_SPEED;
+        else if (down) vy = CLIMB_SPEED;
+        p.setVelocityY(Phaser.Math.Linear(p.body.velocity.y, vy, 0.3));
+      }
+      this.jumpPressedAt = -1000;
       this.wasInWater = false;
     } else if (inCurrent) {
       // Riding the uphill waterfall.
