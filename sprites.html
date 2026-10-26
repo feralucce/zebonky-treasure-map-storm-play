@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sprite viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #1d1a17; --paper: #fbf6ea; --mint: #c4f6e6; --green: #4d9e76; --green-dark: #2f6e50; --headline: #fff46a; --teal: #008080; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 'Poppins', system-ui, sans-serif; }
+  header { background: var(--mint); border-bottom: 4px solid var(--ink); padding: 28px 16px 24px; text-align: center; }
+  .eyebrow { font: 800 13px 'Nunito', sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--green-dark); margin: 0 0 6px; }
+  h1 { margin: 0; font: 900 clamp(30px, 6vw, 48px)/1.1 'Nunito', sans-serif; color: var(--headline); text-transform: uppercase;
+       text-shadow: -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 4px 0 var(--ink); }
+  .lede { max-width: 620px; margin: 12px auto 0; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+  h2 { font: 900 24px 'Nunito', sans-serif; margin: 28px 0 4px; }
+  .note { margin: 0 0 14px; color: #3e5a4b; font-size: 15px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+  .card { background: #fff; border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 12px; }
+  .card h3 { margin: 0 0 8px; font: 900 20px 'Nunito', sans-serif; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .tag { font: 800 11px 'Nunito', sans-serif; letter-spacing: .08em; text-transform: uppercase; background: #9c6b3c; color: #fff; border-radius: 999px; padding: 2px 8px; }
+  .tag.ok { background: var(--green); }
+  .stage { background: var(--teal); border: 3px solid var(--ink); border-radius: 12px; display: grid; place-items: center; padding: 8px; }
+  /* The whole frame always shows: it shrinks to fit the card. */
+  canvas { image-rendering: pixelated; display: block; width: 100%; height: auto; }
+  .anims { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .anims button { font: 800 14px 'Nunito', sans-serif; border: 3px solid var(--ink); border-radius: 999px; padding: 4px 12px; background: #fff; cursor: pointer; }
+  .anims button[aria-pressed="true"] { background: var(--green); color: #fff; }
+  .meta { font-size: 13px; color: #5b6b62; margin: 6px 0 0; }
+  .layers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 13px; }
+  .layers label { display: inline-flex; align-items: center; gap: 4px; border: 2px solid var(--ink); border-radius: 999px; padding: 1px 8px; cursor: pointer; }
+  .tabs { display: flex; gap: 10px; justify-content: center; margin: 18px 0 0; }
+  .tabs button { font: 900 20px 'Nunito', sans-serif; border: 3px solid var(--ink); border-radius: 14px; padding: 8px 22px; background: #fff; cursor: pointer; box-shadow: 0 4px 0 var(--ink); }
+  .tabs button[aria-selected="true"] { background: var(--green); color: #fff; }
+  .window[hidden] { display: none; }
+  .empty { grid-column: 1 / -1; border: 3px dashed #9ab; border-radius: 18px; padding: 18px; color: #3e5a4b; }
+</style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">Treasure Map Storm &middot; Sprite viewer</p>
+  <h1>See them move</h1>
+  <p class="lede">Every finished character in the game, playing its animations at game speed, without loading a level. Tap an animation to switch.</p>
+</header>
+<nav class="tabs" role="tablist">
+  <button role="tab" data-window="zebonkies-window">Zebonkies</button>
+  <button role="tab" data-window="explorer-window">Explorer</button>
+</nav>
+<main>
+  <section class="window" id="zebonkies-window">
+  <h2>Zebonkies</h2>
+  <p class="note">Chris's sprite sheets, cut into the frames the game plays.</p>
+  <div class="grid" id="zebonkies"></div>
+  </section>
+
+  <section class="window" id="explorer-window">
+  <h2>Explorers</h2>
+  <p class="note">The characters you can play as. Stand-ins are temporary until Chris draws the cast.</p>
+  <div class="grid" id="explorers"></div>
+
+  <h2>Paper doll (layered) characters</h2>
+  <p class="note">Characters drawn in layers on one frame grid (body, hair, hat and so on), so parts can be swapped and recoloured. Turn layers on and off to see each part.</p>
+  <div class="grid" id="layered"></div>
+  </section>
+</main>
+<script type="module">
+// The sprite viewer (the user, 2026-10-26): a tech demo for the whole team,
+// on the play link and as a card on the Zebonky hub. It reads the same
+// manifests the game does, so whatever the game plays shows up here:
+// - Zebonkies: each art set's `zebonky` entry (assets/artsets/<set>/artset.json);
+// - explorers: data/characters.js, a strip per animation;
+// - layered (paper doll) characters: a character manifest with `layers`,
+//   each layer its own strips on the same frame grid, drawn in order.
+import { ARTSETS } from './src/data/artsets.js?v=26be683';
+import { CHARACTERS } from './src/data/characters.js?v=26be683';
+
+// Frames per second, as the game plays them (actors.js, Platformer.js).
+const ZEBONKY_FPS = { idle: 5, walk: 10, run: 14, jump: 10 };
+const EXPLORER_FPS = { idle: 3, walk: 8, jump: 8, crouch: 8, run: 12, swim: 8 };
+const NAMES = { idle: 'Idle', walk: 'Walk', run: 'Run', jump: 'Jump', crouch: 'Crouch', swim: 'Swim' };
+
+const json = (url) => fetch(url, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+const image = (url) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
+
+const players = [];
+
+// Two windows (the user, 2026-10-26): Zebonkies and Explorer. The address
+// remembers which (sprites.html#explorer), so each can be linked directly.
+const tabs = [...document.querySelectorAll('.tabs button')];
+function show(id) {
+  tabs.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.window === id)));
+  document.querySelectorAll('.window').forEach((w) => { w.hidden = w.id !== id; });
+  history.replaceState(null, '', id === 'explorer-window' ? '#explorer' : '#zebonkies');
+}
+tabs.forEach((b) => { b.onclick = () => show(b.dataset.window); });
+show(location.hash === '#explorer' ? 'explorer-window' : 'zebonkies-window');
+
+// One card: a canvas playing `layers` (each {anims: {name: {img, frames}}}),
+// frame size fw x fh, with a button per animation.
+function card(parent, title, tags, fw, fh, layers, fps, scale) {
+  const el = document.createElement('section');
+  el.className = 'card';
+  el.innerHTML = `<h3>${title}${tags.map(([t, ok]) => ` <span class="tag${ok ? ' ok' : ''}">${t}</span>`).join('')}</h3>`;
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  const canvas = document.createElement('canvas');
+  canvas.width = fw;
+  canvas.height = fh;
+  canvas.style.maxWidth = `${fw * scale}px`;
+  stage.appendChild(canvas);
+  el.appendChild(stage);
+  // Always in the same order, starting on Walk (the most to see).
+  const ORDER = ['idle', 'walk', 'run', 'jump', 'crouch', 'swim'];
+  const names = Object.keys(layers[0].anims).sort((x, y) => (ORDER.indexOf(x) + 1 || 99) - (ORDER.indexOf(y) + 1 || 99));
+  const buttons = document.createElement('div');
+  buttons.className = 'anims';
+  const meta = document.createElement('p');
+  meta.className = 'meta';
+  const p = { paused: false, canvas, layers, anim: names.includes('walk') ? 'walk' : names[0], frame: 0, last: 0, fps, fw, fh, meta, on: layers.map(() => true) };
+  names.forEach((n) => {
+    const b = document.createElement('button');
+    b.textContent = NAMES[n] || n;
+    b.onclick = () => { p.anim = n; p.frame = 0; draw(p); buttons.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); };
+    b.setAttribute('aria-pressed', String(n === p.anim));
+    buttons.appendChild(b);
+  });
+  el.appendChild(buttons);
+  if (layers.length > 1) {
+    const box = document.createElement('div');
+    box.className = 'layers';
+    layers.forEach((l, i) => {
+      const lab = document.createElement('label');
+      lab.innerHTML = `<input type="checkbox" checked> ${l.name}`;
+      lab.querySelector('input').onchange = (e) => { p.on[i] = e.target.checked; };
+      box.appendChild(lab);
+    });
+    el.appendChild(box);
+  }
+  // Play / pause and frame by frame (the user, 2026-10-26: to point at the
+  // exact frame that's wrong). Stepping pauses.
+  const ctrl = document.createElement('div');
+  ctrl.className = 'anims';
+  const mk = (label, title, fn) => {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute('aria-label', title);
+    b.onclick = fn;
+    ctrl.appendChild(b);
+    return b;
+  };
+  const step = (by) => { p.paused = true; playBtn.textContent = 'Play'; p.frame = (p.frame + by + count(p)) % count(p); draw(p); };
+  mk('◀', 'Previous frame', () => step(-1));
+  const playBtn = mk('Pause', 'Play or pause', () => {
+    p.paused = !p.paused;
+    playBtn.textContent = p.paused ? 'Play' : 'Pause';
+    draw(p);
+  });
+  mk('▶', 'Next frame', () => step(1));
+  el.appendChild(ctrl);
+  el.appendChild(meta);
+  parent.appendChild(el);
+  players.push(p);
+}
+
+// Frame count of the animation playing (the longest layer).
+function count(p) {
+  return Math.max(1, ...p.layers.map((l, i) => (l.anims[p.anim] && p.on[i] ? l.anims[p.anim].frames : 1)));
+}
+
+function rateOf(p) {
+  const own = p.layers[0].anims[p.anim];
+  return (own && own.fps) || p.fps[p.anim] || 8;
+}
+
+// Draws frame p.frame of the animation.
+function draw(p) {
+  const g = p.canvas.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, p.fw, p.fh);
+  p.layers.forEach((l, i) => {
+    const a = l.anims[p.anim];
+    if (!a || !a.img || !p.on[i]) return;
+    const f = p.frame % a.frames;
+    g.drawImage(a.img, f * p.fw, 0, p.fw, p.fh, 0, 0, p.fw, p.fh);
+  });
+  p.meta.textContent = `${NAMES[p.anim] || p.anim}: frame ${(p.frame % count(p)) + 1} of ${count(p)}, `
+    + `${rateOf(p)} frames a second${p.paused ? ' (paused)' : ''}`;
+}
+
+function tick(t) {
+  players.forEach((p) => {
+    if (p.paused || t - p.last < 1000 / rateOf(p)) return;
+    p.last = t;
+    p.frame = (p.frame + 1) % count(p);
+    draw(p);
+  });
+  requestAnimationFrame(tick);
+}
+
+// Strips {name: {file, frames}} under base -> {name: {img, frames}}.
+async function loadAnims(base, anims) {
+  const out = {};
+  await Promise.all(Object.entries(anims).map(async ([n, a]) => {
+    out[n] = { img: await image(base + a.file), frames: a.frames, fps: a.fps };
+  }));
+  return out;
+}
+
+// Zebonkies: one card each (sets that share one are shown once).
+const seen = new Set();
+for (const set of ARTSETS) {
+  const base = `assets/artsets/${set}/`;
+  const m = await json(`${base}artset.json`);
+  const z = m && m.zebonky;
+  if (!z || seen.has(z.name) || set === 'rainforest') continue;
+  seen.add(z.name);
+  const anims = await loadAnims(base, z.anims);
+  card(document.getElementById('zebonkies'), z.name.replace(' (stand-in)', ''),
+    z.standin ? [['Stand-in', false]] : [["Chris's art", true]], z.frameWidth, z.frameHeight, [{ name: z.name, anims }], ZEBONKY_FPS, 1.6);
+}
+
+// Explorers: strips; a manifest with `layers` is a paper doll character.
+const layered = document.getElementById('layered');
+let anyLayered = false;
+for (const c of CHARACTERS) {
+  const m = await json(c.manifest);
+  if (!m) continue;
+  if (m.layers) {
+    anyLayered = true;
+    const layers = await Promise.all(m.layers.map(async (l) => ({ name: l.name, anims: await loadAnims(c.base, l.anims) })));
+    card(layered, c.name, [['Layered', true]], m.frameWidth, m.frameHeight, layers, EXPLORER_FPS, 2);
+  } else {
+    const anims = await loadAnims(c.base, m.anims);
+    card(document.getElementById('explorers'), c.name, c.standin ? [['Stand-in', false]] : [], m.frameWidth, m.frameHeight,
+      [{ name: c.name, anims }], EXPLORER_FPS, 2);
+  }
+}
+if (!anyLayered) {
+  layered.innerHTML = '<div class="empty">Chris is drawing the explorer in layers: the body, then her hair and hat on top, on one frame grid. '
+    + 'They will play here as soon as they are in, with each layer switchable.</div>';
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

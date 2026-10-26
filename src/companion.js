@@ -4,7 +4,7 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=9c4152c';
+import { BIOMES } from './data/world.js?v=26be683';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen

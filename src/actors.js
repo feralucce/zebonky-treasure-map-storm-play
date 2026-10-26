@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=9c4152c';
-import { texKey } from './data/artsets.js?v=9c4152c';
+import { TILE } from './data/levels.js?v=26be683';
+import { texKey } from './data/artsets.js?v=26be683';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -42,6 +42,18 @@ export function zebonkyArt(scene, artName) {
   return null;
 }
 
+// The code below flips a Zebonky as if its art faces left. Art that faces
+// right (`faces: 'right'` in the manifest: a sheet Chris drew facing right,
+// tools/zebonky_sheet.py) gets the opposite flip, so it still looks the
+// way it's going.
+function faceArt(sprite, art) {
+  if (art.z.faces !== 'right') return sprite;
+  const flip = sprite.setFlipX.bind(sprite);
+  sprite.setFlipX = (v) => flip(!v);
+  sprite.setFlipX(false);
+  return sprite;
+}
+
 // Animations are shared by every scene, so they're made once.
 export function ensureAnims(scene, art) {
   Object.entries(art.z.anims).forEach(([anim, a]) => {
@@ -50,7 +62,7 @@ export function ensureAnims(scene, art) {
     scene.anims.create({
       key,
       frames: scene.anims.generateFrameNumbers(texKey(art.name, a.file), { start: 0, end: a.frames - 1 }),
-      frameRate: ANIM_RATES[anim] || 10,
+      frameRate: a.fps || ANIM_RATES[anim] || 10,
       repeat: -1,
     });
   });
@@ -90,7 +102,7 @@ export class WildZebonky {
     this.target = null;
     this.safe = { x, y: feetY };    // last spot with floor under its middle
     const idle = texKey(art.name, art.z.anims.idle.file);
-    const s = scene.physics.add.sprite(x, feetY, idle).setOrigin(0.5, 1).setScale(WILD_SCALE).setDepth(4);
+    const s = faceArt(scene.physics.add.sprite(x, feetY, idle).setOrigin(0.5, 1).setScale(WILD_SCALE).setDepth(4), art);
     // Body: the cub, not the empty edges of its frame.
     const fw = art.z.frameWidth;
     const fh = art.z.frameHeight;
@@ -502,7 +514,7 @@ export class GuideZebonky {
     this.revealed = false;
     this.onLastStop = onLastStop;
     const idle = texKey(art.name, art.z.anims.idle.file);
-    this.sprite = scene.add.sprite(points[0].x, points[0].y, idle).setOrigin(0.5, 1).setScale(GUIDE_SCALE).setDepth(4);
+    this.sprite = faceArt(scene.add.sprite(points[0].x, points[0].y, idle).setOrigin(0.5, 1).setScale(GUIDE_SCALE).setDepth(4), art);
     play(this.sprite, art, 'idle');
     // Sparkles, for now, so the guide stands out from wild Zebonkies.
     // Sparkles, so the guide stands out from wild Zebonkies: a soft golden

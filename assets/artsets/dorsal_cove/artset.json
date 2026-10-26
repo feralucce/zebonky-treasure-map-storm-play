@@ -305,7 +305,8 @@
   "anims": {
    "idle": {
     "file": "zebonky_idle.png",
-    "frames": 7
+    "frames": 32,
+    "fps": 8
    },
    "walk": {
     "file": "zebonky_walk.png",
@@ -319,7 +320,8 @@
     "file": "zebonky_jump.png",
     "frames": 4
    }
-  }
+  },
+  "faces": "right"
  },
  "foreground": [
   {

@@ -17,9 +17,9 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=9c4152c';
-import { state, pathKey } from './state.js?v=9c4152c';
-import { bankFor, questionKey } from './data/questions.js?v=9c4152c';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=26be683';
+import { state, pathKey } from './state.js?v=26be683';
+import { bankFor, questionKey } from './data/questions.js?v=26be683';
 
 // 3 added the answered questions; a version 2 link still loads, without them.
 const VERSION = 3;
