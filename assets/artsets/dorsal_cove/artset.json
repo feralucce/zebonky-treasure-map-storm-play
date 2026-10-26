@@ -254,6 +254,7 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/grubberry.png",
+ "foods": [],
  "sky": "#02a9fd",
  "background": [
   {
@@ -298,13 +299,13 @@
   "ground_chance": 0.22
  },
  "zebonky": {
-  "name": "Sharmadillo (stand-in)",
+  "name": "Sharmadillo",
   "frameWidth": 163,
   "frameHeight": 128,
   "anims": {
    "idle": {
     "file": "zebonky_idle.png",
-    "frames": 4
+    "frames": 7
    },
    "walk": {
     "file": "zebonky_walk.png",
@@ -318,8 +319,7 @@
     "file": "zebonky_jump.png",
     "frames": 4
    }
-  },
-  "standin": true
+  }
  },
  "foreground": [
   {

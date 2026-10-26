@@ -110,6 +110,7 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/bananler.png",
+ "foods": [],
  "sky": "#147e6f",
  "background": [
   {
@@ -152,6 +153,29 @@
    "pt_rock_medium.png"
   ],
   "ground_chance": 0.22
+ },
+ "zebonky": {
+  "name": "Chimpanzeetah",
+  "frameWidth": 163,
+  "frameHeight": 128,
+  "anims": {
+   "idle": {
+    "file": "zebonky_idle.png",
+    "frames": 1
+   },
+   "walk": {
+    "file": "zebonky_walk.png",
+    "frames": 7
+   },
+   "run": {
+    "file": "zebonky_run.png",
+    "frames": 5
+   },
+   "jump": {
+    "file": "zebonky_jump.png",
+    "frames": 5
+   }
+  }
  },
  "foreground": [
   {

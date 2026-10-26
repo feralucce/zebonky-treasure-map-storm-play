@@ -110,6 +110,7 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/haycorn.png",
+ "foods": [],
  "sky": "#049cf9",
  "background": [
   {
@@ -154,7 +155,7 @@
   "ground_chance": 0.22
  },
  "zebonky": {
-  "name": "Squffalo (stand-in)",
+  "name": "Squffalo",
   "frameWidth": 163,
   "frameHeight": 128,
   "anims": {
@@ -168,14 +169,13 @@
    },
    "run": {
     "file": "zebonky_run.png",
-    "frames": 8
+    "frames": 7
    },
    "jump": {
     "file": "zebonky_jump.png",
-    "frames": 4
+    "frames": 8
    }
-  },
-  "standin": true
+  }
  },
  "foreground": [
   {

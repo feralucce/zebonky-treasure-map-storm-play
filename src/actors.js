@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=afb17b7';
-import { texKey } from './data/artsets.js?v=afb17b7';
+import { TILE } from './data/levels.js?v=9c4152c';
+import { texKey } from './data/artsets.js?v=9c4152c';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -31,7 +31,8 @@ const FOOD_CHARGE = 250;        // a bit faster than charging the player
 const GUIDE_NEAR = TILE * 3.5;  // the guide moves on when the player is within this radius
 const GUIDE_SPEED = 340;        // px per second while bounding ahead
 
-const ANIM_RATES = { idle: 2, walk: 10, run: 14, jump: 10 };
+// Chris's frames (tools/zebonky_sheet.py): idle breathes at a few frames a second.
+const ANIM_RATES = { idle: 5, walk: 10, run: 14, jump: 10 };
 
 export function zebonkyArt(scene, artName) {
   for (const name of [artName, ACTOR_ARTSET]) {

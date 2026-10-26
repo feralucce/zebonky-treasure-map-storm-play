@@ -110,6 +110,7 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/debriwis.png",
+ "foods": [],
  "sky": "#568af8",
  "background": [
   {
@@ -149,13 +150,13 @@
   "ground_chance": 0.22
  },
  "zebonky": {
-  "name": "Unicorpion (stand-in)",
+  "name": "Unicorpion",
   "frameWidth": 163,
   "frameHeight": 128,
   "anims": {
    "idle": {
     "file": "zebonky_idle.png",
-    "frames": 4
+    "frames": 8
    },
    "walk": {
     "file": "zebonky_walk.png",
@@ -163,14 +164,13 @@
    },
    "run": {
     "file": "zebonky_run.png",
-    "frames": 8
+    "frames": 6
    },
    "jump": {
     "file": "zebonky_jump.png",
-    "frames": 4
+    "frames": 6
    }
-  },
-  "standin": true
+  }
  },
  "foreground": [
   {

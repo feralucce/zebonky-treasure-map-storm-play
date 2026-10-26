@@ -156,7 +156,7 @@
   "ground_chance": 0.22
  },
  "zebonky": {
-  "name": "Axolotter (stand-in)",
+  "name": "Axolotter",
   "frameWidth": 163,
   "frameHeight": 128,
   "anims": {
@@ -166,18 +166,17 @@
    },
    "walk": {
     "file": "zebonky_walk.png",
-    "frames": 8
+    "frames": 6
    },
    "run": {
     "file": "zebonky_run.png",
-    "frames": 8
+    "frames": 6
    },
    "jump": {
     "file": "zebonky_jump.png",
-    "frames": 4
+    "frames": 6
    }
-  },
-  "standin": true
+  }
  },
  "foreground": [
   {

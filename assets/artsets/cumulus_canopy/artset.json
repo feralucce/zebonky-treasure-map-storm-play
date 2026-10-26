@@ -111,6 +111,7 @@
  "vine_strand": "vn_strand.png",
  "vine_strand_top": "vn_strand_top.png",
  "food": "../../food/bananler.png",
+ "foods": [],
  "sky": "#4ea1fd",
  "background": [
   {
@@ -161,7 +162,7 @@
   "hang_chance": 0.25
  },
  "zebonky": {
-  "name": "Raccatoo (stand-in)",
+  "name": "Raccatoo",
   "frameWidth": 163,
   "frameHeight": 128,
   "anims": {
@@ -171,18 +172,17 @@
    },
    "walk": {
     "file": "zebonky_walk.png",
-    "frames": 8
+    "frames": 6
    },
    "run": {
     "file": "zebonky_run.png",
-    "frames": 8
+    "frames": 6
    },
    "jump": {
     "file": "zebonky_jump.png",
-    "frames": 4
+    "frames": 6
    }
-  },
-  "standin": true
+  }
  },
  "foreground": [
   {
