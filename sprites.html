@@ -19,6 +19,9 @@
   h2 { font: 900 24px 'Nunito', sans-serif; margin: 28px 0 4px; }
   .note { margin: 0 0 14px; color: #3e5a4b; font-size: 15px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+  /* Zebonkies in pairs (the user, 2026-10-26): ours on the left, Chris's
+     original on the right, one pair per row. */
+  .grid.pairs { grid-template-columns: 1fr 1fr; }
   .card { background: #fff; border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); padding: 12px; }
   .card h3 { margin: 0 0 8px; font: 900 20px 'Nunito', sans-serif; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .tag { font: 800 11px 'Nunito', sans-serif; letter-spacing: .08em; text-transform: uppercase; background: #9c6b3c; color: #fff; border-radius: 999px; padding: 2px 8px; }
@@ -52,8 +55,8 @@
 <main>
   <section class="window" id="zebonkies-window">
   <h2>Zebonkies</h2>
-  <p class="note">Chris's sprite sheets, cut into the frames the game plays.</p>
-  <div class="grid" id="zebonkies"></div>
+  <p class="note">Left: the animation we are working on, as the game plays it. Right: Chris's original frames, facing the same way.</p>
+  <div class="grid pairs" id="zebonkies"></div>
   </section>
 
   <section class="window" id="explorer-window">
@@ -74,13 +77,23 @@
 // - explorers: data/characters.js, a strip per animation;
 // - layered (paper doll) characters: a character manifest with `layers`,
 //   each layer its own strips on the same frame grid, drawn in order.
-import { ARTSETS } from './src/data/artsets.js?v=26be683';
-import { CHARACTERS } from './src/data/characters.js?v=26be683';
+import { ARTSETS } from './src/data/artsets.js?v=6143082';
+import { CHARACTERS } from './src/data/characters.js?v=6143082';
 
 // Frames per second, as the game plays them (actors.js, Platformer.js).
-const ZEBONKY_FPS = { idle: 5, walk: 10, run: 14, jump: 10 };
+const ZEBONKY_FPS = { idle: 5, walk: 10, run: 14, jump: 10, dive: 10 };
+// How high a Zebonky jumps in the game: LEAP_SPEED 720 against gravity
+// 1900 (actors.js, main.js) is 720 * 720 / (2 * 1900), about 136 px.
+const JUMP_RISE = 136;
+// A dive ends this far under where it started, with this much stage below
+// the ground for it.
+const DIVE_UNDER = 44;
+const DEEP = 50;
+const FEET = 122;   // feet on this row of a Zebonky frame (tools/zebonky_sheet.py)
 const EXPLORER_FPS = { idle: 3, walk: 8, jump: 8, crouch: 8, run: 12, swim: 8 };
-const NAMES = { idle: 'Idle', walk: 'Walk', run: 'Run', jump: 'Jump', crouch: 'Crouch', swim: 'Swim' };
+const NAMES = { idle: 'Idle', walk: 'Walk', run: 'Run', jump: 'Jump', dive: 'Dive', crouch: 'Crouch', swim: 'Swim' };
+// Animations that leave the ground: they play on the jump's arc.
+const LEAPS = new Set(['jump', 'dive']);
 
 const json = (url) => fetch(url, { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const image = (url) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = url; });
@@ -100,30 +113,32 @@ show(location.hash === '#explorer' ? 'explorer-window' : 'zebonkies-window');
 
 // One card: a canvas playing `layers` (each {anims: {name: {img, frames}}}),
 // frame size fw x fh, with a button per animation.
-function card(parent, title, tags, fw, fh, layers, fps, scale) {
+function card(parent, title, tags, fw, fh, layers, fps, scale, rise = 0) {
   const el = document.createElement('section');
   el.className = 'card';
   el.innerHTML = `<h3>${title}${tags.map(([t, ok]) => ` <span class="tag${ok ? ' ok' : ''}">${t}</span>`).join('')}</h3>`;
   const stage = document.createElement('div');
   stage.className = 'stage';
   const canvas = document.createElement('canvas');
+  // Room above the frame for the jump to rise into (`rise` px).
   canvas.width = fw;
-  canvas.height = fh;
+  // And room below for a dive to go into the water (`DEEP`).
+  canvas.height = fh + rise + (rise ? DEEP : 0);
   canvas.style.maxWidth = `${fw * scale}px`;
   stage.appendChild(canvas);
   el.appendChild(stage);
   // Always in the same order, starting on Walk (the most to see).
-  const ORDER = ['idle', 'walk', 'run', 'jump', 'crouch', 'swim'];
+  const ORDER = ['idle', 'walk', 'run', 'jump', 'dive', 'crouch', 'swim'];
   const names = Object.keys(layers[0].anims).sort((x, y) => (ORDER.indexOf(x) + 1 || 99) - (ORDER.indexOf(y) + 1 || 99));
   const buttons = document.createElement('div');
   buttons.className = 'anims';
   const meta = document.createElement('p');
   meta.className = 'meta';
-  const p = { paused: false, canvas, layers, anim: names.includes('walk') ? 'walk' : names[0], frame: 0, last: 0, fps, fw, fh, meta, on: layers.map(() => true) };
+  const p = { paused: false, canvas, layers, anim: names.includes('walk') ? 'walk' : names[0], frame: 0, last: 0, fps, fw, fh, rise, meta, on: layers.map(() => true) };
   names.forEach((n) => {
     const b = document.createElement('button');
     b.textContent = NAMES[n] || n;
-    b.onclick = () => { p.anim = n; p.frame = 0; draw(p); buttons.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); };
+    b.onclick = () => { choose(p, n); buttons.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); };
     b.setAttribute('aria-pressed', String(n === p.anim));
     buttons.appendChild(b);
   });
@@ -152,7 +167,7 @@ function card(parent, title, tags, fw, fh, layers, fps, scale) {
     ctrl.appendChild(b);
     return b;
   };
-  const step = (by) => { p.paused = true; playBtn.textContent = 'Play'; p.frame = (p.frame + by + count(p)) % count(p); draw(p); };
+  const step = (by) => { p.paused = true; playBtn.textContent = 'Play'; advance(p, by); draw(p); };
   mk('◀', 'Previous frame', () => step(-1));
   const playBtn = mk('Pause', 'Play or pause', () => {
     p.paused = !p.paused;
@@ -166,9 +181,111 @@ function card(parent, title, tags, fw, fh, layers, fps, scale) {
   players.push(p);
 }
 
-// Frame count of the animation playing (the longest layer).
+// The strip frames the animation plays, in order. One with phases
+// (`start`, `loop`, `end`: Shaan's roll) plays its start once, then loops
+// until another animation is chosen (the user, 2026-10-26: "have the roll
+// keep going until we hit walk, idle or jump again"), then plays its end
+// once before switching, as the game does.
+const span = ([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => a + i);
+// A jump plays through to its landing pose, stays on the ground a moment,
+// then jumps again (the user, 2026-10-26: "so that we see the sprite
+// actually jump"); `air` is how many of its steps are off the ground.
+const LANDED = 8;
+// A range either way round ([last, first] plays backwards).
+const range = ([a, b]) => Array.from({ length: Math.abs(b - a) + 1 }, (_, i) => a + i * Math.sign(b - a || 1));
+// In the air: the launch, then (a dive) the tip, which ends at the water.
+const airFrames = (a) => (a.tip ? [...range(a.start), ...range(a.tip)]
+  : a.loop && a.start ? [...span(a.start), a.loop[0]] : span([0, a.frames - 1]));
+function order(a, anim) {
+  if (LEAPS.has(anim)) {
+    const air = airFrames(a);
+    // A dive then levels out under the water (the user, 2026-10-26: "the
+    // dive tip forward should be at the level of the water... then it
+    // levels out").
+    const after = a.level ? range(a.level) : [];
+    const last = after.length ? after[after.length - 1] : air[air.length - 1];
+    return [...air, ...after, ...Array(LANDED).fill(last)];
+  }
+  if (!a.loop) return span([0, a.frames - 1]);
+  return [...(a.start ? span(a.start) : []), ...span(a.loop)];
+}
+const airSteps = (a) => airFrames(a).length;
+const loopFrom = (a, anim) => (!LEAPS.has(anim) && a.loop && a.start ? a.start[1] - a.start[0] + 1 : 0);
+
+// How high off the ground the sprite is: a jump follows the game's arc
+// (up and down like a thrown ball), as high as a Zebonky really jumps.
+// A dive comes down to the water as its tip ends, then goes under it while
+// it levels out (the user, 2026-10-26: "Shaan's dive needs to end with
+// shaan in the water"), and stays there.
+function lift(p, a) {
+  if (!LEAPS.has(p.anim) || p.ending || !p.rise) return 0;
+  const n = airSteps(a);
+  const i = p.frame % order(a, p.anim).length;
+  if (i < n) {
+    const t = n > 1 ? i / (n - 1) : 1;
+    return Math.round(p.rise * 4 * t * (1 - t));
+  }
+  if (p.anim !== 'dive') return 0;
+  // Under the water: down while it levels out, then stays.
+  const k = a.level ? Math.abs(a.level[1] - a.level[0]) + 1 : 1;
+  return -Math.round(DIVE_UNDER * Math.min((i - n + 1) / k, 1));
+}
+
+// The water a dive goes into: from where its feet started to
+// the bottom of the stage, over the Zebonky so what's under it is tinted.
+function water(p, g) {
+  const top = p.rise + FEET;
+  g.fillStyle = 'rgba(64, 150, 220, 0.5)';
+  g.fillRect(0, top, p.fw, p.canvas.height - top);
+  g.fillStyle = 'rgba(220, 245, 255, 0.85)';
+  g.fillRect(0, top, p.fw, 2);
+}
+
+// Steps in the animation playing (the longest layer).
 function count(p) {
-  return Math.max(1, ...p.layers.map((l, i) => (l.anims[p.anim] && p.on[i] ? l.anims[p.anim].frames : 1)));
+  return Math.max(1, ...p.layers.map((l, i) => (l.anims[p.anim] && p.on[i] ? order(l.anims[p.anim], p.anim).length : 1)));
+}
+
+// Switches to animation n: the one playing ends first if it has an end.
+function choose(p, n) {
+  const a = p.layers[0].anims[p.anim];
+  if (n !== p.anim && a && a.end && !p.ending) {
+    p.ending = { frames: span(a.end), i: 0 };
+    p.next = n;
+  } else if (p.ending) {
+    p.next = n;
+  } else {
+    p.anim = n;
+    p.frame = 0;
+  }
+  draw(p);
+}
+
+// One step on (by 1) or back (by -1). The loop part repeats; the start
+// plays only on the way in.
+function advance(p, by) {
+  if (p.ending) {
+    p.ending.i += by;
+    if (p.ending.i >= p.ending.frames.length || p.ending.i < 0) {
+      p.ending = null;
+      p.anim = p.next;
+      p.frame = 0;
+    }
+    return;
+  }
+  const a = p.layers[0].anims[p.anim];
+  const n = count(p);
+  const from = a ? loopFrom(a, p.anim) : 0;
+  p.frame += by;
+  if (p.frame >= n) p.frame = from;
+  if (p.frame < 0) p.frame = n - 1;
+}
+
+function phaseOf(a, f, ending) {
+  if (ending) return ' (end, plays once)';
+  if (!a.loop) return '';
+  if (a.start && f >= a.start[0] && f <= a.start[1]) return ' (start, plays once)';
+  return ' (loop, until another is chosen)';
 }
 
 function rateOf(p) {
@@ -180,14 +297,18 @@ function rateOf(p) {
 function draw(p) {
   const g = p.canvas.getContext('2d');
   g.imageSmoothingEnabled = false;
-  g.clearRect(0, 0, p.fw, p.fh);
+  g.clearRect(0, 0, p.fw, p.canvas.height);
+  const at = (a) => (p.ending ? p.ending.frames[p.ending.i] : order(a, p.anim)[p.frame % order(a, p.anim).length]);
   p.layers.forEach((l, i) => {
     const a = l.anims[p.anim];
     if (!a || !a.img || !p.on[i]) return;
-    const f = p.frame % a.frames;
-    g.drawImage(a.img, f * p.fw, 0, p.fw, p.fh, 0, 0, p.fw, p.fh);
+    g.drawImage(a.img, at(a) * p.fw, 0, p.fw, p.fh, 0, p.rise - lift(p, a), p.fw, p.fh);
   });
-  p.meta.textContent = `${NAMES[p.anim] || p.anim}: frame ${(p.frame % count(p)) + 1} of ${count(p)}, `
+  if (p.anim === 'dive' && p.rise) water(p, g);
+  // Frame numbers are the strip's (the numbers to quote in a review).
+  const a = p.layers[0].anims[p.anim];
+  const f = a ? at(a) : 0;
+  p.meta.textContent = `${NAMES[p.anim] || p.anim}: frame ${f + 1} of ${a ? a.frames : 1}${a ? (LEAPS.has(p.anim) ? (lift(p, a) > 0 ? ' (in the air)' : lift(p, a) < 0 ? ' (in the water)' : p.anim === 'dive' ? ' (at the water)' : ' (on the ground)') : phaseOf(a, f, p.ending)) : ''}, `
     + `${rateOf(p)} frames a second${p.paused ? ' (paused)' : ''}`;
 }
 
@@ -195,7 +316,7 @@ function tick(t) {
   players.forEach((p) => {
     if (p.paused || t - p.last < 1000 / rateOf(p)) return;
     p.last = t;
-    p.frame = (p.frame + 1) % count(p);
+    advance(p, 1);
     draw(p);
   });
   requestAnimationFrame(tick);
@@ -205,22 +326,42 @@ function tick(t) {
 async function loadAnims(base, anims) {
   const out = {};
   await Promise.all(Object.entries(anims).map(async ([n, a]) => {
-    out[n] = { img: await image(base + a.file), frames: a.frames, fps: a.fps };
+    out[n] = { img: await image(base + a.file), frames: a.frames, fps: a.fps, start: a.start, loop: a.loop, end: a.end, tip: a.tip, level: a.level };
   }));
   return out;
 }
 
-// Zebonkies: one card each (sets that share one are shown once).
+// Zebonkies: one card each (sets that share one are shown once), beside
+// Chris's original while we work on it. A finished one goes to the bottom
+// on its own (the user, 2026-10-26, Shaan: "move him to the bottom of the
+// animation page and remove chris's version of him").
+const FINISHED = new Set(['Sharmadillo', 'Axolotter']);
 const seen = new Set();
+const zebonkies = [];
 for (const set of ARTSETS) {
   const base = `assets/artsets/${set}/`;
   const m = await json(`${base}artset.json`);
   const z = m && m.zebonky;
   if (!z || seen.has(z.name) || set === 'rainforest') continue;
   seen.add(z.name);
+  zebonkies.push({ base, z, title: z.name.replace(' (stand-in)', '') });
+}
+zebonkies.sort((x, y) => FINISHED.has(x.title) - FINISHED.has(y.title));
+for (const { base, z, title } of zebonkies) {
   const anims = await loadAnims(base, z.anims);
-  card(document.getElementById('zebonkies'), z.name.replace(' (stand-in)', ''),
-    z.standin ? [['Stand-in', false]] : [["Chris's art", true]], z.frameWidth, z.frameHeight, [{ name: z.name, anims }], ZEBONKY_FPS, 1.6);
+  const grid = document.getElementById('zebonkies');
+  if (FINISHED.has(title)) {
+    card(grid, title, [['Finished', true]], z.frameWidth, z.frameHeight, [{ name: z.name, anims }], ZEBONKY_FPS, 1.6, JUMP_RISE);
+    continue;
+  }
+  card(grid, title, z.standin ? [['Stand-in', false]] : [['Ours', true]], z.frameWidth, z.frameHeight, [{ name: z.name, anims }], ZEBONKY_FPS, 1.6, JUMP_RISE);
+  // His original frames for each animation (zebonky_<anim>_original.png).
+  const orig = Object.fromEntries(Object.entries(z.anims).filter(([, a]) => a.original).map(([n, a]) => [n, a.original]));
+  if (Object.keys(orig).length) {
+    card(grid, title, [["Chris's original", false]], z.frameWidth, z.frameHeight, [{ name: z.name, anims: await loadAnims(base, orig) }], ZEBONKY_FPS, 1.6, JUMP_RISE);
+  } else {
+    grid.insertAdjacentHTML('beforeend', '<div class="card"><h3>' + title + '</h3><p class="meta">No original frames for this one.</p></div>');
+  }
 }
 
 // Explorers: strips; a manifest with `layers` is a paper doll character.

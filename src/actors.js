@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=26be683';
-import { texKey } from './data/artsets.js?v=26be683';
+import { TILE } from './data/levels.js?v=6143082';
+import { texKey } from './data/artsets.js?v=6143082';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -46,7 +46,22 @@ export function zebonkyArt(scene, artName) {
 // right (`faces: 'right'` in the manifest: a sheet Chris drew facing right,
 // tools/zebonky_sheet.py) gets the opposite flip, so it still looks the
 // way it's going.
-function faceArt(sprite, art) {
+// Feet are drawn on this row of a Zebonky frame (tools/zebonky_sheet.py
+// GROUND), not on its bottom edge: a Zebonky stands with this row on the
+// ground (the user, 2026-10-26: "not touching the ground").
+export const FEET_ROW = 122;
+
+// A Zebonky sprite's anchor at its feet, and (with a body) its body from
+// the cub's middle down to its feet, not the empty edges of its frame.
+export function standOnFeet(sprite, art) {
+  const fw = art.z.frameWidth;
+  const fh = art.z.frameHeight;
+  sprite.setOrigin(0.5, FEET_ROW / fh);
+  if (sprite.body) sprite.body.setSize(fw * 0.5, FEET_ROW - fh * 0.38).setOffset(fw * 0.25, fh * 0.38);
+  return sprite;
+}
+
+export function faceArt(sprite, art) {
   if (art.z.faces !== 'right') return sprite;
   const flip = sprite.setFlipX.bind(sprite);
   sprite.setFlipX = (v) => flip(!v);
@@ -55,22 +70,48 @@ function faceArt(sprite, art) {
 }
 
 // Animations are shared by every scene, so they're made once.
+// An animation with phases (`start`, `loop`, `end` in the manifest, frame
+// ranges; Shaan's roll: curl up once, roll, uncurl when he stops) is made
+// as three: <key>-start and <key>-end play once, <key> loops.
 export function ensureAnims(scene, art) {
   Object.entries(art.z.anims).forEach(([anim, a]) => {
     const key = `${art.name}-z-${anim}`;
     if (scene.anims.exists(key)) return;
-    scene.anims.create({
-      key,
-      frames: scene.anims.generateFrameNumbers(texKey(art.name, a.file), { start: 0, end: a.frames - 1 }),
+    const tex = texKey(art.name, a.file);
+    // A range can run backwards ([last, first]): played in reverse.
+    const make = (k, [from, to], repeat) => scene.anims.create({
+      key: k,
+      frames: scene.anims.generateFrameNumbers(tex, {
+        frames: Array.from({ length: Math.abs(to - from) + 1 }, (_, i) => from + i * Math.sign(to - from || 1)),
+      }),
       frameRate: a.fps || ANIM_RATES[anim] || 10,
-      repeat: -1,
+      repeat,
     });
+    make(key, a.loop || [0, a.frames - 1], -1);
+    if (a.start) make(`${key}-start`, a.start, 0);
+    if (a.end) make(`${key}-end`, a.end, 0);
+    // Other phases (the dive's `tip` and `level`) play once, when the
+    // Zebonky's own code calls them (companion.js).
+    if (a.tip) make(`${key}-tip`, a.tip, 0);
+    if (a.level) make(`${key}-level`, a.level, 0);
   });
 }
 
-const play = (sprite, art, anim) => {
+// Plays anim on a Zebonky: the last one's end first if it has one, then
+// this one's start if it has one, then its loop.
+export const play = (sprite, art, anim) => {
+  if (sprite.zAnim === anim) return;
+  const was = sprite.zAnim && art.z.anims[sprite.zAnim];
+  const a = art.z.anims[anim] || {};
   const key = `${art.name}-z-${anim}`;
-  if (sprite.anims.currentAnim?.key !== key) sprite.play(key);
+  const seq = [];
+  if (was && was.end) seq.push(`${art.name}-z-${sprite.zAnim}-end`);
+  if (a.start) seq.push(`${key}-start`);
+  seq.push(key);
+  sprite.zAnim = anim;
+  sprite.anims.chain();
+  sprite.play(seq[0]);
+  seq.slice(1).forEach((k) => sprite.anims.chain(k));
 };
 
 // ---------- wild Zebonky ----------
@@ -102,11 +143,7 @@ export class WildZebonky {
     this.target = null;
     this.safe = { x, y: feetY };    // last spot with floor under its middle
     const idle = texKey(art.name, art.z.anims.idle.file);
-    const s = faceArt(scene.physics.add.sprite(x, feetY, idle).setOrigin(0.5, 1).setScale(WILD_SCALE).setDepth(4), art);
-    // Body: the cub, not the empty edges of its frame.
-    const fw = art.z.frameWidth;
-    const fh = art.z.frameHeight;
-    s.body.setSize(fw * 0.5, fh * 0.62).setOffset(fw * 0.25, fh * 0.38);
+    const s = faceArt(standOnFeet(scene.physics.add.sprite(x, feetY, idle).setScale(WILD_SCALE).setDepth(4), art), art);
     s.setMaxVelocity(LEAP_REACH, 1400);
     s.zebonky = this;
     this.sprite = s;
@@ -457,7 +494,8 @@ export class WildZebonky {
     }
     s.setVelocityX(this.dir * SWIM_SPEED);
     s.setFlipX(this.dir > 0);
-    play(s, this.art, 'walk');
+    // Its own swim strip if it has one (Axel), else it paddles with its walk.
+    play(s, this.art, this.art.z.anims.swim ? 'swim' : 'walk');
   }
 
   // Pop back into view at a spot, after a fall.
@@ -514,7 +552,7 @@ export class GuideZebonky {
     this.revealed = false;
     this.onLastStop = onLastStop;
     const idle = texKey(art.name, art.z.anims.idle.file);
-    this.sprite = faceArt(scene.add.sprite(points[0].x, points[0].y, idle).setOrigin(0.5, 1).setScale(GUIDE_SCALE).setDepth(4), art);
+    this.sprite = faceArt(standOnFeet(scene.add.sprite(points[0].x, points[0].y, idle).setScale(GUIDE_SCALE).setDepth(4), art), art);
     play(this.sprite, art, 'idle');
     // Sparkles, for now, so the guide stands out from wild Zebonkies.
     // Sparkles, so the guide stands out from wild Zebonkies: a soft golden
@@ -592,7 +630,7 @@ export class GuideZebonky {
         });
         return;
       }
-      play(s, this.art, h.type === 'run' ? 'run' : h.type === 'swim' ? 'walk' : 'jump');
+      play(s, this.art, h.type === 'run' ? 'run' : h.type === 'swim' ? (this.art.z.anims.swim ? 'swim' : 'walk') : 'jump');
       const p = { t: 0 };
       // swimming is slower; the uphill waterfall carries it up fast
       const speed = h.type === 'swim' ? GUIDE_SPEED * 0.55 : h.type === 'ride' ? 640 : GUIDE_SPEED;
