@@ -12,18 +12,18 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=3ad4363';
-import { texKey } from './data/artsets.js?v=3ad4363';
+import { TILE } from './data/levels.js?v=8239659';
+import { texKey } from './data/artsets.js?v=8239659';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
 export const ACTOR_ARTSET = 'rainforest';
 
-const WILD_SCALE = 0.55;        // about 70 px tall
+export const WILD_SCALE = 0.55;        // about 70 px tall
 const GUIDE_SCALE = 0.78;       // a size up: about 100 px tall
 const NOTICE = TILE * 5;        // how close before a wild Zebonky reacts
-const CHARGE_SPEED = 210;       // slower than the player, so it can be jumped
-const WANDER_SPEED = 60;
+export const CHARGE_SPEED = 210;       // slower than the player, so it can be jumped
+export const WANDER_SPEED = 60;
 const WANDER_RANGE = TILE * 2;
 const STUN_MS = 900;            // pause after bumping the player
 const FOOD_SMELL = NOTICE;      // food this close gets charged at and eaten
@@ -124,7 +124,7 @@ export const play = (sprite, art, anim) => {
 
 // ---------- wild Zebonky ----------
 
-const LEAP_SPEED = 720;         // a Zebonky's jump: about 2 tiles high
+export const LEAP_SPEED = 720;         // a Zebonky's jump: about 2 tiles high
 const LEAP_REACH = 420;         // fastest sideways speed in a leap (about 5 tiles' reach)
 const OVERSHOOT_MS = 4000;      // keeps running this long after being jumped over (about 13 tiles)
 const DAZE_MS = 1500;           // confused after being landed on
@@ -132,8 +132,8 @@ const FOLLOW_NEAR = TILE * 2.5; // a fed Zebonky stops this close behind you
 const FOLLOW_FAR = TILE * 4;    // and starts walking again past this
 const FOLLOW_LOST = TILE * 16;  // further than this it catches up in a blink
 const FOLLOW_STUCK_MS = 1500;   // no closer to the player for this long: catch up
-const SWIM_SPEED = 120;         // paddling along the surface
-const FLOAT_RISE = 170;         // water carries a Zebonky up at this speed
+export const SWIM_SPEED = 120;         // paddling along the surface
+export const FLOAT_RISE = 170;         // water carries a Zebonky up at this speed
 // A Zebonky that flies (`flies` in its art: Ricky) keeps its feet this far
 // above the water instead of floating in it (the user, 2026-10-27).
 export const FLY_ABOVE = 40;

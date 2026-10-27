@@ -1,9 +1,10 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3ad4363';
-import { testParams, DRAWN } from '../data/levels.js?v=3ad4363';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3ad4363';
-import { CHARACTERS } from '../data/characters.js?v=3ad4363';
-import { state } from '../state.js?v=3ad4363';
-import { COLORS, heading, text } from '../theme.js?v=3ad4363';
+import { ARTSETS, texKey } from '../data/artsets.js?v=8239659';
+import { testParams, DRAWN } from '../data/levels.js?v=8239659';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=8239659';
+import { CHARACTERS } from '../data/characters.js?v=8239659';
+import { state } from '../state.js?v=8239659';
+import { COLORS, heading, text } from '../theme.js?v=8239659';
+import { showcaseData } from '../showcase.js?v=8239659';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -169,6 +170,12 @@ export class BootScene extends Phaser.Scene {
     if (test) test.levelId = playableLevelId(test.levelId);
     // index.html?inspect=1: inspection mode, the whole game with every level
     // open and no explorer (?inspect=<level id> goes straight to that level).
+    // index.html?showcase=1 (or =<name>): the Zebonky showcase.
+    const show = new URLSearchParams(window.location.search).get('showcase');
+    if (show) {
+      this.scene.start('Level', showcaseData(show === '1' ? 'shaan' : show));
+      return;
+    }
     const inspect = new URLSearchParams(window.location.search).get('inspect');
     if (inspect) {
       state.startInspection();
