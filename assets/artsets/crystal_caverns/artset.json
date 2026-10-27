@@ -159,19 +159,63 @@
    "idle": {
     "file": "zebonky_idle.png",
     "frames": 32,
-    "fps": 8
+    "fps": 8,
+    "original": {
+     "file": "zebonky_idle_original.png",
+     "frames": 8
+    }
    },
    "walk": {
     "file": "zebonky_walk.png",
-    "frames": 8
+    "frames": 12,
+    "fps": 10,
+    "original": {
+     "file": "zebonky_walk_original.png",
+     "frames": 8
+    }
    },
    "run": {
     "file": "zebonky_run.png",
-    "frames": 6
+    "frames": 10,
+    "fps": 14,
+    "original": {
+     "file": "zebonky_run_original.png",
+     "frames": 7
+    }
    },
    "jump": {
     "file": "zebonky_jump.png",
-    "frames": 6
+    "frames": 7,
+    "ground": [
+     0,
+     1
+    ],
+    "start": [
+     0,
+     4
+    ],
+    "loop": [
+     5,
+     5
+    ],
+    "end": [
+     6,
+     6
+    ],
+    "fps": 12,
+    "original": {
+     "file": "zebonky_jump_original.png",
+     "frames": 6
+    }
+   },
+   "swim": {
+    "file": "zebonky_swim.png",
+    "frames": 12,
+    "fps": 10,
+    "original": {
+     "file": "zebonky_swim_original.png",
+     "frames": 8
+    }
    }
   },
   "faces": "right"
