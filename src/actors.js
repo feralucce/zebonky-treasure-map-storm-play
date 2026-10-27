@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=2088e6a';
-import { texKey } from './data/artsets.js?v=2088e6a';
+import { TILE } from './data/levels.js?v=3ad4363';
+import { texKey } from './data/artsets.js?v=3ad4363';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -134,6 +134,9 @@ const FOLLOW_LOST = TILE * 16;  // further than this it catches up in a blink
 const FOLLOW_STUCK_MS = 1500;   // no closer to the player for this long: catch up
 const SWIM_SPEED = 120;         // paddling along the surface
 const FLOAT_RISE = 170;         // water carries a Zebonky up at this speed
+// A Zebonky that flies (`flies` in its art: Ricky) keeps its feet this far
+// above the water instead of floating in it (the user, 2026-10-27).
+export const FLY_ABOVE = 40;
 
 export class WildZebonky {
   constructor(scene, art, x, feetY) {
@@ -380,7 +383,8 @@ export class WildZebonky {
       return;
     }
     // In water: float up and paddle for the shore.
-    if (this.scene.isWaterAt(s.x, s.y - 30)) {
+    const flying = this.art.z.flies && !s.body.blocked.down && this.scene.isWaterAt(s.x, s.y + FLY_ABOVE + 20);
+    if (this.scene.isWaterAt(s.x, s.y - 30) || flying) {
       if (this.isFed && time > this.leaveAt) this.goAway(true);   // leaving: it slips away
       else this.swim(player);
       return;
@@ -500,7 +504,7 @@ export class WildZebonky {
     s.body.setGravityY(-scene.physics.world.gravity.y);
     const c = Math.floor(s.x / TILE);
     const surface = scene.surfaceRow[c] !== undefined ? scene.surfaceRow[c] * TILE : null;
-    const floatFeet = surface === null ? s.y : surface + 30;
+    const floatFeet = surface === null ? s.y : surface + (this.art.z.flies ? -FLY_ABOVE : 30);
     const vy = s.body.velocity.y;
     s.setVelocityY(s.y > floatFeet + 4 ? Phaser.Math.Linear(vy, -FLOAT_RISE, 0.1) : Phaser.Math.Linear(vy, (floatFeet - s.y) * 4, 0.25));
     if (this.isFed || this.state === 'charge') this.dir = Math.sign(player.x - s.x) || this.dir;

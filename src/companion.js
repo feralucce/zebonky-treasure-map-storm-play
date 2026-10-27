@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=2088e6a';
-import { ARTSETS, texKey } from './data/artsets.js?v=2088e6a';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime } from './actors.js?v=2088e6a';
+import { BIOMES } from './data/world.js?v=3ad4363';
+import { ARTSETS, texKey } from './data/artsets.js?v=3ad4363';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=3ad4363';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -130,8 +130,12 @@ export class Companion {
     const scene = this.scene;
     const art = this.art;
     const mid = s.y - 20;           // a point in its middle
-    const inWater = scene.isWaterAt(s.x, mid);
     const onFloor = s.body.blocked.down || s.body.touching.down;
+    // A Zebonky that flies (Ricky, `flies` in its art; the user,
+    // 2026-10-27: "flight over water") counts as over the water while there
+    // is water just under where it flies, and isn't standing on anything.
+    const inWater = scene.isWaterAt(s.x, mid)
+      || (art.z.flies && !onFloor && scene.isWaterAt(s.x, s.y + FLY_ABOVE + 20));
     const dir = Math.sign(vx);
     const vy = s.body.velocity.y;
     const surface = this.surfaceAt(s.x);
@@ -154,9 +158,11 @@ export class Companion {
           return;
         }
       }
-      // Floating: its feet a little under the surface.
+      // Floating: its feet a little under the surface; a flier keeps its
+      // feet FLY_ABOVE over it.
+      const ride = art.z.flies ? -FLY_ABOVE : 30;
       if (surface === null) s.setVelocityY(Math.max(vy - 40, -260));
-      else s.setVelocityY(s.y > surface + 34 ? Phaser.Math.Linear(vy, -260, 0.1) : Phaser.Math.Linear(vy, (surface + 30 - s.y) * 4, 0.25));
+      else s.setVelocityY(s.y > surface + ride + 4 ? Phaser.Math.Linear(vy, -260, 0.1) : Phaser.Math.Linear(vy, (surface + ride - s.y) * 4, 0.25));
       if ((vx < 0 && s.body.blocked.left) || (vx > 0 && s.body.blocked.right)) {
         s.setVelocityY(-HOP);
         play(s, art, 'jump');
