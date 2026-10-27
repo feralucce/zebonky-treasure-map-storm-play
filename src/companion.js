@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=6143082';
-import { ARTSETS, texKey } from './data/artsets.js?v=6143082';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet } from './actors.js?v=6143082';
+import { BIOMES } from './data/world.js?v=a63aaf0';
+import { ARTSETS, texKey } from './data/artsets.js?v=a63aaf0';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime } from './actors.js?v=a63aaf0';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -169,6 +169,11 @@ export class Companion {
     }
     if (onFloor) {
       this.dive = null;
+      // Crouching before a hop: still until it springs.
+      if (scene.time.now < (this.crouchUntil || 0)) {
+        s.setVelocityX(0);
+        return;
+      }
       // Water just ahead, off this bank: a little leap, diving in.
       if (dir && art.z.anims.dive && scene.isWaterAt(s.x + dir * TILE * 0.7, s.y + 8)
         && !scene.isWaterAt(s.x, s.y + 8)) {
@@ -181,8 +186,16 @@ export class Companion {
       }
       // A step in the way, or she's well above it: hop.
       if ((vx < 0 && s.body.blocked.left) || (vx > 0 && s.body.blocked.right) || p.y < s.y - TILE * 1.2) {
-        s.setVelocityY(-HOP);
         play(s, art, 'jump');
+        // Its crouch on the ground first (Sofia), then the hop.
+        const wait = crouchTime(art);
+        if (!wait) {
+          s.setVelocityY(-HOP);
+          return;
+        }
+        s.setVelocityX(0);
+        this.crouchUntil = scene.time.now + wait;
+        scene.time.delayedCall(wait, () => { if (s.active) s.setVelocity(vx, -HOP); });
         return;
       }
       // Following her it rolls (the user, 2026-10-26: "My shaan should be

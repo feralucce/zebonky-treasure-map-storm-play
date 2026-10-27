@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=6143082';
-import { texKey } from './data/artsets.js?v=6143082';
+import { TILE } from './data/levels.js?v=a63aaf0';
+import { texKey } from './data/artsets.js?v=a63aaf0';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -96,6 +96,14 @@ export function ensureAnims(scene, art) {
     if (a.level) make(`${key}-level`, a.level, 0);
   });
 }
+
+// How long a Zebonky crouches on the ground before it leaps, ms: its jump's
+// `ground` frames (Sofia, the user, 2026-10-27: "hold her on the ground for
+// the crouch frames in the game too, then leap"). 0 when it has none.
+export const crouchTime = (art) => {
+  const a = art && art.z.anims.jump;
+  return a && a.ground ? ((a.ground[1] - a.ground[0] + 1) / (a.fps || ANIM_RATES.jump || 10)) * 1000 : 0;
+};
 
 // Plays anim on a Zebonky: the last one's end first if it has one, then
 // this one's start if it has one, then its loop.
@@ -306,9 +314,20 @@ export class WildZebonky {
     return false;
   }
 
+  // Crouches first if its jump has crouch frames, standing still, then
+  // leaps with the speed it had.
   leap() {
-    this.sprite.setVelocityY(-LEAP_SPEED);
-    play(this.sprite, this.art, 'jump');
+    const s = this.sprite;
+    play(s, this.art, 'jump');
+    const wait = crouchTime(this.art);
+    if (!wait) {
+      s.setVelocityY(-LEAP_SPEED);
+      return;
+    }
+    const vx = s.body.velocity.x;
+    s.setVelocityX(0);
+    this.crouchUntil = this.scene.time.now + wait;
+    this.scene.time.delayedCall(wait, () => { if (s.active) s.setVelocity(vx, -LEAP_SPEED); });
   }
 
   // Walk or run one way. `canLeap` lets it jump gaps and low ledges; without
@@ -353,6 +372,11 @@ export class WildZebonky {
     // bank stops it sideways) until it's up and over.
     if (time < (this.leapingUntil || 0)) {
       s.setVelocityX(this.dir * 180);
+      return;
+    }
+    // Crouching before a leap: still until it springs.
+    if (time < (this.crouchUntil || 0)) {
+      s.setVelocityX(0);
       return;
     }
     // In water: float up and paddle for the shore.
@@ -632,11 +656,14 @@ export class GuideZebonky {
       }
       play(s, this.art, h.type === 'run' ? 'run' : h.type === 'swim' ? (this.art.z.anims.swim ? 'swim' : 'walk') : 'jump');
       const p = { t: 0 };
+      // A jump starts with its crouch, on the spot.
+      const crouch = h.type === 'jump' ? crouchTime(this.art) : 0;
       // swimming is slower; the uphill waterfall carries it up fast
       const speed = h.type === 'swim' ? GUIDE_SPEED * 0.55 : h.type === 'ride' ? 640 : GUIDE_SPEED;
       this.scene.tweens.add({
         targets: p,
         t: 1,
+        delay: crouch,
         duration: Math.max(h.lift ? 260 : 120, (Math.hypot(h.x1 - h.x0, h.y1 - h.y0) / speed) * 1000),
         onUpdate: () => {
           s.x = h.x0 + (h.x1 - h.x0) * p.t;
