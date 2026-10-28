@@ -1,10 +1,10 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=8239659';
-import { testParams, DRAWN } from '../data/levels.js?v=8239659';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=8239659';
-import { CHARACTERS } from '../data/characters.js?v=8239659';
-import { state } from '../state.js?v=8239659';
-import { COLORS, heading, text } from '../theme.js?v=8239659';
-import { showcaseData } from '../showcase.js?v=8239659';
+import { ARTSETS, texKey } from '../data/artsets.js?v=4a09715';
+import { testParams, DRAWN } from '../data/levels.js?v=4a09715';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=4a09715';
+import { CHARACTERS } from '../data/characters.js?v=4a09715';
+import { state } from '../state.js?v=4a09715';
+import { COLORS, heading, text } from '../theme.js?v=4a09715';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=4a09715';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -94,8 +94,10 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
-    // Art sets: read each manifest, then queue every picture it names.
-    ARTSETS.forEach((name) => {
+    // Art sets: read each manifest, then queue every picture it names. A
+    // showcase strip (zebonkies.html) loads only its Zebonky's own set.
+    const strip = showcaseArtset(new URLSearchParams(window.location.search).get('showcase'));
+    (strip ? [strip] : ARTSETS).forEach((name) => {
       const base = `assets/artsets/${name}/`;
       this.load.json(`artset:${name}`, `${base}artset.json`);
       this.load.once(`filecomplete-json-artset:${name}`, (key, type, data) => {

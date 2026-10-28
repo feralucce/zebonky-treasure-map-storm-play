@@ -8,9 +8,9 @@
 // the Zebonky and what it does: a tour of the whole stretch, or idle, walk,
 // run, jump or swim (flight for Ricky) on their own.
 
-import { TILE, DRAWN } from './data/levels.js?v=8239659';
-import { WildZebonky, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=8239659';
-import { COLORS, text } from './theme.js?v=8239659';
+import { TILE, DRAWN } from './data/levels.js?v=4a09715';
+import { WildZebonky, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=4a09715';
+import { COLORS, text } from './theme.js?v=4a09715';
 
 // Who, in which art set, borrowing which level's name.
 export const SHOWCASE = [
@@ -45,6 +45,16 @@ export function showcaseLayout(artset) {
   }
   return { rows, artset, waits: [], title: 'Zebonky showcase' };
 }
+
+// The art set a showcase link's Zebonky needs (?showcase=<name>), or null.
+export function showcaseArtset(q) {
+  const z = q && SHOWCASE.find((s) => s.key === q);
+  return z ? z.artset : null;
+}
+
+// A strip in the gallery (zebonkies.html: ?showcase=<name>&strip=1): no
+// buttons; the gallery page sends the mode to all six at once.
+const STRIP = new URLSearchParams(window.location.search).has('strip');
 
 // Registers the stretch for one Zebonky and returns the Level scene's data.
 export function showcaseData(key) {
@@ -186,6 +196,21 @@ export function startShowcase(scene, key, art) {
   scene.physics.add.collider(z.sprite, scene.solids);
   scene.physics.add.collider(z.sprite, scene.platforms);
   scene.showcaseZebonky = z;
+
+  if (STRIP) {
+    // The gallery page drives every strip: postMessage({ mode }).
+    scene.sound.mute = true;
+    const who = SHOWCASE.find((s) => s.key === key);
+    scene.add.text(14, 210, who ? who.who : key, text(30, '#ffffff', {
+      backgroundColor: 'rgba(43,29,18,0.75)', padding: { x: 14, y: 6 },
+    })).setScrollFactor(0).setDepth(50);
+    const onMsg = (e) => { if (e.data && e.data.mode) z.setMode(e.data.mode); };
+    window.addEventListener('message', onMsg);
+    scene.events.once('shutdown', () => window.removeEventListener('message', onMsg));
+    if (window.parent !== window) window.parent.postMessage({ ready: key }, '*');
+    cam.startFollow(z.sprite, true, 0.1, 0.1, 0, 40);
+    return;
+  }
 
   // The buttons: the Zebonkies on top, what it does below.
   const bar = (y, items, current, onPick) => {

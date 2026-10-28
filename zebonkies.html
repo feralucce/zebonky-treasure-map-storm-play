@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Zebonky Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    /* Every Zebonky at once (the user, 2026-10-28: "Show all of the
+       zebonkies at the same time, one strip for each of them. The buttons
+       switch all of their behaviors with a single click"). Each strip is
+       the real game (index.html?showcase=<name>&strip=1) in its own biome,
+       cropped to the band around the ground. */
+    :root { --ink: #2b1d12; --paper: #fff8e8; --green: #2f8f5b; --mint: #bfe8d0; }
+    body { margin: 0; background: var(--ink); color: var(--paper); font: 16px/1.4 'Poppins', system-ui, sans-serif; }
+    header { position: sticky; top: 0; z-index: 2; background: var(--mint); color: var(--ink);
+      border-bottom: 4px solid var(--ink); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+    h1 { font: 800 24px 'Nunito', sans-serif; margin: 0; }
+    .modes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .modes button { font: 800 16px 'Nunito', sans-serif; border: 3px solid var(--ink); border-radius: 999px;
+      padding: 6px 16px; background: #fff; color: var(--ink); cursor: pointer; }
+    .modes button[aria-pressed="true"] { background: var(--green); color: #fff; }
+    main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 32px; display: grid; gap: 12px; }
+    .strip { position: relative; overflow: hidden; border: 3px solid #000; border-radius: 12px; background: #000; }
+    .strip iframe { position: absolute; left: 0; border: 0; display: block; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Zebonky Gallery</h1>
+    <div class="modes" id="modes"></div>
+  </header>
+  <main id="strips"></main>
+  <script>
+    const ZEBONKIES = ['shaan', 'axel', 'sofia', 'unity', 'charlie', 'ricky'];
+    const MODES = [['tour', 'Tour'], ['idle', 'Idle'], ['walk', 'Walk'], ['run', 'Run'], ['jump', 'Jump'], ['swim', 'Swim / Fly']];
+    // The game screen is 1180 x 787; a strip shows 25% to 82% of its height
+    // (the ground sits at 59%, a jump peaks two tiles above it).
+    const ASPECT = 787 / 1180, TOP = 0.25, BAND = 0.57;
+    let mode = 'tour';
+    const frames = [];
+
+    const strips = document.getElementById('strips');
+    ZEBONKIES.forEach((key) => {
+      const box = document.createElement('div');
+      box.className = 'strip';
+      const f = document.createElement('iframe');
+      f.title = key;
+      f.src = `index.html?showcase=${key}&strip=1`;
+      box.appendChild(f);
+      strips.appendChild(box);
+      frames.push({ box, f });
+    });
+
+    function size() {
+      frames.forEach(({ box, f }) => {
+        const w = box.clientWidth;
+        const h = w * ASPECT;
+        f.style.width = `${w}px`;
+        f.style.height = `${h}px`;
+        f.style.top = `${-h * TOP}px`;
+        box.style.height = `${h * BAND}px`;
+      });
+    }
+    window.addEventListener('resize', size);
+    size();
+
+    const send = (f) => f.contentWindow && f.contentWindow.postMessage({ mode }, '*');
+    const bar = document.getElementById('modes');
+    MODES.forEach(([id, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.dataset.mode = id;
+      b.setAttribute('aria-pressed', id === mode);
+      b.onclick = () => {
+        mode = id;
+        bar.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', x.dataset.mode === mode));
+        frames.forEach(({ f }) => send(f));
+      };
+      bar.appendChild(b);
+    });
+    // A strip that has just started asks for the current mode.
+    window.addEventListener('message', (e) => {
+      if (!e.data || !e.data.ready) return;
+      const fr = frames.find(({ f }) => f.contentWindow === e.source);
+      if (fr) send(fr.f);
+    });
+  </script>
+</body>
+</html>
