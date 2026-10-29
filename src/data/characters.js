@@ -2,9 +2,10 @@
 // to change (the character selector on the map, scenes/CharacterMenu.js).
 //
 // Each character is one set of animation strips with a manifest in the
-// same layout as the explorer's (assets/player/explorer.json: frame size,
-// then idle, walk, jump and crouch strips). Their textures are keyed
-// `<id>-<anim>`, so the explorer keeps her `explorer-idle` and so on.
+// same layout (frame size, then idle, walk, jump and crouch strips; the rig
+// explorers have more). Their textures are keyed `<id>-<anim>`, e.g.
+// `girl-idle`. The first explorer was replaced by the girl (the user,
+// 2026-10-29); a save that still names her gets the girl.
 //
 // Stand-ins (`standin: true`) are TEMPORARY art from a free side-view pack
 // (tools/make_standin_characters.py), shown with a note saying so. They are
@@ -17,7 +18,6 @@
 export const CHARACTERS = [
   { id: 'girl', name: 'Girl', manifest: 'assets/player/explorer_walk_v2/girl.json', base: 'assets/player/explorer_walk_v2/' },
   { id: 'boy', name: 'Boy', manifest: 'assets/player/explorer_walk_v2/boy.json', base: 'assets/player/explorer_walk_v2/' },
-  { id: 'explorer', name: 'Explorer', manifest: 'assets/player/explorer.json', base: 'assets/player/' },
   { id: 'standin_1', name: 'Stand-in 1', manifest: 'assets/player/standin_1/explorer.json', base: 'assets/player/standin_1/', standin: true },
   { id: 'standin_2', name: 'Stand-in 2', manifest: 'assets/player/standin_2/explorer.json', base: 'assets/player/standin_2/', standin: true },
   { id: 'standin_3', name: 'Stand-in 3', manifest: 'assets/player/standin_3/explorer.json', base: 'assets/player/standin_3/', standin: true },

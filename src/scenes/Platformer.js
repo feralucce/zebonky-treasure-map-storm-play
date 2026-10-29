@@ -2,19 +2,19 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=93b28b5';
-import { TILE, layoutFor } from '../data/levels.js?v=93b28b5';
-import { state } from '../state.js?v=93b28b5';
-import { COLORS, heading, text } from '../theme.js?v=93b28b5';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=93b28b5';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=93b28b5';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=93b28b5';
-import { makeNav } from '../pathing.js?v=93b28b5';
-import { startQuestionRun } from '../data/questions.js?v=93b28b5';
-import { audio, musicButton, soundButton } from '../audio.js?v=93b28b5';
-import { Companion } from '../companion.js?v=93b28b5';
-import { startShowcase } from '../showcase.js?v=93b28b5';
-import { startExplorerTour } from '../explorerTour.js?v=93b28b5';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=ab302b9';
+import { TILE, layoutFor } from '../data/levels.js?v=ab302b9';
+import { state } from '../state.js?v=ab302b9';
+import { COLORS, heading, text } from '../theme.js?v=ab302b9';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=ab302b9';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=ab302b9';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=ab302b9';
+import { makeNav } from '../pathing.js?v=ab302b9';
+import { startQuestionRun } from '../data/questions.js?v=ab302b9';
+import { audio, musicButton, soundButton } from '../audio.js?v=ab302b9';
+import { Companion } from '../companion.js?v=ab302b9';
+import { startShowcase } from '../showcase.js?v=ab302b9';
+import { startExplorerTour } from '../explorerTour.js?v=ab302b9';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1776,9 +1776,10 @@ export class PlatformerScene extends Phaser.Scene {
       }
       this.spentBolts = bolts.map((b) => this.add.image(12, 8, 'zbar-spent').setOrigin(0)
         .setCrop(b.x - 2, 0, b.w + 4, bar.height).setScrollFactor(0).setDepth(21).setVisible(false));
-      // The bar's portrait is the explorer's face. Another character covers
-      // it with her own head and shoulders, from her first idle frame.
-      if (this.cid !== 'explorer') {
+      // The bar's printed portrait is the first explorer's face; every
+      // character covers it with her own head and shoulders, from her
+      // first idle frame.
+      {
         const cx = 12 + 45;
         const cy = 8 + 42;
         const key = `${this.cid}-portrait`;
