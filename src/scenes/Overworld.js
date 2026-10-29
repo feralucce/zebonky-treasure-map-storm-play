@@ -7,14 +7,14 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=bc97eac';
-import { state, pathKey } from '../state.js?v=bc97eac';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=bc97eac';
-import { audio } from '../audio.js?v=bc97eac';
-import { starsFor, rewardTotals } from '../rewards.js?v=bc97eac';
-import { currency, currencyIcon } from '../currency.js?v=bc97eac';
-import { showCompanionCard } from '../companionCard.js?v=bc97eac';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=bc97eac';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=d6b4b18';
+import { state, pathKey } from '../state.js?v=d6b4b18';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=d6b4b18';
+import { audio } from '../audio.js?v=d6b4b18';
+import { starsFor, rewardTotals } from '../rewards.js?v=d6b4b18';
+import { currency, currencyIcon } from '../currency.js?v=d6b4b18';
+import { showCompanionCard } from '../companionCard.js?v=d6b4b18';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=d6b4b18';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path

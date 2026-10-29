@@ -13,7 +13,7 @@
 //   secret     the secret level played through (ready for when it exists)
 // The level ending screen (scenes/LevelEnd.js) pays them.
 
-import { state } from './state.js?v=bc97eac';
+import { state } from './state.js?v=d6b4b18';
 
 export const LETTERS = 'ZEBONKY';
 export const REWARD_EACH = 1;
