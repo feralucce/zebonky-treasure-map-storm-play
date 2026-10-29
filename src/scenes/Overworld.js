@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=ab302b9';
-import { state, pathKey } from '../state.js?v=ab302b9';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=ab302b9';
-import { audio } from '../audio.js?v=ab302b9';
-import { starsFor, rewardTotals } from '../rewards.js?v=ab302b9';
-import { showCompanionCard } from '../companionCard.js?v=ab302b9';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=ab302b9';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=6048224';
+import { state, pathKey } from '../state.js?v=6048224';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=6048224';
+import { audio } from '../audio.js?v=6048224';
+import { starsFor, rewardTotals } from '../rewards.js?v=6048224';
+import { showCompanionCard } from '../companionCard.js?v=6048224';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=6048224';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path

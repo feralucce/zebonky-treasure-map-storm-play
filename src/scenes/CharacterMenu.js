@@ -5,17 +5,22 @@
 // so far, the rest are ready for layered art (hair, hat, outfit, shoes) and
 // say "Soon". The stand-ins carry a note that they are temporary.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=ab302b9';
-import { state } from '../state.js?v=ab302b9';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=ab302b9';
-import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=ab302b9';
-import { audio } from '../audio.js?v=ab302b9';
-import { companionGrid } from '../companionPicker.js?v=ab302b9';
+import { MAP_W, MAP_H } from '../data/world.js?v=6048224';
+import { state } from '../state.js?v=6048224';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=6048224';
+import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=6048224';
+import { audio } from '../audio.js?v=6048224';
+import { companionGrid } from '../companionPicker.js?v=6048224';
 
 const CARD_W = 980;
 const CARD_H = 640;
-const TILE_W = 150;
+const TILE_W = 120;
 const TILE_H = 190;
+const GAP = 12;
+// The explorers are a carousel (the user, 2026-10-29: five had run off the
+// card, "make them a carousel"): four tiles at a time between two arrows.
+const SHOWN = 4;
+const ARROW = 40;
 
 export class CharacterMenuScene extends Phaser.Scene {
   constructor() {
@@ -37,7 +42,9 @@ export class CharacterMenuScene extends Phaser.Scene {
 
     CHARACTERS.forEach((c) => {
       if (!this.anims.exists(`${c.id}-idle`)) {
-        this.anims.create({ key: `${c.id}-idle`, frames: this.anims.generateFrameNumbers(`${c.id}-idle`), frameRate: 3, repeat: -1 });
+        const ia = (this.cache.json.get(c.id) || {}).anims;
+        const rate = (ia && ia.idle && ia.idle.fps) || 3;
+        this.anims.create({ key: `${c.id}-idle`, frames: this.anims.generateFrameNumbers(`${c.id}-idle`), frameRate: rate, repeat: -1 });
       }
     });
 
@@ -118,9 +125,9 @@ export class CharacterMenuScene extends Phaser.Scene {
   tab_character() {
     const x = this.x0 + 330;
     const y = this.y0 + 170;
+    const tx0 = x + ARROW + 8;                    // the first shown tile
     this.tiles = CHARACTERS.map((c, i) => {
-      const tx = x + i * (TILE_W + 12);
-      const t = this.add.container(tx, y);
+      const t = this.add.container(tx0, y);
       const bg = this.add.graphics();
       const fig = this.add.sprite(TILE_W / 2, TILE_H - 44, `${c.id}-idle`, 0).setOrigin(0.5, 1).setScale(1.25);
       const name = this.add.text(TILE_W / 2, TILE_H - 22, c.name, text(16)).setOrigin(0.5);
@@ -145,6 +152,35 @@ export class CharacterMenuScene extends Phaser.Scene {
       this.tabLayer.add(t);
       return { id: c.id, t };
     });
+    // The arrows, and which four are shown (the chosen one among them).
+    const most = Math.max(0, CHARACTERS.length - SHOWN);
+    const chosen = CHARACTERS.findIndex((c) => c.id === state.character().id);
+    this.first = Phaser.Math.Clamp(chosen - SHOWN + 1, 0, most);
+    const arrow = (ax, dir) => {
+      const a = this.add.container(ax, y + TILE_H / 2);
+      const g = this.add.graphics();
+      const label = this.add.text(0, 0, dir < 0 ? '\u25C0' : '\u25B6', text(22, '#ffffff')).setOrigin(0.5);
+      a.add([g, label]);
+      a.draw = (live) => {
+        g.clear();
+        g.fillStyle(COLORS.ink, 1);
+        g.fillCircle(0, 3, ARROW / 2);
+        g.fillStyle(live ? COLORS.green : 0xb9a782, 1);
+        g.fillCircle(0, 0, ARROW / 2);
+      };
+      a.setSize(ARROW, ARROW).setInteractive({ useHandCursor: true });
+      a.on('pointerup', () => {
+        const f = Phaser.Math.Clamp(this.first + dir, 0, most);
+        if (f === this.first) return;
+        this.first = f;
+        audio.sfx(this, 'step');
+        this.layoutTiles();
+      });
+      this.tabLayer.add(a);
+      return a;
+    };
+    this.arrows = [arrow(x + ARROW / 2, -1), arrow(tx0 + SHOWN * (TILE_W + GAP) - GAP + 8 + ARROW / 2, 1)];
+    this.layoutTiles();
     this.drawTiles();
     if (CHARACTERS.some((c) => c.standin)) {
       this.tabLayer.add(this.add.text(x, y + TILE_H + 26, STANDIN_NOTE, text(16, '#6b4a2e', {
@@ -166,6 +202,19 @@ export class CharacterMenuScene extends Phaser.Scene {
       : `Answer every ${state.difficulty().name} question in an area to unlock its Zebonky as a companion on this difficulty.`, text(17, '#6b4a2e', {
       wordWrap: { width: w },
     })));
+  }
+
+  // The carousel: the four from `first` in place, the rest hidden.
+  layoutTiles() {
+    const tx0 = this.x0 + 330 + ARROW + 8;
+    this.tiles.forEach(({ t }, i) => {
+      const k = i - this.first;
+      t.setVisible(k >= 0 && k < SHOWN).setX(tx0 + k * (TILE_W + GAP));
+      if (t.input) t.input.enabled = k >= 0 && k < SHOWN;
+    });
+    const most = Math.max(0, CHARACTERS.length - SHOWN);
+    this.arrows[0].draw(this.first > 0);
+    this.arrows[1].draw(this.first < most);
   }
 
   drawTiles() {
