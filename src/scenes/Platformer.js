@@ -2,18 +2,19 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4a09715';
-import { TILE, layoutFor } from '../data/levels.js?v=4a09715';
-import { state } from '../state.js?v=4a09715';
-import { COLORS, heading, text } from '../theme.js?v=4a09715';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4a09715';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4a09715';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=4a09715';
-import { makeNav } from '../pathing.js?v=4a09715';
-import { startQuestionRun } from '../data/questions.js?v=4a09715';
-import { audio, musicButton, soundButton } from '../audio.js?v=4a09715';
-import { Companion } from '../companion.js?v=4a09715';
-import { startShowcase } from '../showcase.js?v=4a09715';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f603345';
+import { TILE, layoutFor } from '../data/levels.js?v=f603345';
+import { state } from '../state.js?v=f603345';
+import { COLORS, heading, text } from '../theme.js?v=f603345';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f603345';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f603345';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=f603345';
+import { makeNav } from '../pathing.js?v=f603345';
+import { startQuestionRun } from '../data/questions.js?v=f603345';
+import { audio, musicButton, soundButton } from '../audio.js?v=f603345';
+import { Companion } from '../companion.js?v=f603345';
+import { startShowcase } from '../showcase.js?v=f603345';
+import { startExplorerTour } from '../explorerTour.js?v=f603345';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -99,8 +100,10 @@ export class PlatformerScene extends Phaser.Scene {
     this.inspect = !!data.inspect || state.inspectAll;
     // The Zebonky showcase (src/showcase.js): one Zebonky in its own biome.
     this.showcase = data.showcase || null;
-    // A designer test run (or an inspection or showcase) never touches saved progress.
-    state.noSave = this.test || this.inspect || !!this.showcase;
+    // The explorer tour (src/explorerTour.js): an explorer through all her moves.
+    this.explorerTour = data.explorerTour || null;
+    // A designer test run (or an inspection, showcase or tour) never touches saved progress.
+    state.noSave = this.test || this.inspect || !!this.showcase || !!this.explorerTour;
     this.inDoor = false;
     this.touchDoor = false;
     this.touchGrab = false;
@@ -432,6 +435,14 @@ export class PlatformerScene extends Phaser.Scene {
     this.keys.ESC.on('down', () => this.leave());
     const hudFrom = this.children.list.length;
     this.buildHud(lvl);
+    if (this.explorerTour) {
+      // No HUD; the tour's own explorer instead of the player.
+      this.children.list.slice(hudFrom).forEach((o) => o.setVisible && o.setVisible(false));
+      this.player.setVisible(false);
+      this.player.body.enable = false;
+      startExplorerTour(this, this.explorerTour);
+      return;
+    }
     if (this.showcase) {
       // No explorer and no HUD: just the Zebonky in its biome.
       this.children.list.slice(hudFrom).forEach((o) => o.setVisible && o.setVisible(false));
@@ -1886,6 +1897,10 @@ Drag, or arrows / WASD (Shift is faster)`);
   update(time, delta) {
     if (this.showcase) {
       if (this.showcaseZebonky) this.showcaseZebonky.update(time);
+      return;
+    }
+    if (this.explorerTour) {
+      if (this.explorerTourActor) this.explorerTourActor.update(time);
       return;
     }
     if (this.inspect) {

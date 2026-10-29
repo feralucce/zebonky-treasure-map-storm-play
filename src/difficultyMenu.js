@@ -4,11 +4,11 @@
 // (data/difficulty.js `about`). "Play this way" chooses it; Done or Escape
 // closes the screen.
 
-import { MAP_W, MAP_H } from './data/world.js?v=4a09715';
-import { DIFFICULTIES } from './data/difficulty.js?v=4a09715';
-import { state } from './state.js?v=4a09715';
-import { COLORS, heading, text, makeButton } from './theme.js?v=4a09715';
-import { audio } from './audio.js?v=4a09715';
+import { MAP_W, MAP_H } from './data/world.js?v=f603345';
+import { DIFFICULTIES } from './data/difficulty.js?v=f603345';
+import { state } from './state.js?v=f603345';
+import { COLORS, heading, text, makeButton } from './theme.js?v=f603345';
+import { audio } from './audio.js?v=f603345';
 
 export function showDifficultyMenu(scene, onClose) {
   const layer = scene.add.container(0, 0).setDepth(60);

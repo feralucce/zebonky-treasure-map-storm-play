@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explorer Tour</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Poppins:wght@600;800&display=swap" rel="stylesheet">
+  <style>
+    /* The explorers on tour (the user, 2026-10-29: "set up a tour demo like
+       the zebonkies. Just have it tour, have a vine in it and buttons to
+       switch which explorer"). The real game (index.html?explorers=<who>&strip=1)
+       on a stretch of the rainforest floor with a vine and a pool. */
+    :root { --ink: #2b1d12; --paper: #fff8e8; --green: #2f8f5b; --mint: #bfe8d0; }
+    body { margin: 0; background: var(--ink); color: var(--paper); font: 16px/1.4 'Poppins', system-ui, sans-serif; }
+    header { position: sticky; top: 0; z-index: 2; background: var(--mint); color: var(--ink);
+      border-bottom: 4px solid var(--ink); padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+    h1 { font: 800 24px 'Nunito', sans-serif; margin: 0; }
+    .who { display: flex; flex-wrap: wrap; gap: 8px; }
+    .who button { font: 800 16px 'Nunito', sans-serif; border: 3px solid var(--ink); border-radius: 999px;
+      padding: 6px 16px; background: #fff; color: var(--ink); cursor: pointer; }
+    .who button[aria-pressed="true"] { background: var(--green); color: #fff; }
+    main { max-width: 1180px; margin: 0 auto; padding: 12px 16px 32px; }
+    .screen { position: relative; overflow: hidden; border: 3px solid #000; border-radius: 12px; background: #000; aspect-ratio: 1180 / 787; }
+    .screen iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Explorer Tour</h1>
+    <div class="who" id="who"></div>
+  </header>
+  <main><div class="screen"><iframe id="game" title="Explorer tour"></iframe></div></main>
+  <script>
+    const WHO = [['girl', 'Girl'], ['boy', 'Boy']];
+    const game = document.getElementById('game');
+    const bar = document.getElementById('who');
+    const show = (key) => {
+      game.src = `index.html?explorers=${key}&strip=1`;
+      bar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.who === key));
+    };
+    WHO.forEach(([key, label]) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.dataset.who = key;
+      b.onclick = () => show(key);
+      bar.appendChild(b);
+    });
+    show('girl');
+  </script>
+</body>
+</html>

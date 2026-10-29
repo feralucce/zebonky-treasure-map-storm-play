@@ -1,10 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=4a09715';
-import { testParams, DRAWN } from '../data/levels.js?v=4a09715';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=4a09715';
-import { CHARACTERS } from '../data/characters.js?v=4a09715';
-import { state } from '../state.js?v=4a09715';
-import { COLORS, heading, text } from '../theme.js?v=4a09715';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=4a09715';
+import { ARTSETS, texKey } from '../data/artsets.js?v=f603345';
+import { testParams, DRAWN } from '../data/levels.js?v=f603345';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=f603345';
+import { CHARACTERS } from '../data/characters.js?v=f603345';
+import { state } from '../state.js?v=f603345';
+import { COLORS, heading, text } from '../theme.js?v=f603345';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=f603345';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=f603345';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -96,7 +97,10 @@ export class BootScene extends Phaser.Scene {
 
     // Art sets: read each manifest, then queue every picture it names. A
     // showcase strip (zebonkies.html) loads only its Zebonky's own set.
-    const strip = showcaseArtset(new URLSearchParams(window.location.search).get('showcase'));
+    const q = new URLSearchParams(window.location.search);
+    const strip = showcaseArtset(q.get('showcase')) || tourArtset(q.get('explorers'));
+    // The explorer tour (index.html?explorers=girl or =boy): her new strips.
+    if (tourArtset(q.get('explorers'))) loadTourStrips(this, q.get('explorers'));
     (strip ? [strip] : ARTSETS).forEach((name) => {
       const base = `assets/artsets/${name}/`;
       this.load.json(`artset:${name}`, `${base}artset.json`);
@@ -174,6 +178,12 @@ export class BootScene extends Phaser.Scene {
     // open and no explorer (?inspect=<level id> goes straight to that level).
     // index.html?showcase=1 (or =<name>): the Zebonky showcase.
     const show = new URLSearchParams(window.location.search).get('showcase');
+    // index.html?explorers=girl (or =boy): the explorer tour (src/explorerTour.js).
+    const tour = new URLSearchParams(window.location.search).get('explorers');
+    if (tour) {
+      this.scene.start('Level', explorerTourData(tour));
+      return;
+    }
     if (show) {
       this.scene.start('Level', showcaseData(show === '1' ? 'shaan' : show));
       return;
