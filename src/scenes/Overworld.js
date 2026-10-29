@@ -7,13 +7,14 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=6048224';
-import { state, pathKey } from '../state.js?v=6048224';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=6048224';
-import { audio } from '../audio.js?v=6048224';
-import { starsFor, rewardTotals } from '../rewards.js?v=6048224';
-import { showCompanionCard } from '../companionCard.js?v=6048224';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=6048224';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=bc97eac';
+import { state, pathKey } from '../state.js?v=bc97eac';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=bc97eac';
+import { audio } from '../audio.js?v=bc97eac';
+import { starsFor, rewardTotals } from '../rewards.js?v=bc97eac';
+import { currency, currencyIcon } from '../currency.js?v=bc97eac';
+import { showCompanionCard } from '../companionCard.js?v=bc97eac';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=bc97eac';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -730,6 +731,17 @@ export class OverworldScene extends Phaser.Scene {
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, 52, 16);
     this.add.text(x + w / 2, y + 26, `★ ${t.stars}/${t.maxStars}`, heading(22, '#b8860b')).setOrigin(0.5);
+    // Currency (a placeholder name), beside the stars.
+    const cw = 170;
+    const cx0 = x - cw - 12;
+    g.fillStyle(COLORS.ink, 0.9);
+    g.fillRoundedRect(cx0, y + 5, cw, 52, 16);
+    g.fillStyle(COLORS.parchment, 1);
+    g.fillRoundedRect(cx0, y, cw, 52, 16);
+    g.lineStyle(3, COLORS.ink, 1);
+    g.strokeRoundedRect(cx0, y, cw, 52, 16);
+    this.add.image(cx0 + 30, y + 26, currencyIcon(this));
+    this.add.text(cx0 + 52, y + 26, `${currency()}`, heading(22, COLORS.inkCss)).setOrigin(0, 0.5);
     // No music on the map for now; a level's music fades out on the way back.
     audio.stopMusic();
 

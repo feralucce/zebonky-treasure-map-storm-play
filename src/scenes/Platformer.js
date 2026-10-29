@@ -2,19 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6048224';
-import { TILE, layoutFor } from '../data/levels.js?v=6048224';
-import { state } from '../state.js?v=6048224';
-import { COLORS, heading, text } from '../theme.js?v=6048224';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6048224';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6048224';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=6048224';
-import { makeNav } from '../pathing.js?v=6048224';
-import { startQuestionRun } from '../data/questions.js?v=6048224';
-import { audio, musicButton, soundButton } from '../audio.js?v=6048224';
-import { Companion } from '../companion.js?v=6048224';
-import { startShowcase } from '../showcase.js?v=6048224';
-import { startExplorerTour } from '../explorerTour.js?v=6048224';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=bc97eac';
+import { TILE, layoutFor } from '../data/levels.js?v=bc97eac';
+import { state } from '../state.js?v=bc97eac';
+import { COLORS, heading, text } from '../theme.js?v=bc97eac';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=bc97eac';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=bc97eac';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=bc97eac';
+import { makeNav } from '../pathing.js?v=bc97eac';
+import { startQuestionRun } from '../data/questions.js?v=bc97eac';
+import { audio, musicButton, soundButton } from '../audio.js?v=bc97eac';
+import { Companion } from '../companion.js?v=bc97eac';
+import { startShowcase } from '../showcase.js?v=bc97eac';
+import { startExplorerTour } from '../explorerTour.js?v=bc97eac';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=bc97eac';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -104,6 +105,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.explorerTour = data.explorerTour || null;
     // A designer test run (or an inspection, showcase or tour) never touches saved progress.
     state.noSave = this.test || this.inspect || !!this.showcase || !!this.explorerTour;
+    this.damaged = false;      // the no-damage reward (currency.js)
     this.inDoor = false;
     this.touchDoor = false;
     this.touchGrab = false;
@@ -216,6 +218,12 @@ export class PlatformerScene extends Phaser.Scene {
     const atWall = (r, c) => at(r, Math.min(cols - 1, Math.max(0, c)));
     const isSolid = (r, c) => !!SOLID_TEXTURES[atWall(r, c)];
     const isPlatform = (r, c) => atWall(r, c) === '=';
+    // Tunnel blocks (H) look like the ground around them but can be run
+    // into; their neighbours draw as if they were solid, so nothing gives
+    // them away (the user, 2026-10-29).
+    const isArtSolid = (r, c) => isSolid(r, c) || atWall(r, c) === 'H' || atWall(r, c) === 'l';
+    const tunnelCells = [];
+    const letterSpots = [];
     this.grounded = this.findGrounded(rows, cols);
     // Hidden doors: digit -> the cells carrying it.
     const doorCells = {};
@@ -245,7 +253,7 @@ export class PlatformerScene extends Phaser.Scene {
           // Picture only; collision comes from the merged boxes built below.
           if (this.blocks) {
             this.block(x, y, TILE, BLOCK_COLORS[ch]);
-          } else if (!this.drawArtSolid(ch, isSolid, r, c, x, y, at)) {
+          } else if (!this.drawArtSolid(ch, isArtSolid, r, c, x, y, at)) {
             const [topTex, fillTex] = SOLID_TEXTURES[ch];
             const top = !SOLID_TEXTURES[at(r - 1, c)];
             this.add.image(x, y, top ? topTex : fillTex);
@@ -255,6 +263,12 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ARROW_SIGNS[ch]) {
           // Arrow signposts: scenery, standing on the floor of their tile.
           this.add.image(x, (r + 1) * TILE, ARROW_SIGNS[ch]).setOrigin(0.5, 1).setDepth(2);
+        } else if (ch === 'H') {
+          tunnelCells.push({ c, r, x, y });
+        } else if (ch === 'L' || ch === 'l') {
+          // A letter of ZEBONKY; l is one hidden inside a tunnel.
+          letterSpots.push({ c, r, x, y });
+          if (ch === 'l') tunnelCells.push({ c, r, x, y });
         } else if (ch === 'f') {
           foodSpots.push({ x, y });
         } else if (ch === 'Z') {
@@ -385,6 +399,9 @@ export class PlatformerScene extends Phaser.Scene {
     this.rows = rows;
     this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
+    this.buildTunnels(tunnelCells, at, isArtSolid);
+    this.letterSpots = letterSpots;
+    this.crateCount = treasureSpots.length;
     this.buildDoors(doorCells);
 
     (layout.signs || []).forEach((s) => {
@@ -419,6 +436,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.buildZebonkies(layout, wildSpots, guideSpot, goalSpot);
     this.buildDressing(rows, at, isSolid, worldW, worldH);
     this.buildPickups(foodSpots, pawSpots);
+    this.buildLetters();
     // Standing at a crate or a pickup marks it; Down opens or takes it.
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
@@ -511,6 +529,116 @@ export class PlatformerScene extends Phaser.Scene {
     });
   }
 
+  // ---------- tunnels and letters ----------
+
+  // Tunnel blocks: drawn like the solid they sit in (the nearest one beside
+  // them), in front of the explorer; each connected run of them fades away
+  // while she is inside it, so she can be seen.
+  buildTunnels(cells, at, isArtSolid) {
+    this.tunnels = [];
+    this.tunnelAt = new Map();
+    if (!cells.length) return;
+    const key = (c, r) => `${c},${r}`;
+    const left = new Map(cells.map((t) => [key(t.c, t.r), t]));
+    while (left.size) {
+      const [k0, t0] = left.entries().next().value;
+      left.delete(k0);
+      const region = { cells: [t0], imgs: [], alpha: 1 };
+      for (let i = 0; i < region.cells.length; i++) {
+        const { c, r } = region.cells[i];
+        [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dc, dr]) => {
+          const k = key(c + dc, r + dr);
+          if (left.has(k)) { region.cells.push(left.get(k)); left.delete(k); }
+        });
+      }
+      this.tunnels.push(region);
+    }
+    this.tunnels.forEach((region) => {
+      region.cells.forEach(({ c, r, x, y }) => {
+        this.tunnelAt.set(key(c, r), region);
+        // The look of the nearest solid beside it, within a few tiles.
+        let look = null;
+        for (let d = 1; d <= 6 && !look; d++) {
+          for (const [cc, rr] of [[c - d, r], [c + d, r], [c, r + d], [c, r - d]]) {
+            const ch = at(rr, cc);
+            if (SOLID_TEXTURES[ch]) { look = { ch, cc, rr }; break; }
+          }
+        }
+        const ch = look ? look.ch : '#';
+        if (look && this.grounded.has(key(look.cc, look.rr))) this.grounded.add(key(c, r));
+        const from = this.children.list.length;
+        if (this.blocks) this.block(x, y, TILE, BLOCK_COLORS[ch]);
+        else if (!this.drawArtSolid(ch, isArtSolid, r, c, x, y, at)) {
+          const [topTex, fillTex] = SOLID_TEXTURES[ch];
+          this.add.image(x, y, isArtSolid(r - 1, c) ? fillTex : topTex);
+        }
+        this.children.list.slice(from).forEach((o) => { o.setDepth(4); region.imgs.push(o); });
+      });
+    });
+  }
+
+  updateTunnels() {
+    if (!this.tunnels || !this.tunnels.length) return;
+    const b = this.player.body;
+    const inside = new Set();
+    [[b.left + 4, b.top + 4], [b.right - 4, b.top + 4], [b.left + 4, b.bottom - 4], [b.right - 4, b.bottom - 4], [b.center.x, b.center.y]]
+      .forEach(([x, y]) => {
+        const reg = this.tunnelAt.get(`${Math.floor(x / TILE)},${Math.floor(y / TILE)}`);
+        if (reg) inside.add(reg);
+      });
+    this.tunnels.forEach((reg) => {
+      const to = inside.has(reg) ? 0.15 : 1;
+      if (Math.abs(reg.alpha - to) < 0.01) return;
+      reg.alpha = Phaser.Math.Linear(reg.alpha, to, 0.2);
+      if (Math.abs(reg.alpha - to) < 0.02) reg.alpha = to;
+      reg.imgs.forEach((o) => o.setAlpha(reg.alpha));
+    });
+  }
+
+  // The letters of ZEBONKY (L markers, left to right, the first seven): the
+  // ones not found yet on this difficulty. Found letters stay found.
+  buildLetters() {
+    this.letters = [];
+    const spots = [...(this.letterSpots || [])].sort((a, b) => a.c - b.c || a.r - b.r).slice(0, LETTERS.length);
+    const found = lettersFound(this.levelId);
+    spots.forEach((s, i) => {
+      const ch = LETTERS[i];
+      if (found.includes(ch)) return;
+      const t = this.add.text(s.x, s.y, ch, heading(44, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 9 }))
+        .setOrigin(0.5).setDepth(3);
+      this.tweens.add({ targets: t, y: s.y - 8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.letters.push({ ch, t, x: s.x, y: s.y });
+    });
+  }
+
+  updateLetters() {
+    if (!this.letters || !this.letters.length) return;
+    const p = this.player;
+    this.letters = this.letters.filter((L) => {
+      if (Math.abs(p.x - L.x) > 44 || Math.abs(p.y - L.y) > 60) return true;
+      findLetter(this.levelId, L.ch);
+      audio.sfx(this, 'food');
+      this.tweens.killTweensOf(L.t);
+      this.tweens.add({ targets: L.t, y: L.y - 70, scale: 1.6, alpha: 0, duration: 450, onComplete: () => L.t.destroy() });
+      if (allLetters(this.levelId)) this.floatText(p.x, p.y - 120, 'ZEBONKY!', 34, 1400);
+      this.refreshHud();
+      return false;
+    });
+  }
+
+  // What this play earned, for the level ending screen (scenes/LevelEnd.js).
+  runResults() {
+    const items = (LEVELS[this.levelId] && LEVELS[this.levelId].items) || [];
+    const wild = this.wild || [];
+    return {
+      nodamage: !this.damaged,
+      hasWild: wild.length > 0,
+      tamed: wild.length > 0 && wild.every((z) => z.fed),
+      hasCrates: this.crateCount > 0 && items.length > 0,
+      questions: this.crateCount > 0 && items.every((it) => state.hasTreasure(this.levelId, it.id)),
+    };
+  }
+
   // The rig explorers: every move loops at its own rate, except the crouch,
   // which goes down once (its first two frames) and then loops the rest.
   makeRigAnims(ex) {
@@ -544,12 +672,18 @@ export class PlatformerScene extends Phaser.Scene {
       if (p.anims.currentAnim?.key !== k || !p.anims.isPlaying) p.play(k);
     };
     p.anims.timeScale = 1;
+    // Bobbing at the surface can lift her middle a pixel or two out of the
+    // water row: she is still swimming, not jumping (the user: it switched
+    // animation for a frame). Only a real hop out (rising fast) or landing
+    // ends it.
+    if (inWater) this.rigWaterAt = time;
+    const floating = inWater || (!onFloor && !onVine && vy > -350 && time - (this.rigWaterAt || -1e9) < 300);
     if (onVine) {
       play('climb');
       // Her hands and feet only move while she climbs.
       if (Math.abs(vy) < 20) p.anims.pause();
       else p.anims.resume();
-    } else if (inWater) {
+    } else if (floating) {
       play(vx > 40 ? 'swim' : 'tread');
     } else if (!onFloor) {
       const f = vy < -450 ? 3 : vy < -150 ? 4 : vy < 150 ? 5 : vy < 450 ? 8 : 9;
@@ -676,6 +810,7 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   hurt() {
+    this.damaged = true;
     // Junior Explorer has no energy: a bump or a fall only blinks.
     if (this.band.energyBar) this.energy = Math.max(0, this.energy - 1);
     this.safeUntil = this.time.now + HURT_SAFE_MS;
@@ -1703,13 +1838,15 @@ export class PlatformerScene extends Phaser.Scene {
       if (gone) return;
       gone = true;
       const levelData = this.test ? this.scene.settings.data : null;
-      if (secret) {
-        this.cameras.main.fadeOut(300, 43, 29, 18);
-        this.cameras.main.once('camerafadeoutcomplete', () => {
-          this.scene.start('Bonus', { levelId: this.levelId, levelData });
-        });
-      } else if (this.test) this.scene.restart();
-      else finishLevel(this, this.levelId, kind);
+      const run = this.runResults();
+      // The bonus level door goes to the bonus level, which ends on the level
+      // ending screen; the goal goes straight to it (scenes/LevelEnd.js).
+      if (!secret && !this.test) state.completeLevel(this.levelId, kind);
+      this.cameras.main.fadeOut(300, 43, 29, 18);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        if (secret) this.scene.start('Bonus', { levelId: this.levelId, levelData, run });
+        else this.scene.start('LevelEnd', { levelId: this.levelId, kind: 'normal', run, levelData });
+      });
     };
     // A short wait first, so a held jump doesn't skip the message.
     this.time.delayedCall(600, () => {
@@ -1819,6 +1956,22 @@ export class PlatformerScene extends Phaser.Scene {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
 
+    // Currency (a placeholder name), left of the food.
+    this.add.image(MAP_W - 300, 44, currencyIcon(this)).setScrollFactor(0).setDepth(21);
+    this.currencyText = this.add.text(MAP_W - 278, 44, '', heading(26, COLORS.parchmentCss, {
+      stroke: COLORS.inkCss, strokeThickness: 7,
+    })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    // The letters of ZEBONKY in this level, found ones lit (only in a level
+    // that has them).
+    this.letterHud = [];
+    if (this.letterSpots && this.letterSpots.length) {
+      LETTERS.split('').forEach((ch, i) => {
+        this.letterHud.push(this.add.text(MAP_W / 2 + (i - 3) * 28, 122, ch, heading(22, COLORS.yellowCss, {
+          stroke: COLORS.inkCss, strokeThickness: 6,
+        })).setOrigin(0.5).setScrollFactor(0).setDepth(21));
+      });
+    }
+
     // Food carried.
     this.add.image(MAP_W - 190, 44, this.foodTex).setScrollFactor(0).setDepth(21);
     this.foodText = this.add.text(MAP_W - 162, 44, 'x0', heading(26, COLORS.parchmentCss, {
@@ -1848,6 +2001,11 @@ export class PlatformerScene extends Phaser.Scene {
   refreshHud() {
     if (this.spentBolts) this.spentBolts.forEach((img, i) => img.setVisible(i >= this.energy));
     if (this.foodText) this.foodText.setText(`x${this.food}`);
+    if (this.currencyText) this.currencyText.setText(`x${currency()}`);
+    if (this.letterHud && this.letterHud.length) {
+      const found = lettersFound(this.levelId);
+      this.letterHud.forEach((t, i) => t.setAlpha(found.includes(LETTERS[i]) ? 1 : 0.3));
+    }
     if (this.tamedText && this.wild) {
       const fed = this.wild.filter((z) => z.fed).length;
       const done = this.wild.length && (fed === this.wild.length || state.hasTamedAll(this.levelId));
@@ -2247,6 +2405,8 @@ Drag, or arrows / WASD (Shift is faster)`);
     if (!jumpHeld && !boosted && !inWater && !onVine && p.body.velocity.y < -250) p.setVelocityY(p.body.velocity.y * 0.85);
 
     this.falls.forEach((f) => { f.tilePositionY += delta * 0.35; });
+    this.updateTunnels();
+    this.updateLetters();
 
     // Picture: in the air the jump frame follows her speed (rising, top of
     // the arc, falling); on the ground she walks or stands.

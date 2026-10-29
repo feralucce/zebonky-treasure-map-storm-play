@@ -2,10 +2,10 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=6048224';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=6048224';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=6048224';
-import { bankFor, questionKey } from './data/questions.js?v=6048224';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=bc97eac';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=bc97eac';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=bc97eac';
+import { bankFor, questionKey } from './data/questions.js?v=bc97eac';
 
 const KEY = 'zebonky-tms-save-v1';
 
@@ -31,6 +31,10 @@ function fresh() {
     answered: {},
     companionsBy: {},
     companionBy: {},
+    // Currency (a placeholder name) and the level rewards that pay it, once
+    // per level per difficulty: band -> levelId -> { letters, paid } (currency.js).
+    currency: 0,
+    rewardsBy: {},
   };
 }
 

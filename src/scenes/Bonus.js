@@ -1,9 +1,9 @@
 // The bonus minigame behind a secret exit. A placeholder for now: a card
 // saying so, and a button back to the map (a test run plays its level again).
 
-import { MAP_W, MAP_H } from '../data/world.js?v=6048224';
-import { finishLevel } from '../levelApi.js?v=6048224';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=6048224';
+import { MAP_W, MAP_H } from '../data/world.js?v=bc97eac';
+import { state } from '../state.js?v=bc97eac';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=bc97eac';
 
 export class BonusScene extends Phaser.Scene {
   constructor() {
@@ -13,6 +13,7 @@ export class BonusScene extends Phaser.Scene {
   init(data) {
     this.levelId = data.levelId;
     this.levelData = data.levelData; // set for a test run, to play it again
+    this.run = data.run || {};       // what the level's play earned, for the ending screen
     this.leaving = false;
   }
 
@@ -45,7 +46,8 @@ export class BonusScene extends Phaser.Scene {
   back() {
     if (this.leaving || !this.levelId) return;
     this.leaving = true;
-    if (this.levelData) this.scene.start('Level', this.levelData);
-    else finishLevel(this, this.levelId, 'secret');
+    // The level ending screen comes after the bonus level (scenes/LevelEnd.js).
+    if (!this.levelData) state.completeLevel(this.levelId, 'secret');
+    this.scene.start('LevelEnd', { levelId: this.levelId, kind: 'bonus', run: this.run, levelData: this.levelData });
   }
 }
