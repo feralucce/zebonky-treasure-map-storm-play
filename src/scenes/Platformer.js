@@ -2,19 +2,19 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f603345';
-import { TILE, layoutFor } from '../data/levels.js?v=f603345';
-import { state } from '../state.js?v=f603345';
-import { COLORS, heading, text } from '../theme.js?v=f603345';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f603345';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f603345';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=f603345';
-import { makeNav } from '../pathing.js?v=f603345';
-import { startQuestionRun } from '../data/questions.js?v=f603345';
-import { audio, musicButton, soundButton } from '../audio.js?v=f603345';
-import { Companion } from '../companion.js?v=f603345';
-import { startShowcase } from '../showcase.js?v=f603345';
-import { startExplorerTour } from '../explorerTour.js?v=f603345';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=93b28b5';
+import { TILE, layoutFor } from '../data/levels.js?v=93b28b5';
+import { state } from '../state.js?v=93b28b5';
+import { COLORS, heading, text } from '../theme.js?v=93b28b5';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=93b28b5';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=93b28b5';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=93b28b5';
+import { makeNav } from '../pathing.js?v=93b28b5';
+import { startQuestionRun } from '../data/questions.js?v=93b28b5';
+import { audio, musicButton, soundButton } from '../audio.js?v=93b28b5';
+import { Companion } from '../companion.js?v=93b28b5';
+import { startShowcase } from '../showcase.js?v=93b28b5';
+import { startExplorerTour } from '../explorerTour.js?v=93b28b5';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -406,6 +406,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.player = this.physics.add.sprite(start.x, start.y - 16, `${this.cid}-idle`, 0);
     const ex = this.cache.json.get(this.cid);
     this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
+    // A rig explorer's background arm and leg on a vine, behind the vine (depth 1).
+    this.playerBack = this.rig ? this.add.sprite(start.x, start.y, `${this.cid}-climb_back`, 0).setDepth(0.5).setVisible(false) : null;
     this.player.setMaxVelocity(RUN_SPEED, 1400);
     this.player.setDragX(SLIDE_DRAG);
     this.player.setCollideWorldBounds(true);
@@ -490,6 +492,11 @@ export class PlatformerScene extends Phaser.Scene {
     // Her walk: four steps, about two strides a second. A character's
     // manifest can set its own walk speed and footstep frames.
     const ex = this.cache.json.get(this.cid);
+    this.rig = !!ex.rig;
+    if (this.rig) {
+      this.makeRigAnims(ex);
+      return;
+    }
     this.stepFrames = ex.steps || [0, 2];
     const rates = { idle: 3, walk: ex.walkRate || 8 };
     Object.entries(rates).forEach(([name, rate]) => {
@@ -502,6 +509,86 @@ export class PlatformerScene extends Phaser.Scene {
         repeat: -1,
       });
     });
+  }
+
+  // The rig explorers: every move loops at its own rate, except the crouch,
+  // which goes down once (its first two frames) and then loops the rest.
+  makeRigAnims(ex) {
+    const id = this.cid;
+    this.rigSteps = ex.steps || {};
+    Object.entries(ex.anims).forEach(([name, a]) => {
+      const key = `${id}-${name}`;
+      if (name === 'crouch') {
+        if (!this.anims.exists(`${key}down`)) {
+          this.anims.create({ key: `${key}down`, frames: this.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: a.fps, repeat: 0 });
+          this.anims.create({ key, frames: this.anims.generateFrameNumbers(key, { start: 2, end: a.frames - 1 }), frameRate: a.fps, repeat: -1 });
+        }
+        return;
+      }
+      if (this.anims.exists(key) || name === 'jump' || name === 'climb_back') return;
+      this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: a.fps, repeat: -1 });
+    });
+  }
+
+  // The rig explorers' picture each frame: climbing on a vine (the
+  // background arm and leg behind it, the rest in front), swimming or
+  // treading water, the jump frame by her speed in the air, the crouch,
+  // running at speed, walking, standing.
+  rigPicture(time, onFloor, onVine, inWater, down) {
+    const p = this.player;
+    const id = this.cid;
+    const vx = Math.abs(p.body.velocity.x);
+    const vy = p.body.velocity.y;
+    const play = (name) => {
+      const k = `${id}-${name}`;
+      if (p.anims.currentAnim?.key !== k || !p.anims.isPlaying) p.play(k);
+    };
+    p.anims.timeScale = 1;
+    if (onVine) {
+      play('climb');
+      // Her hands and feet only move while she climbs.
+      if (Math.abs(vy) < 20) p.anims.pause();
+      else p.anims.resume();
+    } else if (inWater) {
+      play(vx > 40 ? 'swim' : 'tread');
+    } else if (!onFloor) {
+      const f = vy < -450 ? 3 : vy < -150 ? 4 : vy < 150 ? 5 : vy < 450 ? 8 : 9;
+      p.anims.stop();
+      p.setTexture(`${id}-jump`, f);
+    } else if ((down && vx <= 30) || time < (this.crouchUntil || 0)) {
+      if (!p.anims.currentAnim || !p.anims.currentAnim.key.startsWith(`${id}-crouch`)) {
+        p.play(`${id}-crouchdown`);
+        p.anims.chain(`${id}-crouch`);
+      }
+    } else if (vx > 30) {
+      const name = vx > 230 ? 'run' : 'walk';
+      play(name);
+      if (name === 'walk') p.anims.timeScale = Phaser.Math.Clamp(vx / 230, 0.6, 1);
+      // A footstep as each foot lands, never the same sound twice in a row.
+      const frame = p.anims.currentFrame ? p.anims.currentFrame.index - 1 : -1;
+      if (frame !== this.walkFrame && (this.rigSteps[name] || []).includes(frame) && p.body.blocked.down) {
+        let n;
+        do n = Phaser.Math.Between(0, 4); while (n === this.lastStep);
+        this.lastStep = n;
+        audio.sfx(this, `step-${n}`, { detune: Phaser.Math.Between(-80, 80) });
+      }
+      this.walkFrame = frame;
+    } else {
+      play('idle');
+    }
+    // The swim's frames are wider: keep her body box where it was.
+    const fw = p.frame.width;
+    if (fw !== this.rigFW) {
+      this.rigFW = fw;
+      p.body.setOffset((fw - 34) / 2, p.frame.height - 64);
+    }
+    // On a vine she is in front of it; her background arm and leg are behind.
+    p.setDepth(onVine ? 2 : 0);
+    const b = this.playerBack;
+    if (b) {
+      b.setVisible(onVine && p.visible);
+      if (onVine) b.setPosition(p.x, p.y).setFlipX(p.flipX).setFrame(p.frame.name);
+    }
   }
 
   // ---------- Zebonkies ----------
@@ -2043,6 +2130,13 @@ Drag, or arrows / WASD (Shift is faster)`);
       }
       const strandX = side > 0 ? (hi + 1) * TILE : side < 0 ? lo * TILE : ((lo + hi + 1) / 2) * TILE;
       p.x = Phaser.Math.Clamp(strandX, lo * TILE + hw, (hi + 1) * TILE - hw);
+      if (this.rig && side) {
+        // A rig explorer faces the vine, hung off the wall with the vine
+        // between her knees and hands (where it runs in her climb frames).
+        const ex = this.cache.json.get(this.cid);
+        p.setFlipX(side < 0);
+        p.x = Phaser.Math.Clamp(strandX - side * ((ex.vineX || 46) + 10 - ex.frameWidth / 2), lo * TILE + 2, (hi + 1) * TILE - 2);
+      }
       const climbUp = up || touchClimb;
       const atTop = !this.vines.has(`${c},${r - 1}`);
       const atBottom = !this.vines.has(`${c},${r + 1}`);
@@ -2093,7 +2187,10 @@ Drag, or arrows / WASD (Shift is faster)`);
       if (down) {
         p.setVelocityY(Phaser.Math.Linear(vy, SWIM_DIVE, 0.12));
       } else if (surfaceY !== null) {
-        const floatY = surfaceY + 6 + Math.sin(time / 320) * 3;
+        // A rig explorer sits in up to her chin: treading water (not swimming
+        // along) a little lower, swimming a touch higher (as in the tour).
+        const tread = !this.rig ? 0 : Math.abs(p.body.velocity.x) <= 40 ? 8 : -4;
+        const floatY = surfaceY + 6 + tread + Math.sin(time / 320) * 3;
         const below = p.y - floatY;
         if (below > 6) p.setVelocityY(Phaser.Math.Linear(vy, -FLOAT_RISE, 0.08));
         else p.setVelocityY(Phaser.Math.Linear(vy, below * -4, 0.25));
@@ -2152,7 +2249,9 @@ Drag, or arrows / WASD (Shift is faster)`);
 
     // Picture: in the air the jump frame follows her speed (rising, top of
     // the arc, falling); on the ground she walks or stands.
-    if (!onFloor) {
+    if (this.rig) {
+      this.rigPicture(time, onFloor, onVine, inWater, down);
+    } else if (!onFloor) {
       const vy = p.body.velocity.y;
       const f = vy < -450 ? 1 : vy < -150 ? 2 : vy < 150 ? 3 : vy < 450 ? 4 : 5;
       p.anims.stop();

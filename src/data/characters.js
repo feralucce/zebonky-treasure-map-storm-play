@@ -10,14 +10,20 @@
 // (tools/make_standin_characters.py), shown with a note saying so. They are
 // removed before the game ships, when Chris draws the cast.
 
+// The rig explorers (`rig: true` in the manifest, the user, 2026-10-29: "Put
+// the boy and girl animations in the actual game"): a strip for every move
+// (idle, walk, run, jump, crouch, climb with its background layer, swim,
+// tread), each with its own frame rate and, where it differs, frame width.
 export const CHARACTERS = [
+  { id: 'girl', name: 'Girl', manifest: 'assets/player/explorer_walk_v2/girl.json', base: 'assets/player/explorer_walk_v2/' },
+  { id: 'boy', name: 'Boy', manifest: 'assets/player/explorer_walk_v2/boy.json', base: 'assets/player/explorer_walk_v2/' },
   { id: 'explorer', name: 'Explorer', manifest: 'assets/player/explorer.json', base: 'assets/player/' },
   { id: 'standin_1', name: 'Stand-in 1', manifest: 'assets/player/standin_1/explorer.json', base: 'assets/player/standin_1/', standin: true },
   { id: 'standin_2', name: 'Stand-in 2', manifest: 'assets/player/standin_2/explorer.json', base: 'assets/player/standin_2/', standin: true },
   { id: 'standin_3', name: 'Stand-in 3', manifest: 'assets/player/standin_3/explorer.json', base: 'assets/player/standin_3/', standin: true },
 ];
 
-export const DEFAULT_CHARACTER = 'explorer';
+export const DEFAULT_CHARACTER = 'girl';
 
 export function characterById(id) {
   return CHARACTERS.find((c) => c.id === id) || CHARACTERS[0];

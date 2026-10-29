@@ -1,0 +1,65 @@
+{
+ "note": "The rig explorers (tools/explorer_walk, docs/animation-refinement.md). Every move has its own strip; frameWidth per move where it differs.",
+ "frameWidth": 71,
+ "frameHeight": 96,
+ "rig": true,
+ "vineX": 45,
+ "steps": {
+  "walk": [
+   0,
+   8
+  ],
+  "run": [
+   0,
+   4
+  ]
+ },
+ "anims": {
+  "idle": {
+   "file": "boy_idle_game_strip.png",
+   "frames": 16,
+   "fps": 9
+  },
+  "walk": {
+   "file": "boy_walk_game_strip.png",
+   "frames": 16,
+   "fps": 16
+  },
+  "run": {
+   "file": "boy_run_game_strip.png",
+   "frames": 8,
+   "fps": 14
+  },
+  "jump": {
+   "file": "boy_jump_game_strip.png",
+   "frames": 14,
+   "fps": 12
+  },
+  "crouch": {
+   "file": "boy_crouch_game_strip.png",
+   "frames": 18,
+   "fps": 10
+  },
+  "climb": {
+   "file": "boy_climb_game_strip.png",
+   "frames": 8,
+   "fps": 9
+  },
+  "climb_back": {
+   "file": "boy_climb_back_game_strip.png",
+   "frames": 8,
+   "fps": 9
+  },
+  "swim": {
+   "file": "boy_swim_game_strip.png",
+   "frames": 8,
+   "fps": 9,
+   "frameWidth": 88
+  },
+  "tread": {
+   "file": "boy_tread_game_strip.png",
+   "frames": 8,
+   "fps": 7
+  }
+ }
+}

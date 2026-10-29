@@ -7,13 +7,13 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=f603345';
-import { state, pathKey } from '../state.js?v=f603345';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=f603345';
-import { audio } from '../audio.js?v=f603345';
-import { starsFor, rewardTotals } from '../rewards.js?v=f603345';
-import { showCompanionCard } from '../companionCard.js?v=f603345';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=f603345';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=93b28b5';
+import { state, pathKey } from '../state.js?v=93b28b5';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=93b28b5';
+import { audio } from '../audio.js?v=93b28b5';
+import { starsFor, rewardTotals } from '../rewards.js?v=93b28b5';
+import { showCompanionCard } from '../companionCard.js?v=93b28b5';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=93b28b5';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -627,7 +627,9 @@ export class OverworldScene extends Phaser.Scene {
   drawPlayerFigure() {
     const cid = state.character().id;
     if (!this.anims.exists(`${cid}-idle`)) {
-      this.anims.create({ key: `${cid}-idle`, frames: this.anims.generateFrameNumbers(`${cid}-idle`), frameRate: 3, repeat: -1 });
+      const ia = (this.cache.json.get(cid) || {}).anims;
+      const rate = (ia && ia.idle && ia.idle.fps) || 3;
+      this.anims.create({ key: `${cid}-idle`, frames: this.anims.generateFrameNumbers(`${cid}-idle`), frameRate: rate, repeat: -1 });
     }
     this.playerBody.removeAll(true);
     const fig = this.add.sprite(0, 6, `${cid}-idle`, 0).setOrigin(0.5, 1).setScale(0.62);
