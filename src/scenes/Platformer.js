@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=62e2e14';
-import { TILE, layoutFor } from '../data/levels.js?v=62e2e14';
-import { state } from '../state.js?v=62e2e14';
-import { COLORS, heading, text } from '../theme.js?v=62e2e14';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=62e2e14';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=62e2e14';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=62e2e14';
-import { makeNav } from '../pathing.js?v=62e2e14';
-import { startQuestionRun } from '../data/questions.js?v=62e2e14';
-import { audio, musicButton, soundButton } from '../audio.js?v=62e2e14';
-import { Companion } from '../companion.js?v=62e2e14';
-import { startShowcase } from '../showcase.js?v=62e2e14';
-import { startExplorerTour } from '../explorerTour.js?v=62e2e14';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=62e2e14';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2c098d1';
+import { TILE, layoutFor } from '../data/levels.js?v=2c098d1';
+import { state } from '../state.js?v=2c098d1';
+import { COLORS, heading, text } from '../theme.js?v=2c098d1';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2c098d1';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2c098d1';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2c098d1';
+import { makeNav } from '../pathing.js?v=2c098d1';
+import { startQuestionRun } from '../data/questions.js?v=2c098d1';
+import { audio, musicButton, soundButton } from '../audio.js?v=2c098d1';
+import { Companion } from '../companion.js?v=2c098d1';
+import { startShowcase } from '../showcase.js?v=2c098d1';
+import { startExplorerTour } from '../explorerTour.js?v=2c098d1';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2c098d1';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -973,6 +973,35 @@ export class PlatformerScene extends Phaser.Scene {
       if (!isSolid(r, c - 1)) continue;
       this.add.image((c - 1) * TILE + TILE / 2, r * TILE, 'pit-sign').setOrigin(0.5, 1).setDepth(2);
       this.signCells.add(`${c - 1},${r - 1}`);
+    }
+    // Dangerous pits fade to black, starting one block below the ground
+    // beside them (the user, 2026-10-30), solid by the level's bottom edge.
+    if (!this.textures.exists('pit-dark')) {
+      const cv = Object.assign(document.createElement('canvas'), { width: 4, height: 256 });
+      const g = cv.getContext('2d');
+      const grad = g.createLinearGradient(0, 0, 0, 256);
+      grad.addColorStop(0, 'rgba(8,16,12,0)');
+      grad.addColorStop(1, 'rgba(8,16,12,1)');
+      g.fillStyle = grad;
+      g.fillRect(0, 0, 4, 256);
+      this.textures.addCanvas('pit-dark', cv);
+    }
+    const topOf = (c) => {
+      if (c < 0 || c >= cols) return null;
+      for (let r = 0; r <= bottom; r++) if (isSolid(r, c)) return r;
+      return null;
+    };
+    const worldH = rows.length * TILE;
+    for (let c = 0; c < cols;) {
+      if (!open(c)) { c++; continue; }
+      const c0 = c;
+      while (c < cols && open(c)) c++;
+      const sides = [topOf(c0 - 1), topOf(c)].filter((r) => r !== null);
+      if (!sides.length) continue;
+      const y0 = (Math.max(...sides) + 1) * TILE;
+      if (y0 >= worldH) continue;
+      this.add.image(c0 * TILE, y0, 'pit-dark').setOrigin(0).setDisplaySize((c - c0) * TILE, worldH - y0).setDepth(-1.5);
+      this.add.rectangle(c0 * TILE, worldH, (c - c0) * TILE, 800, 0x08100c, 1).setOrigin(0).setDepth(-1.5);
     }
   }
 
