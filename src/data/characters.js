@@ -7,9 +7,8 @@
 // `girl-idle`. The first explorer was replaced by the girl (the user,
 // 2026-10-29); a save that still names her gets the girl.
 //
-// Stand-ins (`standin: true`) are TEMPORARY art from a free side-view pack
-// (tools/make_standin_characters.py), shown with a note saying so. They are
-// removed before the game ships, when Chris draws the cast.
+// The three temporary stand-ins were removed (the user, 2026-10-30: the cast
+// is the boy and the girl); a save that names one gets the girl.
 
 // The rig explorers (`rig: true` in the manifest, the user, 2026-10-29: "Put
 // the boy and girl animations in the actual game"): a strip for every move
@@ -18,9 +17,6 @@
 export const CHARACTERS = [
   { id: 'girl', name: 'Girl', manifest: 'assets/player/explorer_walk_v2/girl.json', base: 'assets/player/explorer_walk_v2/' },
   { id: 'boy', name: 'Boy', manifest: 'assets/player/explorer_walk_v2/boy.json', base: 'assets/player/explorer_walk_v2/' },
-  { id: 'standin_1', name: 'Stand-in 1', manifest: 'assets/player/standin_1/explorer.json', base: 'assets/player/standin_1/', standin: true },
-  { id: 'standin_2', name: 'Stand-in 2', manifest: 'assets/player/standin_2/explorer.json', base: 'assets/player/standin_2/', standin: true },
-  { id: 'standin_3', name: 'Stand-in 3', manifest: 'assets/player/standin_3/explorer.json', base: 'assets/player/standin_3/', standin: true },
 ];
 
 export const DEFAULT_CHARACTER = 'girl';
@@ -41,5 +37,3 @@ export const LOOK_SLOTS = [
   { id: 'shoes', name: 'Shoes', ready: false },
 ];
 
-export const STANDIN_NOTE = 'These three explorers are temporary stand-ins while our artist draws the real cast. '
-  + 'They will be replaced before the game is finished.';

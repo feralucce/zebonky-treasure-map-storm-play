@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=d6b4b18';
-import { TILE, layoutFor } from '../data/levels.js?v=d6b4b18';
-import { state } from '../state.js?v=d6b4b18';
-import { COLORS, heading, text } from '../theme.js?v=d6b4b18';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=d6b4b18';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=d6b4b18';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=d6b4b18';
-import { makeNav } from '../pathing.js?v=d6b4b18';
-import { startQuestionRun } from '../data/questions.js?v=d6b4b18';
-import { audio, musicButton, soundButton } from '../audio.js?v=d6b4b18';
-import { Companion } from '../companion.js?v=d6b4b18';
-import { startShowcase } from '../showcase.js?v=d6b4b18';
-import { startExplorerTour } from '../explorerTour.js?v=d6b4b18';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=d6b4b18';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3637605';
+import { TILE, layoutFor } from '../data/levels.js?v=3637605';
+import { state } from '../state.js?v=3637605';
+import { COLORS, heading, text } from '../theme.js?v=3637605';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3637605';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3637605';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=3637605';
+import { makeNav } from '../pathing.js?v=3637605';
+import { startQuestionRun } from '../data/questions.js?v=3637605';
+import { audio, musicButton, soundButton } from '../audio.js?v=3637605';
+import { Companion } from '../companion.js?v=3637605';
+import { startShowcase } from '../showcase.js?v=3637605';
+import { startExplorerTour } from '../explorerTour.js?v=3637605';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3637605';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -653,7 +653,7 @@ export class PlatformerScene extends Phaser.Scene {
         }
         return;
       }
-      if (this.anims.exists(key) || name === 'jump' || name === 'climb_back') return;
+      if (this.anims.exists(key) || name === 'jump' || name === 'climb_back' || name === 'picker') return;
       this.anims.create({ key, frames: this.anims.generateFrameNumbers(key), frameRate: a.fps, repeat: -1 });
     });
   }

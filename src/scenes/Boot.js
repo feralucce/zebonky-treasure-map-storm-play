@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=d6b4b18';
-import { testParams, DRAWN } from '../data/levels.js?v=d6b4b18';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=d6b4b18';
-import { CHARACTERS } from '../data/characters.js?v=d6b4b18';
-import { state } from '../state.js?v=d6b4b18';
-import { COLORS, heading, text } from '../theme.js?v=d6b4b18';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=d6b4b18';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=d6b4b18';
+import { ARTSETS, texKey } from '../data/artsets.js?v=3637605';
+import { testParams, DRAWN } from '../data/levels.js?v=3637605';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3637605';
+import { CHARACTERS } from '../data/characters.js?v=3637605';
+import { state } from '../state.js?v=3637605';
+import { COLORS, heading, text } from '../theme.js?v=3637605';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=3637605';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=3637605';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -90,7 +90,7 @@ export class BootScene extends Phaser.Scene {
       this.load.once(`filecomplete-json-${c.id}`, (key, type, data) => {
         Object.entries(data.anims).forEach(([name, a]) => {
           this.load.spritesheet(`${c.id}-${name}`, `${c.base}${a.file}`,
-            { frameWidth: a.frameWidth || data.frameWidth, frameHeight: data.frameHeight });
+            { frameWidth: a.frameWidth || data.frameWidth, frameHeight: a.frameHeight || data.frameHeight });
         });
       });
     });

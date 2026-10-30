@@ -60,6 +60,13 @@
    "file": "girl_tread_game_strip.png",
    "frames": 8,
    "fps": 7
+  },
+  "picker": {
+   "file": "girl_picker_strip.png",
+   "frames": 8,
+   "fps": 4,
+   "frameWidth": 159,
+   "frameHeight": 230
   }
  }
 }

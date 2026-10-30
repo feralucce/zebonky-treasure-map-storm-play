@@ -5,12 +5,12 @@
 // so far, the rest are ready for layered art (hair, hat, outfit, shoes) and
 // say "Soon". The stand-ins carry a note that they are temporary.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=d6b4b18';
-import { state } from '../state.js?v=d6b4b18';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=d6b4b18';
-import { CHARACTERS, LOOK_SLOTS, STANDIN_NOTE } from '../data/characters.js?v=d6b4b18';
-import { audio } from '../audio.js?v=d6b4b18';
-import { companionGrid } from '../companionPicker.js?v=d6b4b18';
+import { MAP_W, MAP_H } from '../data/world.js?v=3637605';
+import { state } from '../state.js?v=3637605';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=3637605';
+import { CHARACTERS, LOOK_SLOTS } from '../data/characters.js?v=3637605';
+import { audio } from '../audio.js?v=3637605';
+import { companionGrid } from '../companionPicker.js?v=3637605';
 
 const CARD_W = 980;
 const CARD_H = 640;
@@ -41,6 +41,12 @@ export class CharacterMenuScene extends Phaser.Scene {
     this.add.text(MAP_W / 2, this.y0 + 40, 'Your explorer', heading(34)).setOrigin(0.5);
 
     CHARACTERS.forEach((c) => {
+      // The picker's own idle (front facing, from Chris's cards and the
+      // user's heads, the user, 2026-10-30), where an explorer has one.
+      const pa = ((this.cache.json.get(c.id) || {}).anims || {}).picker;
+      if (pa && !this.anims.exists(`${c.id}-pick`)) {
+        this.anims.create({ key: `${c.id}-pick`, frames: this.anims.generateFrameNumbers(`${c.id}-picker`), frameRate: pa.fps, repeat: -1 });
+      }
       if (!this.anims.exists(`${c.id}-idle`)) {
         const ia = (this.cache.json.get(c.id) || {}).anims;
         const rate = (ia && ia.idle && ia.idle.fps) || 3;
@@ -60,6 +66,14 @@ export class CharacterMenuScene extends Phaser.Scene {
     this.input.keyboard.on('keydown-ENTER', () => this.close());
   }
 
+  // An explorer's picture here: the picker idle if she has one (taller
+  // frames, so smaller scales), else her game idle.
+  look(id) {
+    return this.anims.exists(`${id}-pick`)
+      ? { tex: `${id}-picker`, anim: `${id}-pick`, big: 1.25, small: 0.55 }
+      : { tex: `${id}-idle`, anim: `${id}-idle`, big: 3, small: 1.25 };
+  }
+
   // Left: the chosen explorer, big, playing her idle.
   buildPreview() {
     const px = this.x0 + 40;
@@ -73,7 +87,7 @@ export class CharacterMenuScene extends Phaser.Scene {
     g.strokeRoundedRect(px, py, pw, ph, 18);
     g.fillStyle(COLORS.ink, 0.25);
     g.fillEllipse(px + pw / 2, py + ph - 70, 150, 26);
-    this.preview = this.add.sprite(px + pw / 2, py + ph - 66, `${state.character().id}-idle`, 0)
+    this.preview = this.add.sprite(px + pw / 2, py + ph - 66, this.look(state.character().id).tex, 0)
       .setOrigin(0.5, 1).setScale(3);
     this.previewName = this.add.text(px + pw / 2, py + ph - 30, '', heading(22)).setOrigin(0.5);
     this.refreshPreview();
@@ -81,7 +95,9 @@ export class CharacterMenuScene extends Phaser.Scene {
 
   refreshPreview() {
     const c = state.character();
-    this.preview.play(`${c.id}-idle`);
+    const lk = this.look(c.id);
+    this.preview.setTexture(lk.tex, 0).setScale(lk.big);
+    this.preview.play(lk.anim);
     this.previewName.setText(c.name);
   }
 
@@ -129,21 +145,17 @@ export class CharacterMenuScene extends Phaser.Scene {
     this.tiles = CHARACTERS.map((c, i) => {
       const t = this.add.container(tx0, y);
       const bg = this.add.graphics();
-      const fig = this.add.sprite(TILE_W / 2, TILE_H - 44, `${c.id}-idle`, 0).setOrigin(0.5, 1).setScale(1.25);
+      const lk = this.look(c.id);
+      const fig = this.add.sprite(TILE_W / 2, TILE_H - 44, lk.tex, 0).setOrigin(0.5, 1).setScale(lk.small);
       const name = this.add.text(TILE_W / 2, TILE_H - 22, c.name, text(16)).setOrigin(0.5);
       t.add([bg, fig, name]);
-      if (c.standin) {
-        t.add(this.add.text(TILE_W - 8, 8, 'Stand-in', text(11, '#ffffff', {
-          backgroundColor: '#9c6b3c', padding: { x: 5, y: 2 },
-        })).setOrigin(1, 0));
-      }
       t.draw = (on) => {
         bg.clear();
         bg.fillStyle(on ? 0xd6f0dc : 0xf8ecd0, 1);
         bg.fillRoundedRect(0, 0, TILE_W, TILE_H, 16);
         bg.lineStyle(on ? 5 : 3, on ? COLORS.green : COLORS.ink, 1);
         bg.strokeRoundedRect(0, 0, TILE_W, TILE_H, 16);
-        if (on) fig.play(`${c.id}-idle`);
+        if (on) fig.play(lk.anim);
         else fig.stop().setFrame(0);
       };
       t.setInteractive(new Phaser.Geom.Rectangle(0, 0, TILE_W, TILE_H), Phaser.Geom.Rectangle.Contains);
@@ -182,11 +194,6 @@ export class CharacterMenuScene extends Phaser.Scene {
     this.arrows = [arrow(x + ARROW / 2, -1), arrow(tx0 + SHOWN * (TILE_W + GAP) - GAP + 8 + ARROW / 2, 1)];
     this.layoutTiles();
     this.drawTiles();
-    if (CHARACTERS.some((c) => c.standin)) {
-      this.tabLayer.add(this.add.text(x, y + TILE_H + 26, STANDIN_NOTE, text(16, '#6b4a2e', {
-        wordWrap: { width: CARD_W - 370 },
-      })));
-    }
   }
 
   // The companions: every biome's Zebonky, the unlocked ones to pick from,
@@ -215,6 +222,8 @@ export class CharacterMenuScene extends Phaser.Scene {
     const most = Math.max(0, CHARACTERS.length - SHOWN);
     this.arrows[0].draw(this.first > 0);
     this.arrows[1].draw(this.first < most);
+    // No arrows while every explorer fits.
+    this.arrows.forEach((a) => a.setVisible(most > 0));
   }
 
   drawTiles() {
