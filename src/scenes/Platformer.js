@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3637605';
-import { TILE, layoutFor } from '../data/levels.js?v=3637605';
-import { state } from '../state.js?v=3637605';
-import { COLORS, heading, text } from '../theme.js?v=3637605';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3637605';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3637605';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=3637605';
-import { makeNav } from '../pathing.js?v=3637605';
-import { startQuestionRun } from '../data/questions.js?v=3637605';
-import { audio, musicButton, soundButton } from '../audio.js?v=3637605';
-import { Companion } from '../companion.js?v=3637605';
-import { startShowcase } from '../showcase.js?v=3637605';
-import { startExplorerTour } from '../explorerTour.js?v=3637605';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3637605';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f1ed798';
+import { TILE, layoutFor } from '../data/levels.js?v=f1ed798';
+import { state } from '../state.js?v=f1ed798';
+import { COLORS, heading, text } from '../theme.js?v=f1ed798';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f1ed798';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f1ed798';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=f1ed798';
+import { makeNav } from '../pathing.js?v=f1ed798';
+import { startQuestionRun } from '../data/questions.js?v=f1ed798';
+import { audio, musicButton, soundButton } from '../audio.js?v=f1ed798';
+import { Companion } from '../companion.js?v=f1ed798';
+import { startShowcase } from '../showcase.js?v=f1ed798';
+import { startExplorerTour } from '../explorerTour.js?v=f1ed798';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=f1ed798';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -390,7 +390,24 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ch === 'S' && (lvl.hasSecret || this.test)) {
           // On the map only levels with a secret route show it; a test or
           // demo always shows a drawn one (it just restarts the level).
-          this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 48, 'secret-door');
+          // The art set's dressed door (empty until it's opened), else the plain one.
+          const db = !this.blocks && this.art && this.art.door_bonus;
+          const dk = db && texKey(this.artName, db.file);
+          if (dk && this.textures.exists(dk)) {
+            // Set back from an edge, so its plants stand on the ground and
+            // don't hang over (the user): the dressing reaches about 112 px
+            // each side of the door's middle; move it a tile at a time (up to
+            // two) toward whichever side has the ground.
+            const floorAt = (px) => isSolid(r + 1, Math.floor(px / TILE)) || at(r + 1, Math.floor(px / TILE)) === '=';
+            const fits = (cx) => floorAt(cx - 112) && floorAt(cx + 112);
+            let dxs = 0;
+            for (const t of [0, -1, 1, -2, 2]) {
+              if (fits(x + t * TILE)) { dxs = t * TILE; break; }
+            }
+            this.secret = this.physics.add.staticSprite(x + dxs, (r + 1) * TILE - db.frameHeight / 2, dk, db.frames - 1).setDepth(-0.5);
+            this.secret.body.setSize(96, 128).setOffset((db.frameWidth - 96) / 2, db.frameHeight - 128);
+            this.secret.dressed = db;
+          } else this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 48, 'secret-door');
         } else if (ch === 'P') {
           start = { x, y };
         }
@@ -1790,6 +1807,30 @@ export class PlatformerScene extends Phaser.Scene {
     p.body.enable = false;
     p.anims.stop();
     const d = this.secret;
+    if (d.dressed) {
+      // The dressed door: the green spark opens out into rings, then she
+      // steps into the doorway and is gone.
+      const db = d.dressed;
+      const feet = d.y + db.frameHeight / 2;
+      this.tweens.add({ targets: p, y: feet - foot, x: d.x, duration: 260, ease: 'Quad.Out' });
+      audio.sfx(this, 'door');
+      d.setDepth(3);                  // she goes in behind the arch and its plants
+      let k = 0;
+      this.time.addEvent({
+        delay: 70, repeat: db.frames - 1,
+        callback: () => {
+          d.setFrame(k);
+          k += 1;
+          if (k === Math.floor(db.frames * 0.6)) {
+            this.tweens.add({
+              targets: p, alpha: 0, scale: 0.85, duration: 380, ease: 'Sine.In',
+              onComplete: () => { this.done = false; this.exit('secret'); },
+            });
+          }
+        },
+      });
+      return;
+    }
     const w = d.displayWidth;
     const h = d.displayHeight;
     // Touched it mid-jump (coming up over the falls, say): land at its foot.

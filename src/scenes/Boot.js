@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3637605';
-import { testParams, DRAWN } from '../data/levels.js?v=3637605';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3637605';
-import { CHARACTERS } from '../data/characters.js?v=3637605';
-import { state } from '../state.js?v=3637605';
-import { COLORS, heading, text } from '../theme.js?v=3637605';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=3637605';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=3637605';
+import { ARTSETS, texKey } from '../data/artsets.js?v=f1ed798';
+import { testParams, DRAWN } from '../data/levels.js?v=f1ed798';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=f1ed798';
+import { CHARACTERS } from '../data/characters.js?v=f1ed798';
+import { state } from '../state.js?v=f1ed798';
+import { COLORS, heading, text } from '../theme.js?v=f1ed798';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=f1ed798';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=f1ed798';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -134,6 +134,11 @@ export class BootScene extends Phaser.Scene {
         const dr = data.dressing || {};
         [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);
         Object.values(data.canopy || {}).flat().forEach(add);
+        // The bonus level door (tools/make_bonus_door.py): its opening frames.
+        if (data.door_bonus) {
+          this.load.spritesheet(texKey(name, data.door_bonus.file), base + data.door_bonus.file,
+            { frameWidth: data.door_bonus.frameWidth, frameHeight: data.door_bonus.frameHeight });
+        }
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;
         if (z) {
