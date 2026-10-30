@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f1ed798';
-import { TILE, layoutFor } from '../data/levels.js?v=f1ed798';
-import { state } from '../state.js?v=f1ed798';
-import { COLORS, heading, text } from '../theme.js?v=f1ed798';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f1ed798';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f1ed798';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=f1ed798';
-import { makeNav } from '../pathing.js?v=f1ed798';
-import { startQuestionRun } from '../data/questions.js?v=f1ed798';
-import { audio, musicButton, soundButton } from '../audio.js?v=f1ed798';
-import { Companion } from '../companion.js?v=f1ed798';
-import { startShowcase } from '../showcase.js?v=f1ed798';
-import { startExplorerTour } from '../explorerTour.js?v=f1ed798';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=f1ed798';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=c6ce4c1';
+import { TILE, layoutFor } from '../data/levels.js?v=c6ce4c1';
+import { state } from '../state.js?v=c6ce4c1';
+import { COLORS, heading, text } from '../theme.js?v=c6ce4c1';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=c6ce4c1';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=c6ce4c1';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=c6ce4c1';
+import { makeNav } from '../pathing.js?v=c6ce4c1';
+import { startQuestionRun } from '../data/questions.js?v=c6ce4c1';
+import { audio, musicButton, soundButton } from '../audio.js?v=c6ce4c1';
+import { Companion } from '../companion.js?v=c6ce4c1';
+import { startShowcase } from '../showcase.js?v=c6ce4c1';
+import { startExplorerTour } from '../explorerTour.js?v=c6ce4c1';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=c6ce4c1';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -79,6 +79,8 @@ function savedArt(art) {
   };
   return a.background || a.dressing.length ? a : null;
 }
+
+const GHOST_ALPHA = 0.12;        // ghost platforms before she finds them (barely there)
 
 const SOLID_TEXTURES = {
   '#': ['ground-top', 'ground'],
@@ -218,6 +220,11 @@ export class PlatformerScene extends Phaser.Scene {
     const atWall = (r, c) => at(r, Math.min(cols - 1, Math.max(0, c)));
     const isSolid = (r, c) => !!SOLID_TEXTURES[atWall(r, c)];
     const isPlatform = (r, c) => atWall(r, c) === '=';
+    // Ghost platforms (the level's `ghost` cells, all `=`; the user,
+    // 2026-10-30: the ways up to the bonus doors): barely there until she
+    // first stands on one, then that run fades in fully and stays.
+    this.ghostCells = new Set((layout.ghost || []).map(([gc, gr]) => `${gc},${gr}`));
+    this.ghostRuns = new Map();      // cell -> { objs, shown }
     // Tunnel blocks (H) look like the ground around them but can be run
     // into; their neighbours draw as if they were solid, so nothing gives
     // them away (the user, 2026-10-29).
@@ -377,7 +384,16 @@ export class PlatformerScene extends Phaser.Scene {
             p.setOrigin(0.5, 14 / p.height).refreshBody();
             p.body.setSize(p.width, 28, false).setOffset(0, 0);
           }
+          const before = this.children.list.length;
           this.decoratePlatform(x, r, c);
+          if (this.ghostCells.has(`${c},${r}`)) {
+            // one run per row of touching ghost cells
+            const prev = this.ghostRuns.get(`${c - 1},${r}`);
+            const run = prev || { objs: [], shown: false };
+            run.objs.push(p, ...this.children.list.slice(before));
+            run.objs.forEach((o) => o.setAlpha && o.setAlpha(GHOST_ALPHA));
+            this.ghostRuns.set(`${c},${r}`, run);
+          }
           p.body.checkCollision.down = false;
           p.body.checkCollision.left = false;
           p.body.checkCollision.right = false;
@@ -1604,7 +1620,7 @@ export class PlatformerScene extends Phaser.Scene {
             .setOrigin(0.5, 1).setScale(scale).setFlipX(h > 0.5).setDepth(-1);
         }
       }
-      if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1)
+      if (hangers.length && (isSolid(r, c) || ch === '=') && open(r + 1) && !this.ghostCells.has(`${c},${r}`)
           && tileHash(c + 307, r + 41) < (d.hang_chance || 0)) {
         // The whole hanger stays under the ledge, never past its ends. Under
         // a platform it hangs in front, its mossy top on the grass's front
@@ -2281,6 +2297,13 @@ Drag, or arrows / WASD (Shift is faster)`);
 
     // Down + Jump on a platform drops through it instead of jumping.
     const onPlatform = onFloor && this.cellAt(Math.floor((p.body.bottom + 2) / TILE), Math.floor(p.x / TILE)) === '=';
+    if (onPlatform && this.ghostRuns.size) {
+      const run = this.ghostRuns.get(`${Math.floor(p.x / TILE)},${Math.floor((p.body.bottom + 2) / TILE)}`);
+      if (run && !run.shown) {
+        run.shown = true;
+        this.tweens.add({ targets: run.objs.filter((o) => o.setAlpha), alpha: 1, duration: 450, ease: 'Sine.Out' });
+      }
+    }
     let dropped = false;
     if (down && wantsJump && onPlatform) {
       this.dropUntil = time + 260;
