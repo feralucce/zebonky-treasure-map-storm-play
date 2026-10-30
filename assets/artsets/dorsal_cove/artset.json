@@ -402,5 +402,14 @@
   "frameHeight": 144,
   "frames": 17,
   "note": "tools/make_bonus_door.py: the bonus level door (LetargicDev \"Portals\", CC0), dressed for this set"
+ },
+ "portal": {
+  "file": "portal.png",
+  "frameWidth": 134,
+  "frameHeight": 194,
+  "frames": 24,
+  "fps": 10,
+  "sink": 20,
+  "note": "tools/portal/make_portal.py: the user's pixel portal (Vecteezy, credit it), recoloured for the biome"
  }
 }

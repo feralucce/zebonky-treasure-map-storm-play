@@ -19,10 +19,10 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=3ed34b2';
-import { state, pathKey } from './state.js?v=3ed34b2';
-import { bankFor, questionKey } from './data/questions.js?v=3ed34b2';
-import { LETTERS, REWARDS } from './currency.js?v=3ed34b2';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=c1447cb';
+import { state, pathKey } from './state.js?v=c1447cb';
+import { bankFor, questionKey } from './data/questions.js?v=c1447cb';
+import { LETTERS, REWARDS } from './currency.js?v=c1447cb';
 
 // 3 added the answered questions; 4 the currency and its level rewards
 // (the user, 2026-10-30). Version 2 and 3 links still load, without them.

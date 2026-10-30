@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=3ed34b2';
-import { ARTSETS, texKey } from './data/artsets.js?v=3ed34b2';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE, layerFor, LAND_DEPTH } from './actors.js?v=3ed34b2';
+import { BIOMES } from './data/world.js?v=c1447cb';
+import { ARTSETS, texKey } from './data/artsets.js?v=c1447cb';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE, layerFor, LAND_DEPTH } from './actors.js?v=c1447cb';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -110,7 +110,7 @@ export class Companion {
       }
     }
     // Lost (fallen out, or left far behind): back beside her.
-    if (Math.abs(s.x - p.x) > TOO_FAR || s.y > this.scene.worldH + 100 || Math.abs(s.y - p.y) > TILE * 5) {
+    if (Math.abs(s.x - p.x) > TOO_FAR || s.y > this.scene.pitBottom(s.x) + 100 || Math.abs(s.y - p.y) > TILE * 5) {
       if (p.body.blocked.down) {
         s.setPosition(p.x - (p.flipX ? -BEHIND : BEHIND), this.art ? p.body.bottom : p.y - 20).setVelocity(0, 0);
         this.dive = null;

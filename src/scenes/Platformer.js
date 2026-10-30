@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3ed34b2';
-import { TILE, layoutFor } from '../data/levels.js?v=3ed34b2';
-import { state } from '../state.js?v=3ed34b2';
-import { COLORS, heading, text } from '../theme.js?v=3ed34b2';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3ed34b2';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3ed34b2';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=3ed34b2';
-import { makeNav } from '../pathing.js?v=3ed34b2';
-import { startQuestionRun } from '../data/questions.js?v=3ed34b2';
-import { audio, musicButton, soundButton } from '../audio.js?v=3ed34b2';
-import { Companion } from '../companion.js?v=3ed34b2';
-import { startShowcase } from '../showcase.js?v=3ed34b2';
-import { startExplorerTour } from '../explorerTour.js?v=3ed34b2';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3ed34b2';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=c1447cb';
+import { TILE, layoutFor } from '../data/levels.js?v=c1447cb';
+import { state } from '../state.js?v=c1447cb';
+import { COLORS, heading, text } from '../theme.js?v=c1447cb';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=c1447cb';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=c1447cb';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=c1447cb';
+import { makeNav } from '../pathing.js?v=c1447cb';
+import { startQuestionRun } from '../data/questions.js?v=c1447cb';
+import { audio, musicButton, soundButton } from '../audio.js?v=c1447cb';
+import { Companion } from '../companion.js?v=c1447cb';
+import { startShowcase } from '../showcase.js?v=c1447cb';
+import { startExplorerTour } from '../explorerTour.js?v=c1447cb';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=c1447cb';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -231,7 +231,8 @@ export class PlatformerScene extends Phaser.Scene {
     // Tunnel blocks (H) look like the ground around them but can be run
     // into; their neighbours draw as if they were solid, so nothing gives
     // them away (the user, 2026-10-29).
-    const isArtSolid = (r, c) => isSolid(r, c) || atWall(r, c) === 'H' || atWall(r, c) === 'l';
+    // h is a wall you can swim through: water, drawn the same way.
+    const isArtSolid = (r, c) => isSolid(r, c) || atWall(r, c) === 'H' || atWall(r, c) === 'l' || atWall(r, c) === 'h';
     const tunnelCells = [];
     const letterSpots = [];
     this.grounded = this.findGrounded(rows, cols);
@@ -243,9 +244,30 @@ export class PlatformerScene extends Phaser.Scene {
     const wildSpots = [];
     let guideSpot = null;
     let goalSpot = null;
-    const isWater = (r, c) => at(r, c) === '~' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
+    const isWater = (r, c) => at(r, c) === '~' || at(r, c) === 'h' || (at(r, c) === 'T' && (at(r, c - 1) === '~' || at(r, c + 1) === '~'));
+    // Danger blocks (X) at the bottom of a pit in a level that goes on down
+    // (the user, 2026-10-30): falling onto one is falling out of the level.
+    // The top one in each column.
+    this.dangerTop = {};
+    rows.forEach((row, r) => [...row].forEach((ch, c) => {
+      if (ch === 'X' && this.dangerTop[c] === undefined) this.dangerTop[c] = r;
+    }));
+    const swimWalls = [];
 
     this.pitSigns(rows, cols, isSolid, isWater);
+    // Under the ground (a level's `cave_from` row down), open space is a
+    // dark cave, not a window onto the sky behind.
+    if (layout.cave_from !== undefined) {
+      for (let r = layout.cave_from; r < rows.length; r++) {
+        for (let c = 0; c < cols;) {
+          const open = (cc) => cc < cols && !isSolid(r, cc) && at(r, cc) !== 'X';
+          if (!open(c)) { c++; continue; }
+          const c0 = c;
+          while (open(c)) c++;
+          this.add.rectangle(c0 * TILE, r * TILE, (c - c0) * TILE, TILE, 0x16120e, 1).setOrigin(0).setDepth(-1.4);
+        }
+      }
+    }
     // Banks: ground beside water. They draw in front of the water, which
     // runs a little way in under them, so the shore is the ledge's own
     // edge instead of a square cut (the user, 2026-10-24).
@@ -254,6 +276,12 @@ export class PlatformerScene extends Phaser.Scene {
       if (SOLID_TEXTURES[ch] && (isWater(r, c - 1) || isWater(r, c + 1))) this.bankCells.add(`${c},${r}`);
     }));
     const BANK_TUCK = 14;
+    // Rock with rock all round it, two or more rows under the ground's old
+    // bottom edge in a level that goes on down.
+    const buriedCells = [];
+    // (rock carries on below the bottom row)
+    const buried = (r, c) => layout.cave_from !== undefined && r > layout.cave_from
+      && [-1, 0, 1].every((dr) => [-1, 0, 1].every((dc) => (r + dr >= rows.length ? isArtSolid(r, c + dc) : isArtSolid(r + dr, c + dc))));
 
     rows.forEach((row, r) => {
       [...row].forEach((ch, c) => {
@@ -261,7 +289,12 @@ export class PlatformerScene extends Phaser.Scene {
         const y = r * TILE + TILE / 2;
         if (SOLID_TEXTURES[ch]) {
           // Picture only; collision comes from the merged boxes built below.
-          if (this.blocks) {
+          if (buried(r, c)) {
+            // Deep in the rock under a level that goes on down: drawn in
+            // long strips after the loop (thousands of single tiles slow
+            // the game down).
+            buriedCells.push({ r, c });
+          } else if (this.blocks) {
             this.block(x, y, TILE, BLOCK_COLORS[ch]);
           } else if (!this.drawArtSolid(ch, isArtSolid, r, c, x, y, at)) {
             const [topTex, fillTex] = SOLID_TEXTURES[ch];
@@ -289,7 +322,11 @@ export class PlatformerScene extends Phaser.Scene {
         } else if (ch === 'B') {
           guideSpot = { x, y: (r + 1) * TILE };
         } else if (isWater(r, c)) {
-          const surface = !isWater(r - 1, c);
+          const surface = !isWater(r - 1, c) && !isSolid(r - 1, c);
+          if (ch === 'h') {
+            tunnelCells.push({ c, r, x, y });
+            swimWalls.push({ c, r });
+          }
           const wa = !this.blocks && this.art && this.art.water;
           const wFiles = wa && (surface ? wa.top : wa.body);
           const wKey = wFiles && wFiles.length && texKey(this.artName, pick(wFiles, c, r));
@@ -314,7 +351,8 @@ export class PlatformerScene extends Phaser.Scene {
             if (tl || tr) img.setDisplaySize(TILE + tl + tr, TILE).setX(x + (tr - tl) / 2);
           }
           this.water.add(`${c},${r}`);
-          if (surface) this.surfaceRow[c] = r;
+          // the top one in the column (the Zebonkies stay up there)
+          if (surface && this.surfaceRow[c] === undefined) this.surfaceRow[c] = r;
           if (ch === 'T') treasureSpots.push({ x, y });
         } else if (ch === 'V') {
           // Vine wall: the art set's vine tile, or a see-through green block.
@@ -412,7 +450,19 @@ export class PlatformerScene extends Phaser.Scene {
           // The art set's dressed door (empty until it's opened), else the plain one.
           const db = !this.blocks && this.art && this.art.door_bonus;
           const dk = db && texKey(this.artName, db.file);
-          if (dk && this.textures.exists(dk)) {
+          const pt = layout.portal && !this.blocks && this.art && this.art.portal;
+          const pk = pt && texKey(this.artName, pt.file);
+          if (pk && this.textures.exists(pk)) {
+            // The biome's portal (the user's, 2026-10-30), always turning,
+            // standing on the floor of its tile.
+            if (!this.anims.exists(pk)) {
+              this.anims.create({ key: pk, frames: this.anims.generateFrameNumbers(pk, {}), frameRate: pt.fps, repeat: -1 });
+            }
+            this.secret = this.physics.add.staticSprite(x, (r + 1) * TILE - pt.frameHeight / 2 + (pt.sink || 0), pk).setDepth(-0.5);
+            this.secret.play(pk);
+            this.secret.body.setSize(80, 128).setOffset((pt.frameWidth - 80) / 2, pt.frameHeight - 128 - (pt.sink || 0));
+            this.secret.portal = pt;
+          } else if (dk && this.textures.exists(dk)) {
             // Set back from an edge, so its plants stand on the ground and
             // don't hang over (the user): the dressing reaches about 112 px
             // each side of the door's middle; move it a tile at a time (up to
@@ -432,11 +482,27 @@ export class PlatformerScene extends Phaser.Scene {
         }
       });
     });
+    // The buried rock, a strip per row run, in the same rock as under the
+    // level's bottom edge.
+    for (let i = 0; i < buriedCells.length;) {
+      const { r, c } = buriedCells[i];
+      let n = 1;
+      while (i + n < buriedCells.length && buriedCells[i + n].r === r && buriedCells[i + n].c === c + n) n++;
+      if (underKey && this.textures.exists(underKey)) {
+        const strip = this.add.tileSprite(c * TILE, r * TILE, n * TILE, TILE, underKey).setOrigin(0);
+        strip.setTilePosition(c * TILE, r * TILE);
+        if (underKey === skinRock) strip.setTint(0xcccccc);   // as dark as drawSkin's deepest tiles
+      } else {
+        this.add.rectangle(c * TILE, r * TILE, n * TILE, TILE, this.blocks ? BLOCK_COLORS[at(r, c)] : 0x6b4a2e).setOrigin(0);
+      }
+      i += n;
+    }
     this.rows = rows;
     this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
     this.buildTunnels(tunnelCells, at, isArtSolid);
     this.sparkleGhosts();
+    this.markSwimWalls(swimWalls, isWater);
     this.letterSpots = letterSpots;
     this.crateCount = treasureSpots.length;
     this.buildDoors(doorCells);
@@ -999,9 +1065,11 @@ export class PlatformerScene extends Phaser.Scene {
       const sides = [topOf(c0 - 1), topOf(c)].filter((r) => r !== null);
       if (!sides.length) continue;
       const y0 = (Math.max(...sides) + 1) * TILE;
-      if (y0 >= worldH) continue;
-      this.add.image(c0 * TILE, y0, 'pit-dark').setOrigin(0).setDisplaySize((c - c0) * TILE, worldH - y0).setDepth(-1.5);
-      this.add.rectangle(c0 * TILE, worldH, (c - c0) * TILE, 800, 0x08100c, 1).setOrigin(0).setDepth(-1.5);
+      // down to its danger blocks, if it has them, else the level's bottom
+      const yEnd = this.dangerTop[c0] !== undefined ? this.dangerTop[c0] * TILE : worldH;
+      if (y0 >= yEnd) continue;
+      this.add.image(c0 * TILE, y0, 'pit-dark').setOrigin(0).setDisplaySize((c - c0) * TILE, yEnd - y0).setDepth(-1.5);
+      this.add.rectangle(c0 * TILE, yEnd, (c - c0) * TILE, worldH - yEnd + 800, 0x08100c, 1).setOrigin(0).setDepth(-1.5);
     }
   }
 
@@ -1078,6 +1146,66 @@ export class PlatformerScene extends Phaser.Scene {
         alpha: { start: 0.9, end: 0 },
         rotate: { min: 0, max: 45 },
       }).setDepth(2);
+    });
+  }
+
+  // The wall you can swim through (h): bubbles stream out of it on every
+  // difficulty, and on Junior Explorer and Explorer it sparkles too (the
+  // user, 2026-10-30: "a little bit of a sparkle so it stands out"; "just
+  // bubbles on pioneer"). Both come from its faces onto open water.
+  markSwimWalls(cells, isWater) {
+    if (!cells.length) return;
+    if (!this.textures.exists('bubble')) {
+      const cv = Object.assign(document.createElement('canvas'), { width: 12, height: 12 });
+      const g = cv.getContext('2d');
+      g.strokeStyle = 'rgba(235,250,255,0.95)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.arc(6, 6, 4.5, 0, Math.PI * 2);
+      g.stroke();
+      g.fillStyle = 'rgba(255,255,255,0.9)';
+      g.fillRect(3, 3, 2, 2);
+      this.textures.addCanvas('bubble', cv);
+    }
+    const wall = new Set(cells.map(({ c, r }) => `${c},${r}`));
+    const faces = [];
+    cells.forEach(({ c, r }) => {
+      [-1, 1].forEach((d) => {
+        if (!wall.has(`${c + d},${r}`) && isWater(r, c + d)) faces.push({ x: (d < 0 ? c : c + 1) * TILE, y: r * TILE, d, c: c + d });
+      });
+    });
+    // Bubbles rise to the top of the water beside the wall (up a shaft, all
+    // the way to the pool's surface, where they can be seen from above).
+    const topOf = (c, r) => {
+      while (isWater(r - 1, c)) r--;
+      return r * TILE;
+    };
+    const sparkle = this.band.id !== 'pioneer';
+    if (sparkle) this.ensureSparkTexture();
+    faces.forEach(({ x, y, d, c }) => {
+      const rise = y + TILE / 2 - topOf(c, Math.floor(y / TILE)) - 12;
+      this.add.particles(0, 0, 'bubble', {
+        x: { min: x + d * 4, max: x + d * 14 },
+        y: { min: y + 8, max: y + TILE - 8 },
+        lifespan: Math.max(600, (rise / 70) * 1000),
+        frequency: 420,
+        speedY: { min: -78, max: -70 },
+        speedX: { min: d * 2, max: d * 8 },
+        scale: { min: 0.7, max: 1.4 },
+        alpha: { start: 0.95, end: 0.5 },
+      }).setDepth(6);
+      if (sparkle) {
+        this.add.particles(0, 0, 'pickup-spark', {
+          x: { min: x - 10, max: x + 10 },
+          y: { min: y + 4, max: y + TILE - 4 },
+          lifespan: 1000,
+          frequency: 260,
+          speedY: { min: -14, max: -4 },
+          scale: { start: 1.7, end: 0.3 },
+          alpha: { start: 0.95, end: 0 },
+          rotate: { min: 0, max: 45 },
+        }).setDepth(9);
+      }
     });
   }
 
@@ -1198,6 +1326,21 @@ export class PlatformerScene extends Phaser.Scene {
     return this.water.has(`${Math.floor(x / TILE)},${Math.floor(y / TILE)}`);
   }
 
+  // How far down a fall goes before it counts as out of the level: the top
+  // of the pit's danger blocks, or the bottom of the level.
+  pitBottom(x) {
+    const r = this.dangerTop && this.dangerTop[Math.floor(x / TILE)];
+    return r !== undefined ? r * TILE : this.worldH;
+  }
+
+  // The top of the water she is in, if it has air over it (none in a passage
+  // under rock: there she just floats up against the roof).
+  surfaceFor(c, r) {
+    if (!this.water.has(`${c},${r}`)) return null;
+    while (this.water.has(`${c},${r - 1}`)) r--;
+    return this.isFloor(r - 1, c) ? null : r;
+  }
+
   // Solid floor or a platform right under these feet?
   // Junior Explorer's pit rescue: carry her up and over to the first ground
   // past the pit, on the side she was heading. False if there's none to find.
@@ -1215,7 +1358,7 @@ export class PlatformerScene extends Phaser.Scene {
       p.body.enable = false;
       p.setVelocity(0, 0);
       p.setAcceleration(0, 0);
-      p.setPosition(p.x, this.worldH + 40);
+      p.setPosition(p.x, this.pitBottom(p.x) + 40);
       this.floatText(x, top - 120, 'Up you go!', 26);
       this.tweens.add({
         targets: p, x, y: top - 72, duration: 900, ease: 'Sine.InOut',
@@ -1893,6 +2036,20 @@ export class PlatformerScene extends Phaser.Scene {
     p.body.enable = false;
     p.anims.stop();
     const d = this.secret;
+    if (d.portal) {
+      // The portal: she's drawn into the middle, turning and shrinking.
+      audio.sfx(this, 'door');
+      p.setDepth(-0.4);
+      this.tweens.add({
+        targets: p, x: d.x, y: d.y, angle: 360, scale: 0.2, alpha: 0, duration: 900, ease: 'Sine.In',
+        onComplete: () => {
+          this.cameras.main.flash(250, 255, 255, 255);
+          this.done = false;
+          this.exit('secret');
+        },
+      });
+      return;
+    }
     if (d.dressed) {
       // The dressed door: the green spark opens out into rings, then she
       // steps into the doorway and is gone.
@@ -2500,7 +2657,8 @@ Drag, or arrows / WASD (Shift is faster)`);
       // there, head and shoulders out, bobbing a little. Down dives.
       p.body.setGravityY(-this.physics.world.gravity.y);
       p.setMaxVelocity(SWIM_SPEED, 1400);
-      const surfaceY = this.surfaceRow[c] !== undefined ? this.surfaceRow[c] * TILE : null;
+      const surfRow = this.surfaceFor(c, r);
+      const surfaceY = surfRow !== null ? surfRow * TILE : null;
       if (!this.wasInWater) this.splash(p.x, surfaceY ?? p.y, p.body.velocity.y);
       const vy = p.body.velocity.y;
       if (down) {
@@ -2517,7 +2675,7 @@ Drag, or arrows / WASD (Shift is faster)`);
         p.setVelocityY(Phaser.Math.Linear(vy, -FLOAT_RISE, 0.08));
       }
       if (wantsJump) {
-        const nearSurface = this.surfaceRow[c] !== undefined && p.y - this.surfaceRow[c] * TILE < 44;
+        const nearSurface = surfaceY !== null && p.y - surfaceY < 44;
         p.setVelocityY(nearSurface ? -SWIM_HOP_OUT : -SWIM_STROKE);
         this.strokeUntil = time + 500;
         if (nearSurface) this.boostUntil = time + 400;
@@ -2601,8 +2759,9 @@ Drag, or arrows / WASD (Shift is faster)`);
 
     // Fell in a pit: pop back to the last solid ground, one Z-bolt down.
     // Junior Explorer is lifted across to the far side instead.
-    if (p.y > this.worldH + 120 && this.band.pitLift && !this.lifting && this.liftAcross(p)) return;
-    if (p.y > this.worldH + 120 && !this.lifting) {
+    const fell = p.y > this.pitBottom(p.x) + 120;
+    if (fell && this.band.pitLift && !this.lifting && this.liftAcross(p)) return;
+    if (fell && !this.lifting) {
       p.setVelocity(0, 0);
       p.setAcceleration(0, 0);
       // A step back from the edge if there's floor there, else the spot itself.

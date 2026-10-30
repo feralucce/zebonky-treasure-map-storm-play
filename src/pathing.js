@@ -45,13 +45,16 @@ export function makeNav(rows) {
     return rows[r][c] || '.';
   };
   const solid = (r, c) => SOLID.has(ch(r, c));
-  const water = (r, c) => ch(r, c) === '~';
+  // h: a wall you can swim through (water drawn like the stone around it).
+  const water = (r, c) => ch(r, c) === '~' || ch(r, c) === 'h';
   // Uphill waterfalls and vine walls both take you up.
   const current = (r, c) => ch(r, c) === 'W' || ch(r, c) === 'V';
   const floorAt = (r, c) => solid(r, c) || ch(r, c) === '=';
   const stand = (r, c) => r >= 0 && r < R && !solid(r, c) && !water(r, c) && floorAt(r + 1, c);
   const surface = (r, c) => water(r, c) && !water(r - 1, c) && !solid(r - 1, c);
-  const isSpot = (r, c) => c >= 0 && c < C && (stand(r, c) || surface(r, c));
+  // Under the surface: hold Down to dive, swim any way, float back up.
+  const deep = (r, c) => water(r, c) && !surface(r, c);
+  const isSpot = (r, c) => c >= 0 && c < C && (stand(r, c) || surface(r, c) || deep(r, c));
 
   // Falling straight down a column: where you come to rest, or null for a pit.
   const fallFrom = (r, c) => {
@@ -94,6 +97,15 @@ export function makeNav(rows) {
   function moves(r, c) {
     const out = [];
     const add = (nr, nc, type, cost) => out.push({ r: nr, c: nc, type, cost });
+    // Underwater (deep pools, the passages under Dorsal Cove 1): to any
+    // water beside, above or below. Dearer than swimming on top, so routes
+    // only go down when that's the only way.
+    if (water(r, c)) {
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (water(r + dr, c + dc) && (dr !== 0 || deep(r, c) || deep(r, c + dc))) add(r + dr, c + dc, 'dive', 3);
+      }
+      if (deep(r, c)) return out;
+    }
     if (surface(r, c)) {
       for (const d of [-1, 1]) {
         if (surface(r, c + d)) add(r, c + d, 'swim', 1.5);

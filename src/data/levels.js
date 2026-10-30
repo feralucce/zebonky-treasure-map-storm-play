@@ -9,6 +9,9 @@
 //   G  goal flag       S  bonus level door (in code: the secret exit)
 //   P  player start    .  empty
 //   <  >  ^  [  ]  arrow signposts: left, right, up, up-left, up-right (scenery)
+//   h  a wall you can swim through: water, drawn like the stone round it
+//   X  danger block at the bottom of a pit, in a level that goes on down:
+//      falling onto one is falling out of the level
 //   1-9  hidden door: the two cells with the same digit are a pair. Stand in
 //        one and press Up to come out at the other. Nothing is drawn there.
 // Rows shorter than the widest row are padded with empty space.

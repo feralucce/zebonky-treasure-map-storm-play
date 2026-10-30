@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3ed34b2';
-import { testParams, DRAWN } from '../data/levels.js?v=3ed34b2';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3ed34b2';
-import { CHARACTERS } from '../data/characters.js?v=3ed34b2';
-import { state } from '../state.js?v=3ed34b2';
-import { COLORS, heading, text } from '../theme.js?v=3ed34b2';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=3ed34b2';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=3ed34b2';
+import { ARTSETS, texKey } from '../data/artsets.js?v=c1447cb';
+import { testParams, DRAWN } from '../data/levels.js?v=c1447cb';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=c1447cb';
+import { CHARACTERS } from '../data/characters.js?v=c1447cb';
+import { state } from '../state.js?v=c1447cb';
+import { COLORS, heading, text } from '../theme.js?v=c1447cb';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=c1447cb';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=c1447cb';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -138,6 +138,12 @@ export class BootScene extends Phaser.Scene {
         if (data.door_bonus) {
           this.load.spritesheet(texKey(name, data.door_bonus.file), base + data.door_bonus.file,
             { frameWidth: data.door_bonus.frameWidth, frameHeight: data.door_bonus.frameHeight });
+        }
+        // The biome's portal (tools/portal/make_portal.py), for a bonus
+        // level door hidden somewhere special (a level with `portal`).
+        if (data.portal) {
+          this.load.spritesheet(texKey(name, data.portal.file), base + data.portal.file,
+            { frameWidth: data.portal.frameWidth, frameHeight: data.portal.frameHeight });
         }
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;

@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=3ed34b2';
-import { texKey } from './data/artsets.js?v=3ed34b2';
+import { TILE } from './data/levels.js?v=c1447cb';
+import { texKey } from './data/artsets.js?v=c1447cb';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -398,7 +398,7 @@ export class WildZebonky {
     }
     // Fell out of the level: back on the edge it fell from (or, when fed,
     // back beside the player), like the explorer.
-    if (s.y > this.scene.worldH + 200) {
+    if (s.y > this.scene.pitBottom(s.x) + 200) {
       if (!this.isFed) this.reappear(this.safe.x, this.safe.y);
       else this.goAway();
       return;
