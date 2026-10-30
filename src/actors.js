@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=b000e7d';
-import { texKey } from './data/artsets.js?v=b000e7d';
+import { TILE } from './data/levels.js?v=b75b70d';
+import { texKey } from './data/artsets.js?v=b75b70d';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -55,13 +55,28 @@ export const FEET_ROW = 122;
 // hovering (the user, 2026-10-30). The picture sits this much below the body.
 export const GRASS_SINK = 6;
 
+// Layers (the user, 2026-10-30: a Zebonky on a bank was behind its grass):
+// on land a character draws over every piece of ground, the banks' grass
+// included (6.5); in water, under the water (5) so it swims in it. Tunnel
+// blocks (8) stay in front, to hide whoever is inside.
+export const LAND_DEPTH = 7;
+export const WATER_DEPTH = 4;
+export function layerFor(sprite, scene, depthOffset = 0) {
+  const wet = scene.isWaterAt && scene.isWaterAt(sprite.x, sprite.y - 30);
+  sprite.setDepth((wet ? WATER_DEPTH : LAND_DEPTH) + depthOffset);
+}
+
 // A Zebonky sprite's anchor at its feet, and (with a body) its body from
 // the cub's middle down to its feet, not the empty edges of its frame.
 export function standOnFeet(sprite, art) {
   const fw = art.z.frameWidth;
   const fh = art.z.frameHeight;
   sprite.setOrigin(0.5, FEET_ROW / fh);
-  if (sprite.body) sprite.body.setSize(fw * 0.5, FEET_ROW - fh * 0.38 - GRASS_SINK).setOffset(fw * 0.25, fh * 0.38);
+  // the sink is in game px: the body is sized in the frame's own pixels,
+  // which the sprite's scale shrinks (Zebonkies are drawn at about half);
+  // and his feet end a pixel or two above FEET_ROW
+  const sink = GRASS_SINK / (Math.abs(sprite.scaleY) || 1) + 2;
+  if (sprite.body) sprite.body.setSize(fw * 0.5, FEET_ROW - fh * 0.38 - sink).setOffset(fw * 0.25, fh * 0.38);
   return sprite;
 }
 
@@ -368,6 +383,7 @@ export class WildZebonky {
   update(time, player) {
     const s = this.sprite;
     if (this.gone) return;
+    layerFor(s, this.scene, -0.2);
     // A tamed Zebonky never falls into a pit and disappears (the user,
     // 2026-10-30: "it is traumatic to kids"): falling with no ground
     // anywhere below it, it pops back, in hearts, onto the last ground it
@@ -639,6 +655,7 @@ export class GuideZebonky {
   }
 
   update(time, player) {
+    layerFor(this.sprite, this.scene, -0.2);
     if (this.glow) this.glow.setPosition(this.sprite.x, this.sprite.y - 48);
     if (this.travelling || this.revealed) return;
     const s = this.sprite;

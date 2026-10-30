@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=b000e7d';
-import { ARTSETS, texKey } from './data/artsets.js?v=b000e7d';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=b000e7d';
+import { BIOMES } from './data/world.js?v=b75b70d';
+import { ARTSETS, texKey } from './data/artsets.js?v=b75b70d';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE, layerFor, LAND_DEPTH } from './actors.js?v=b75b70d';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -55,7 +55,7 @@ export class Companion {
       const r = (s.width * 0.42);
       s.body.setCircle(r, s.width / 2 - r, s.height - 2 * r);
     }
-    s.setDepth(0.9);          // over the grass (0.5), just behind her (1)
+    s.setDepth(LAND_DEPTH - 0.1);   // just behind her; layerFor keeps it right in water
     scene.physics.add.collider(s, scene.solids);
     scene.physics.add.collider(s, scene.platforms);
     this.sprite = s;
@@ -90,6 +90,7 @@ export class Companion {
     const s = this.sprite;
     const p = this.scene.player;
     if (!s.active) return;
+    layerFor(s, this.scene, -0.1);
     // Never falls into a pit (the user, 2026-10-30: "it is traumatic to
     // kids"): dropping with no ground or water anywhere below, it sparkles
     // back onto the last ground she stood on safely.

@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b000e7d';
-import { TILE, layoutFor } from '../data/levels.js?v=b000e7d';
-import { state } from '../state.js?v=b000e7d';
-import { COLORS, heading, text } from '../theme.js?v=b000e7d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b000e7d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b000e7d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK } from '../actors.js?v=b000e7d';
-import { makeNav } from '../pathing.js?v=b000e7d';
-import { startQuestionRun } from '../data/questions.js?v=b000e7d';
-import { audio, musicButton, soundButton } from '../audio.js?v=b000e7d';
-import { Companion } from '../companion.js?v=b000e7d';
-import { startShowcase } from '../showcase.js?v=b000e7d';
-import { startExplorerTour } from '../explorerTour.js?v=b000e7d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=b000e7d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b75b70d';
+import { TILE, layoutFor } from '../data/levels.js?v=b75b70d';
+import { state } from '../state.js?v=b75b70d';
+import { COLORS, heading, text } from '../theme.js?v=b75b70d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b75b70d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b75b70d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=b75b70d';
+import { makeNav } from '../pathing.js?v=b75b70d';
+import { startQuestionRun } from '../data/questions.js?v=b75b70d';
+import { audio, musicButton, soundButton } from '../audio.js?v=b75b70d';
+import { Companion } from '../companion.js?v=b75b70d';
+import { startShowcase } from '../showcase.js?v=b75b70d';
+import { startExplorerTour } from '../explorerTour.js?v=b75b70d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=b75b70d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -80,9 +80,9 @@ function savedArt(art) {
   return a.background || a.dressing.length ? a : null;
 }
 
-// The explorer draws over the ground's grass (depth 0.5) so her feet show
-// on it, and under the water (5) (the user, 2026-10-30).
-const PLAYER_DEPTH = 1;
+// The explorer's layer on land: over all the ground's grass, banks too
+// (actors.js LAND_DEPTH); in water she drops under it (WATER_DEPTH).
+const PLAYER_DEPTH = LAND_DEPTH;
 const GHOST_ALPHA = 0.12;        // ghost platforms before she finds them (barely there)
 
 const SOLID_TEXTURES = {
@@ -610,7 +610,7 @@ export class PlatformerScene extends Phaser.Scene {
           const [topTex, fillTex] = SOLID_TEXTURES[ch];
           this.add.image(x, y, isArtSolid(r - 1, c) ? fillTex : topTex);
         }
-        this.children.list.slice(from).forEach((o) => { o.setDepth(4); region.imgs.push(o); });
+        this.children.list.slice(from).forEach((o) => { o.setDepth(8); region.imgs.push(o); });
       });
     });
   }
@@ -759,7 +759,7 @@ export class PlatformerScene extends Phaser.Scene {
       p.body.setOffset((fw - 34) / 2, p.frame.height - 64 - GRASS_SINK);
     }
     // On a vine she is in front of it; her background arm and leg are behind.
-    p.setDepth(onVine ? 2 : PLAYER_DEPTH);
+    p.setDepth(onVine ? 2 : floating ? WATER_DEPTH : PLAYER_DEPTH);
     const b = this.playerBack;
     if (b) {
       b.setVisible(onVine && p.visible);
@@ -1871,7 +1871,7 @@ export class PlatformerScene extends Phaser.Scene {
       const feet = d.y + db.frameHeight / 2;
       this.tweens.add({ targets: p, y: feet - foot, x: d.x, duration: 260, ease: 'Quad.Out' });
       audio.sfx(this, 'door');
-      d.setDepth(3);                  // she goes in behind the arch and its plants
+      d.setDepth(8);                  // she goes in behind the arch and its plants
       let k = 0;
       this.time.addEvent({
         delay: 70, repeat: db.frames - 1,

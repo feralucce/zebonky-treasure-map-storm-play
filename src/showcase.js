@@ -8,9 +8,9 @@
 // the Zebonky and what it does: a tour of the whole stretch, or idle, walk,
 // run, jump or swim (flight for Ricky) on their own.
 
-import { TILE, DRAWN } from './data/levels.js?v=b000e7d';
-import { WildZebonky, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=b000e7d';
-import { COLORS, text } from './theme.js?v=b000e7d';
+import { TILE, DRAWN } from './data/levels.js?v=b75b70d';
+import { WildZebonky, layerFor, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=b75b70d';
+import { COLORS, text } from './theme.js?v=b75b70d';
 
 // Who, in which art set, borrowing which level's name.
 export const SHOWCASE = [
@@ -139,6 +139,7 @@ class ShowcaseZebonky extends WildZebonky {
 
   update(time) {
     const s = this.sprite;
+    layerFor(s, this.scene, -0.2);
     if (time < (this.crouchUntil || 0)) { s.setVelocityX(0); return; }
     if (time < (this.leapingUntil || 0)) { s.setVelocityX(this.dir * 180); return; }
     if (this.mode === 'swim' || this.inWater()) { this.paddle(); return; }
