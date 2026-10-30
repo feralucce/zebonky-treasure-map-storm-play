@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=c1447cb';
-import { TILE, layoutFor } from '../data/levels.js?v=c1447cb';
-import { state } from '../state.js?v=c1447cb';
-import { COLORS, heading, text } from '../theme.js?v=c1447cb';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=c1447cb';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=c1447cb';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=c1447cb';
-import { makeNav } from '../pathing.js?v=c1447cb';
-import { startQuestionRun } from '../data/questions.js?v=c1447cb';
-import { audio, musicButton, soundButton } from '../audio.js?v=c1447cb';
-import { Companion } from '../companion.js?v=c1447cb';
-import { startShowcase } from '../showcase.js?v=c1447cb';
-import { startExplorerTour } from '../explorerTour.js?v=c1447cb';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=c1447cb';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9213db7';
+import { TILE, layoutFor } from '../data/levels.js?v=9213db7';
+import { state } from '../state.js?v=9213db7';
+import { COLORS, heading, text } from '../theme.js?v=9213db7';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=9213db7';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=9213db7';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=9213db7';
+import { makeNav } from '../pathing.js?v=9213db7';
+import { startQuestionRun } from '../data/questions.js?v=9213db7';
+import { audio, musicButton, soundButton } from '../audio.js?v=9213db7';
+import { Companion } from '../companion.js?v=9213db7';
+import { startShowcase } from '../showcase.js?v=9213db7';
+import { startExplorerTour } from '../explorerTour.js?v=9213db7';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=9213db7';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -264,6 +264,13 @@ export class PlatformerScene extends Phaser.Scene {
           if (!open(c)) { c++; continue; }
           const c0 = c;
           while (open(c)) c++;
+          if (r === layout.cave_from && isWater(r - 1, c0)) {
+            // Water carrying on down from a pool above: it darkens over a
+            // few rows, with no line to give the deep part away.
+            this.add.image(c0 * TILE, (r - 2) * TILE, 'pit-dark').setOrigin(0)
+              .setDisplaySize((c - c0) * TILE, 3 * TILE).setDepth(-1.4);
+            continue;
+          }
           this.add.rectangle(c0 * TILE, r * TILE, (c - c0) * TILE, TILE, 0x16120e, 1).setOrigin(0).setDepth(-1.4);
         }
       }
