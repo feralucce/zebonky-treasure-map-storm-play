@@ -6,8 +6,10 @@
 // are the save packed into bytes: a version, one byte per level (cleared,
 // bonus level door, which of the five crates, every Zebonky tamed), where
 // the player stands, every question answered right (one bit per question of
-// each biome's bank, for each difficulty), and a check byte, so a damaged
-// link is refused rather than loaded wrong. The QR code is this link.
+// each biome's bank, for each difficulty), the currency and its level
+// rewards (only the levels that have any: which ZEBONKY letters are found and
+// which rewards are paid, for each difficulty), and a check byte, so a
+// damaged link is refused rather than loaded wrong. The QR code is this link.
 //
 // Save file: the whole save, exactly, as a small JSON file. Email sends it
 // with the device's share sheet (file attached) where it can, or opens the
@@ -17,12 +19,14 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=b75b70d';
-import { state, pathKey } from './state.js?v=b75b70d';
-import { bankFor, questionKey } from './data/questions.js?v=b75b70d';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=62e2e14';
+import { state, pathKey } from './state.js?v=62e2e14';
+import { bankFor, questionKey } from './data/questions.js?v=62e2e14';
+import { LETTERS, REWARDS } from './currency.js?v=62e2e14';
 
-// 3 added the answered questions; a version 2 link still loads, without them.
-const VERSION = 3;
+// 3 added the answered questions; 4 the currency and its level rewards
+// (the user, 2026-10-30). Version 2 and 3 links still load, without them.
+const VERSION = 4;
 const BANDS = ['junior', 'explorer', 'pioneer'];
 const FILE_TAG = 'zebonky-treasure-map-storm';
 const FILE_NAME = 'zebonky-treasure-map-save.json';
@@ -105,9 +109,57 @@ function readAnswered(bytes) {
   return answered;
 }
 
+// The currency (two bytes) and, for each difficulty, a count and then for
+// each level with anything in it: its index, its letters (one bit each, in
+// ZEBONKY order) and its paid rewards (one bit each, in REWARDS order).
+function rewardBytes(data) {
+  const n = Math.min(65535, data.currency || 0);
+  const out = [n >> 8, n & 255];
+  BANDS.forEach((band) => {
+    const recs = (data.rewardsBy || {})[band] || {};
+    const rows = [];
+    ORDER.forEach((id, i) => {
+      const r = recs[id];
+      if (!r) return;
+      let lb = 0;
+      LETTERS.split('').forEach((ch, k) => { if ((r.letters || []).includes(ch)) lb |= 1 << k; });
+      let pb = 0;
+      REWARDS.forEach((rw, k) => { if (r.paid && r.paid[rw.key]) pb |= 1 << k; });
+      if (lb || pb) rows.push(i, lb, pb);
+    });
+    out.push(rows.length / 3, ...rows);
+  });
+  return out;
+}
+
+// Reads rewardBytes back from bytes[at]; returns { currency, rewardsBy, end } or null.
+function readRewards(bytes, at) {
+  let i = at;
+  const take = () => (i < bytes.length ? bytes[i++] : -1);
+  const hi = take();
+  const lo = take();
+  if (hi < 0 || lo < 0) return null;
+  const rewardsBy = {};
+  for (const band of BANDS) {
+    const n = take();
+    if (n < 0) return null;
+    for (let k = 0; k < n; k++) {
+      const li = take();
+      const lb = take();
+      const pb = take();
+      if (pb < 0 || !ORDER[li]) return null;
+      const letters = LETTERS.split('').filter((ch, j) => lb & (1 << j));
+      const paid = {};
+      REWARDS.forEach((rw, j) => { if (pb & (1 << j)) paid[rw.key] = true; });
+      rewardsBy[band] = { ...(rewardsBy[band] || {}), [ORDER[li]]: { letters, paid } };
+    }
+  }
+  return { currency: (hi << 8) | lo, rewardsBy, end: i };
+}
+
 export function packSave(data = state.data) {
   const at = Math.max(0, ORDER.indexOf(data.at)) | ((DIFF_CODE[data.difficulty] || 0) << 6);
-  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), at, ...answeredBytes(data)];
+  const bytes = [VERSION, ...ORDER.map((id) => levelByte(data, id)), at, ...answeredBytes(data), ...rewardBytes(data)];
   bytes.push(check(bytes));
   return toB64(bytes);
 }
@@ -116,11 +168,15 @@ export function packSave(data = state.data) {
 export function unpackSave(letters) {
   const bytes = letters && fromB64(String(letters));
   if (!bytes || bytes.length < 2) return { ok: false, reason: "That save link doesn't work." };
-  if (bytes[0] !== VERSION && bytes[0] !== 2) return { ok: false, reason: 'That save is from another version of the game.' };
+  if (![2, 3, VERSION].includes(bytes[0])) return { ok: false, reason: 'That save is from another version of the game.' };
   const tally = bytes[0] === 2 ? 0 : answeredBytes(state.blank()).length;
-  if (bytes.length !== ORDER.length + 3 + tally || check(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) {
-    return { ok: false, reason: "That save link doesn't work. It may have been cut short." };
-  }
+  const cut = { ok: false, reason: "That save link doesn't work. It may have been cut short." };
+  if (check(bytes.slice(0, -1)) !== bytes[bytes.length - 1]) return cut;
+  let rewards = null;
+  if (bytes[0] >= 4) {
+    rewards = readRewards(bytes, 2 + ORDER.length + tally);
+    if (!rewards || rewards.end !== bytes.length - 1) return cut;
+  } else if (bytes.length !== ORDER.length + 3 + tally) return cut;
   const data = state.blank();
   ORDER.forEach((id, i) => {
     const b = bytes[1 + i];
@@ -139,6 +195,10 @@ export function unpackSave(letters) {
   data.at = ORDER[bytes[1 + ORDER.length] & 63] || START_NODE;
   data.difficulty = DIFF_OF[bytes[1 + ORDER.length] >> 6];
   if (tally) data.answered = readAnswered(bytes.slice(2 + ORDER.length, 2 + ORDER.length + tally));
+  if (rewards) {
+    data.currency = rewards.currency;
+    data.rewardsBy = rewards.rewardsBy;
+  }
   return { ok: true, data };
 }
 
