@@ -15,23 +15,23 @@
 
 // This is the Explorer bank. Junior Explorer and Pioneer have their own
 // (questions_junior.js, questions_pioneer.js), copies of this one for now.
-import { JUNIOR_QUESTIONS } from './questions_junior.js?v=c6ce4c1';
-import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=c6ce4c1';
-import dorsalJunior from './questions/dorsal_junior.js?v=c6ce4c1';
-import dorsalExplorer from './questions/dorsal_explorer.js?v=c6ce4c1';
-import dorsalPioneer from './questions/dorsal_pioneer.js?v=c6ce4c1';
-import cumulusJunior from './questions/cumulus_junior.js?v=c6ce4c1';
-import cumulusExplorer from './questions/cumulus_explorer.js?v=c6ce4c1';
-import cumulusPioneer from './questions/cumulus_pioneer.js?v=c6ce4c1';
-import squvannahsJunior from './questions/squvannahs_junior.js?v=c6ce4c1';
-import squvannahsExplorer from './questions/squvannahs_explorer.js?v=c6ce4c1';
-import squvannahsPioneer from './questions/squvannahs_pioneer.js?v=c6ce4c1';
-import seafoamJunior from './questions/seafoam_junior.js?v=c6ce4c1';
-import seafoamExplorer from './questions/seafoam_explorer.js?v=c6ce4c1';
-import seafoamPioneer from './questions/seafoam_pioneer.js?v=c6ce4c1';
-import magentaJunior from './questions/magenta_junior.js?v=c6ce4c1';
-import magentaExplorer from './questions/magenta_explorer.js?v=c6ce4c1';
-import magentaPioneer from './questions/magenta_pioneer.js?v=c6ce4c1';
+import { JUNIOR_QUESTIONS } from './questions_junior.js?v=80f9bd6';
+import { PIONEER_QUESTIONS } from './questions_pioneer.js?v=80f9bd6';
+import dorsalJunior from './questions/dorsal_junior.js?v=80f9bd6';
+import dorsalExplorer from './questions/dorsal_explorer.js?v=80f9bd6';
+import dorsalPioneer from './questions/dorsal_pioneer.js?v=80f9bd6';
+import cumulusJunior from './questions/cumulus_junior.js?v=80f9bd6';
+import cumulusExplorer from './questions/cumulus_explorer.js?v=80f9bd6';
+import cumulusPioneer from './questions/cumulus_pioneer.js?v=80f9bd6';
+import squvannahsJunior from './questions/squvannahs_junior.js?v=80f9bd6';
+import squvannahsExplorer from './questions/squvannahs_explorer.js?v=80f9bd6';
+import squvannahsPioneer from './questions/squvannahs_pioneer.js?v=80f9bd6';
+import seafoamJunior from './questions/seafoam_junior.js?v=80f9bd6';
+import seafoamExplorer from './questions/seafoam_explorer.js?v=80f9bd6';
+import seafoamPioneer from './questions/seafoam_pioneer.js?v=80f9bd6';
+import magentaJunior from './questions/magenta_junior.js?v=80f9bd6';
+import magentaExplorer from './questions/magenta_explorer.js?v=80f9bd6';
+import magentaPioneer from './questions/magenta_pioneer.js?v=80f9bd6';
 
 export const QUESTIONS = {
   dorsal: [

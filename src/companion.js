@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=c6ce4c1';
-import { ARTSETS, texKey } from './data/artsets.js?v=c6ce4c1';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=c6ce4c1';
+import { BIOMES } from './data/world.js?v=80f9bd6';
+import { ARTSETS, texKey } from './data/artsets.js?v=80f9bd6';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=80f9bd6';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -90,6 +90,24 @@ export class Companion {
     const s = this.sprite;
     const p = this.scene.player;
     if (!s.active) return;
+    // Never falls into a pit (the user, 2026-10-30: "it is traumatic to
+    // kids"): dropping with no ground or water anywhere below, it sparkles
+    // back onto the last ground she stood on safely.
+    const sc = this.scene;
+    const lowest = sc.safe ? (sc.safe.feet ?? sc.safe.y + 52) + TILE * 1.5 : Infinity;
+    if (s.body && s.body.velocity.y > 0 && !s.body.blocked.down && s.y > lowest) {
+      const c = Math.floor(s.x / TILE);
+      let pit = true;
+      for (let r = Math.max(0, Math.floor(s.y / TILE)); r < sc.rows.length && pit; r++) {
+        if (sc.isFloor(r, c) || sc.water.has(`${c},${r}`)) pit = false;
+      }
+      if (pit && sc.safe) {
+        s.setPosition(sc.safe.x, this.art ? (sc.safe.feet ?? sc.safe.y + 52) : sc.safe.y - 20).setVelocity(0, 0);
+        this.dive = null;
+        this.sparkleIn();
+        return;
+      }
+    }
     // Lost (fallen out, or left far behind): back beside her.
     if (Math.abs(s.x - p.x) > TOO_FAR || s.y > this.scene.worldH + 100 || Math.abs(s.y - p.y) > TILE * 5) {
       if (p.body.blocked.down) {

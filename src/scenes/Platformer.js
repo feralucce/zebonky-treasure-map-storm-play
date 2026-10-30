@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=c6ce4c1';
-import { TILE, layoutFor } from '../data/levels.js?v=c6ce4c1';
-import { state } from '../state.js?v=c6ce4c1';
-import { COLORS, heading, text } from '../theme.js?v=c6ce4c1';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=c6ce4c1';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=c6ce4c1';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=c6ce4c1';
-import { makeNav } from '../pathing.js?v=c6ce4c1';
-import { startQuestionRun } from '../data/questions.js?v=c6ce4c1';
-import { audio, musicButton, soundButton } from '../audio.js?v=c6ce4c1';
-import { Companion } from '../companion.js?v=c6ce4c1';
-import { startShowcase } from '../showcase.js?v=c6ce4c1';
-import { startExplorerTour } from '../explorerTour.js?v=c6ce4c1';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=c6ce4c1';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=80f9bd6';
+import { TILE, layoutFor } from '../data/levels.js?v=80f9bd6';
+import { state } from '../state.js?v=80f9bd6';
+import { COLORS, heading, text } from '../theme.js?v=80f9bd6';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=80f9bd6';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=80f9bd6';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=80f9bd6';
+import { makeNav } from '../pathing.js?v=80f9bd6';
+import { startQuestionRun } from '../data/questions.js?v=80f9bd6';
+import { audio, musicButton, soundButton } from '../audio.js?v=80f9bd6';
+import { Companion } from '../companion.js?v=80f9bd6';
+import { startShowcase } from '../showcase.js?v=80f9bd6';
+import { startExplorerTour } from '../explorerTour.js?v=80f9bd6';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=80f9bd6';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -391,7 +391,7 @@ export class PlatformerScene extends Phaser.Scene {
             const prev = this.ghostRuns.get(`${c - 1},${r}`);
             const run = prev || { objs: [], shown: false };
             run.objs.push(p, ...this.children.list.slice(before));
-            run.objs.forEach((o) => o.setAlpha && o.setAlpha(GHOST_ALPHA));
+            run.objs.forEach((o) => o.setAlpha && o.setAlpha(this.ghostAlpha()));
             this.ghostRuns.set(`${c},${r}`, run);
           }
           p.body.checkCollision.down = false;
@@ -433,6 +433,7 @@ export class PlatformerScene extends Phaser.Scene {
     this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
     this.buildTunnels(tunnelCells, at, isArtSolid);
+    this.sparkleGhosts();
     this.letterSpots = letterSpots;
     this.crateCount = treasureSpots.length;
     this.buildDoors(doorCells);
@@ -710,6 +711,10 @@ export class PlatformerScene extends Phaser.Scene {
     // animation for a frame). Only a real hop out (rising fast) or landing
     // ends it.
     if (inWater) this.rigWaterAt = time;
+    // A hop out of the water (rising fast) ends the swim for good, so she
+    // doesn't flick back to a swim frame as she slows near the top of the
+    // jump (the user: a glitchy frame in mid air).
+    else if (vy < -350) this.rigWaterAt = -1e9;
     const floating = inWater || (!onFloor && !onVine && vy > -350 && time - (this.rigWaterAt || -1e9) < 300);
     if (onVine) {
       play('climb');
@@ -980,20 +985,7 @@ export class PlatformerScene extends Phaser.Scene {
       g.fillRect(0, 0, 128, 128);
       this.textures.addCanvas('pickup-glow', cv);
     }
-    if (!this.textures.exists('pickup-spark')) {
-      // A little four-pointed gold star with a light middle.
-      const cv = Object.assign(document.createElement('canvas'), { width: 13, height: 13 });
-      const g = cv.getContext('2d');
-      g.fillStyle = '#ffcf3a';
-      g.fillRect(5, 0, 3, 13);
-      g.fillRect(0, 5, 13, 3);
-      g.fillRect(4, 4, 5, 5);
-      g.fillStyle = '#fff8d8';
-      g.fillRect(6, 2, 1, 9);
-      g.fillRect(2, 6, 9, 1);
-      g.fillRect(5, 5, 3, 3);
-      this.textures.addCanvas('pickup-spark', cv);
-    }
+    this.ensureSparkTexture();
     const glow = this.add.image(it.x, it.y, 'pickup-glow').setDepth(it.depth - 0.2)
       .setAlpha(0.9);
     this.tweens.add({ targets: glow, scale: 1.2, alpha: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -1009,6 +1001,51 @@ export class PlatformerScene extends Phaser.Scene {
       rotate: this.sparkTex ? 0 : { min: 0, max: 45 },
     }).setDepth(it.depth - 0.1);
     it.shine = [glow, sparks];
+  }
+
+  // A little four-pointed gold star with a light middle (pickups, ghost platforms).
+  ensureSparkTexture() {
+    if (this.textures.exists('pickup-spark')) return;
+    const cv = Object.assign(document.createElement('canvas'), { width: 13, height: 13 });
+    const g = cv.getContext('2d');
+    g.fillStyle = '#ffcf3a';
+    g.fillRect(5, 0, 3, 13);
+    g.fillRect(0, 5, 13, 3);
+    g.fillRect(4, 4, 5, 5);
+    g.fillStyle = '#fff8d8';
+    g.fillRect(6, 2, 1, 9);
+    g.fillRect(2, 6, 9, 1);
+    g.fillRect(5, 5, 3, 3);
+    this.textures.addCanvas('pickup-spark', cv);
+  }
+
+  // Ghost platforms by difficulty (the user, 2026-10-30): hidden completely
+  // on Pioneer; barely there on Explorer; barely there and sparkling on
+  // Junior Explorer. Whichever, the run fades in once she stands on it.
+  ghostAlpha() {
+    return this.band.id === 'pioneer' ? 0 : GHOST_ALPHA;
+  }
+
+  sparkleGhosts() {
+    if (this.band.id !== 'junior' || !this.ghostRuns.size) return;
+    this.ensureSparkTexture();
+    new Set(this.ghostRuns.values()).forEach((run) => {
+      const ps = run.objs.filter((o) => o.body);            // its platform pieces
+      const x0 = Math.min(...ps.map((o) => o.body.left));
+      const x1 = Math.max(...ps.map((o) => o.body.right));
+      const y = Math.min(...ps.map((o) => o.body.top));
+      run.sparks = this.add.particles(0, 0, 'pickup-spark', {
+        x: { min: x0 + 6, max: x1 - 6 },
+        y: { min: y - 6, max: y + 10 },
+        lifespan: 1200,
+        frequency: 180,
+        quantity: 1,
+        speedY: { min: -22, max: -8 },
+        scale: { start: 1.9, end: 0.4 },
+        alpha: { start: 0.9, end: 0 },
+        rotate: { min: 0, max: 45 },
+      }).setDepth(2);
+    });
   }
 
   // Thrown food lying on the ground near a point, that no Zebonky is
@@ -2301,6 +2338,7 @@ Drag, or arrows / WASD (Shift is faster)`);
       const run = this.ghostRuns.get(`${Math.floor(p.x / TILE)},${Math.floor((p.body.bottom + 2) / TILE)}`);
       if (run && !run.shown) {
         run.shown = true;
+        if (run.sparks) run.sparks.stop();
         this.tweens.add({ targets: run.objs.filter((o) => o.setAlpha), alpha: 1, duration: 450, ease: 'Sine.Out' });
       }
     }

@@ -8,9 +8,9 @@
 // the Zebonky and what it does: a tour of the whole stretch, or idle, walk,
 // run, jump or swim (flight for Ricky) on their own.
 
-import { TILE, DRAWN } from './data/levels.js?v=c6ce4c1';
-import { WildZebonky, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=c6ce4c1';
-import { COLORS, text } from './theme.js?v=c6ce4c1';
+import { TILE, DRAWN } from './data/levels.js?v=80f9bd6';
+import { WildZebonky, play, crouchTime, FLY_ABOVE, LEAP_SPEED, SWIM_SPEED, FLOAT_RISE, WANDER_SPEED, CHARGE_SPEED } from './actors.js?v=80f9bd6';
+import { COLORS, text } from './theme.js?v=80f9bd6';
 
 // Who, in which art set, borrowing which level's name.
 export const SHOWCASE = [

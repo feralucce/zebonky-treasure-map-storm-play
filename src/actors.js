@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=c6ce4c1';
-import { texKey } from './data/artsets.js?v=c6ce4c1';
+import { TILE } from './data/levels.js?v=80f9bd6';
+import { texKey } from './data/artsets.js?v=80f9bd6';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -364,6 +364,18 @@ export class WildZebonky {
   update(time, player) {
     const s = this.sprite;
     if (this.gone) return;
+    // A tamed Zebonky never falls into a pit and disappears (the user,
+    // 2026-10-30: "it is traumatic to kids"): falling with no ground
+    // anywhere below it, it pops back, in hearts, onto the last ground it
+    // stood on, and goes on from there.
+    // (only once it has dropped well below that ground: a leap across a gap
+    // is over open air for a moment too)
+    if (this.isFed && s.body.velocity.y > 0 && !s.body.blocked.down
+        && s.y > this.safe.y + TILE * 1.5 && this.overPit()) {
+      this.reappear(this.safe.x, this.safe.y);
+      this.hearts(3);
+      return;
+    }
     // Fell out of the level: back on the edge it fell from (or, when fed,
     // back beside the player), like the explorer.
     if (s.y > this.scene.worldH + 200) {
@@ -527,6 +539,18 @@ export class WildZebonky {
   }
 
   // Pop back into view at a spot, after a fall.
+  // Nothing to land on in this column, all the way down (a pit), and no
+  // water to fall into.
+  overPit() {
+    const sc = this.scene;
+    const s = this.sprite;
+    const c = Math.floor(s.x / TILE);
+    for (let r = Math.max(0, Math.floor(s.y / TILE)); r < sc.rows.length; r++) {
+      if (sc.isFloor(r, c) || sc.water.has(`${c},${r}`)) return false;
+    }
+    return true;
+  }
+
   reappear(x, feetY) {
     const s = this.sprite;
     s.setPosition(x, feetY - 2);
