@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=80f9bd6';
-import { TILE, layoutFor } from '../data/levels.js?v=80f9bd6';
-import { state } from '../state.js?v=80f9bd6';
-import { COLORS, heading, text } from '../theme.js?v=80f9bd6';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=80f9bd6';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=80f9bd6';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims } from '../actors.js?v=80f9bd6';
-import { makeNav } from '../pathing.js?v=80f9bd6';
-import { startQuestionRun } from '../data/questions.js?v=80f9bd6';
-import { audio, musicButton, soundButton } from '../audio.js?v=80f9bd6';
-import { Companion } from '../companion.js?v=80f9bd6';
-import { startShowcase } from '../showcase.js?v=80f9bd6';
-import { startExplorerTour } from '../explorerTour.js?v=80f9bd6';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=80f9bd6';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b000e7d';
+import { TILE, layoutFor } from '../data/levels.js?v=b000e7d';
+import { state } from '../state.js?v=b000e7d';
+import { COLORS, heading, text } from '../theme.js?v=b000e7d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b000e7d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b000e7d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK } from '../actors.js?v=b000e7d';
+import { makeNav } from '../pathing.js?v=b000e7d';
+import { startQuestionRun } from '../data/questions.js?v=b000e7d';
+import { audio, musicButton, soundButton } from '../audio.js?v=b000e7d';
+import { Companion } from '../companion.js?v=b000e7d';
+import { startShowcase } from '../showcase.js?v=b000e7d';
+import { startExplorerTour } from '../explorerTour.js?v=b000e7d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=b000e7d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -80,6 +80,9 @@ function savedArt(art) {
   return a.background || a.dressing.length ? a : null;
 }
 
+// The explorer draws over the ground's grass (depth 0.5) so her feet show
+// on it, and under the water (5) (the user, 2026-10-30).
+const PLAYER_DEPTH = 1;
 const GHOST_ALPHA = 0.12;        // ghost platforms before she finds them (barely there)
 
 const SOLID_TEXTURES = {
@@ -456,7 +459,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.makeExplorerAnims();
     this.player = this.physics.add.sprite(start.x, start.y - 16, `${this.cid}-idle`, 0);
     const ex = this.cache.json.get(this.cid);
-    this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64);
+    this.player.body.setSize(34, 64).setOffset((ex.frameWidth - 34) / 2, ex.frameHeight - 64 - GRASS_SINK);
+    this.player.setDepth(PLAYER_DEPTH);
     // A rig explorer's background arm and leg on a vine, behind the vine (depth 1).
     this.playerBack = this.rig ? this.add.sprite(start.x, start.y, `${this.cid}-climb_back`, 0).setDepth(0.5).setVisible(false) : null;
     this.player.setMaxVelocity(RUN_SPEED, 1400);
@@ -752,10 +756,10 @@ export class PlatformerScene extends Phaser.Scene {
     const fw = p.frame.width;
     if (fw !== this.rigFW) {
       this.rigFW = fw;
-      p.body.setOffset((fw - 34) / 2, p.frame.height - 64);
+      p.body.setOffset((fw - 34) / 2, p.frame.height - 64 - GRASS_SINK);
     }
     // On a vine she is in front of it; her background arm and leg are behind.
-    p.setDepth(onVine ? 2 : 0);
+    p.setDepth(onVine ? 2 : PLAYER_DEPTH);
     const b = this.playerBack;
     if (b) {
       b.setVisible(onVine && p.visible);

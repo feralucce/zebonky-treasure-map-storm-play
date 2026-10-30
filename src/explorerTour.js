@@ -11,8 +11,9 @@
 // the pool, swim, tread water, swim, hop out, run, idle; then it starts
 // over. Her frames are the new rig strips (assets/player/explorer_walk_v2/).
 
-import { TILE, DRAWN } from './data/levels.js?v=80f9bd6';
-import { text } from './theme.js?v=80f9bd6';
+import { TILE, DRAWN } from './data/levels.js?v=b000e7d';
+import { text } from './theme.js?v=b000e7d';
+import { GRASS_SINK } from './actors.js?v=b000e7d';
 
 export const TOUR_WHO = [
   { key: 'girl', who: 'Girl' },
@@ -181,7 +182,7 @@ class TourExplorer {
     b.setTexture(`tour-${this.who}-${s.anim}`, f);
     // Feet at (x, y). On the vine her frame is set by where the vine runs in it.
     b.setOrigin(s.onVine ? (VINE_X[this.who] + VINE_OFF) / a.w : 0.5, 1);
-    b.setPosition(x, y);
+    b.setPosition(x, y + (s.onVine || s.anim === 'swim' || s.anim === 'tread' ? 0 : GRASS_SINK));   // feet in the grass
     this.back.setVisible(!!s.onVine);
     if (s.onVine) {
       this.back.setTexture(`tour-${this.who}-climb_back`, f).setOrigin(b.originX, 1).setPosition(x, y);

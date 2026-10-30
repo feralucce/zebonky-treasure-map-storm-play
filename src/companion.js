@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=80f9bd6';
-import { ARTSETS, texKey } from './data/artsets.js?v=80f9bd6';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=80f9bd6';
+import { BIOMES } from './data/world.js?v=b000e7d';
+import { ARTSETS, texKey } from './data/artsets.js?v=b000e7d';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE } from './actors.js?v=b000e7d';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)
@@ -55,7 +55,7 @@ export class Companion {
       const r = (s.width * 0.42);
       s.body.setCircle(r, s.width / 2 - r, s.height - 2 * r);
     }
-    s.setDepth(-0.5);
+    s.setDepth(0.9);          // over the grass (0.5), just behind her (1)
     scene.physics.add.collider(s, scene.solids);
     scene.physics.add.collider(s, scene.platforms);
     this.sprite = s;

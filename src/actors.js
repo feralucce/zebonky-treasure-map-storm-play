@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=80f9bd6';
-import { texKey } from './data/artsets.js?v=80f9bd6';
+import { TILE } from './data/levels.js?v=b000e7d';
+import { texKey } from './data/artsets.js?v=b000e7d';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -50,6 +50,10 @@ export function zebonkyArt(scene, artName) {
 // GROUND), not on its bottom edge: a Zebonky stands with this row on the
 // ground (the user, 2026-10-26: "not touching the ground").
 export const FEET_ROW = 122;
+// How far feet sink into the ground's grass: the tile's top line is under
+// the grass Chris drew above it, so standing exactly on it looked like
+// hovering (the user, 2026-10-30). The picture sits this much below the body.
+export const GRASS_SINK = 6;
 
 // A Zebonky sprite's anchor at its feet, and (with a body) its body from
 // the cub's middle down to its feet, not the empty edges of its frame.
@@ -57,7 +61,7 @@ export function standOnFeet(sprite, art) {
   const fw = art.z.frameWidth;
   const fh = art.z.frameHeight;
   sprite.setOrigin(0.5, FEET_ROW / fh);
-  if (sprite.body) sprite.body.setSize(fw * 0.5, FEET_ROW - fh * 0.38).setOffset(fw * 0.25, fh * 0.38);
+  if (sprite.body) sprite.body.setSize(fw * 0.5, FEET_ROW - fh * 0.38 - GRASS_SINK).setOffset(fw * 0.25, fh * 0.38);
   return sprite;
 }
 
