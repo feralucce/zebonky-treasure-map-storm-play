@@ -68,5 +68,10 @@
    "frameWidth": 142,
    "frameHeight": 230
   }
- }
+ },
+ "portrait": [
+  18,
+  14,
+  112
+ ]
 }

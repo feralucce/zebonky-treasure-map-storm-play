@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2c098d1';
-import { TILE, layoutFor } from '../data/levels.js?v=2c098d1';
-import { state } from '../state.js?v=2c098d1';
-import { COLORS, heading, text } from '../theme.js?v=2c098d1';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2c098d1';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2c098d1';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2c098d1';
-import { makeNav } from '../pathing.js?v=2c098d1';
-import { startQuestionRun } from '../data/questions.js?v=2c098d1';
-import { audio, musicButton, soundButton } from '../audio.js?v=2c098d1';
-import { Companion } from '../companion.js?v=2c098d1';
-import { startShowcase } from '../showcase.js?v=2c098d1';
-import { startExplorerTour } from '../explorerTour.js?v=2c098d1';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2c098d1';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3ed34b2';
+import { TILE, layoutFor } from '../data/levels.js?v=3ed34b2';
+import { state } from '../state.js?v=3ed34b2';
+import { COLORS, heading, text } from '../theme.js?v=3ed34b2';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3ed34b2';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3ed34b2';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=3ed34b2';
+import { makeNav } from '../pathing.js?v=3ed34b2';
+import { startQuestionRun } from '../data/questions.js?v=3ed34b2';
+import { audio, musicButton, soundButton } from '../audio.js?v=3ed34b2';
+import { Companion } from '../companion.js?v=3ed34b2';
+import { startShowcase } from '../showcase.js?v=3ed34b2';
+import { startExplorerTour } from '../explorerTour.js?v=3ed34b2';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3ed34b2';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -2044,21 +2044,46 @@ export class PlatformerScene extends Phaser.Scene {
       // character covers it with her own head and shoulders, from her
       // first idle frame.
       {
-        const cx = 12 + 45;
-        const cy = 8 + 42;
+        // The portrait (the user, 2026-10-30): the bar's ring is filled
+        // solid, hiding the face printed in the bar, and her head goes in it,
+        // hat and hair overlapping the frame above and to the sides; the
+        // ring's circle cuts her off below. Ring centre and inner radius in
+        // the bar's own pixels.
+        const RX = 58.5;
+        const RY = 46.5;
+        const RR = 34;
+        const cx = 12 + RX;
+        const cy = 8 + RY;
         const key = `${this.cid}-portrait`;
         if (!this.textures.exists(key)) {
-          const D = 62;
+          const D = 100;                               // room around the ring for the overlap
+          const c0 = D / 2;
           const tex = this.textures.createCanvas(key, D, D);
           const ctx = tex.getContext();
-          ctx.imageSmoothingEnabled = false;
           ctx.fillStyle = '#e8cf98';
           ctx.beginPath();
-          ctx.arc(D / 2, D / 2, D / 2, 0, Math.PI * 2);
+          ctx.arc(c0, c0, RR, 0, Math.PI * 2);
           ctx.fill();
+          // her head: unclipped above the ring's middle, inside the circle below it
+          ctx.beginPath();
+          ctx.rect(0, 0, D, c0);
+          ctx.arc(c0, c0, RR, 0, Math.PI * 2);
           ctx.clip();
-          // Head and shoulders: the top of the first idle frame, doubled.
-          ctx.drawImage(this.textures.get(`${this.cid}-idle`).getSourceImage(), 14, 2, 43, 43, -12, -2, 86, 86);
+          const ex2 = this.cache.json.get(this.cid);
+          const pk = `${this.cid}-picker`;
+          ctx.imageSmoothingEnabled = true;            // shrinking it: smooth, not jagged
+          if (ex2 && ex2.portrait && this.textures.exists(pk)) {
+            // the manifest's `portrait` square [x, y, size] of the picker's
+            // first frame fills the ring; the rest of her head spills past it
+            const [px0, py0, ps] = ex2.portrait;
+            const k = (2 * RR) / ps;
+            const fw = ex2.anims.picker.frameWidth;
+            const fh = ex2.anims.picker.frameHeight;
+            ctx.drawImage(this.textures.get(pk).getSourceImage(), 0, 0, fw, fh,
+              c0 - RR - px0 * k, c0 - RR - py0 * k, fw * k, fh * k);
+          } else {
+            ctx.drawImage(this.textures.get(`${this.cid}-idle`).getSourceImage(), 14, 2, 43, 43, c0 - 43, c0 - 43, 86, 86);
+          }
           tex.refresh();
         }
         this.add.image(cx, cy, key).setScrollFactor(0).setDepth(21);
