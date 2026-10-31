@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9213db7';
-import { TILE, layoutFor } from '../data/levels.js?v=9213db7';
-import { state } from '../state.js?v=9213db7';
-import { COLORS, heading, text } from '../theme.js?v=9213db7';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=9213db7';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=9213db7';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=9213db7';
-import { makeNav } from '../pathing.js?v=9213db7';
-import { startQuestionRun } from '../data/questions.js?v=9213db7';
-import { audio, musicButton, soundButton } from '../audio.js?v=9213db7';
-import { Companion } from '../companion.js?v=9213db7';
-import { startShowcase } from '../showcase.js?v=9213db7';
-import { startExplorerTour } from '../explorerTour.js?v=9213db7';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=9213db7';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2e01f67';
+import { TILE, layoutFor } from '../data/levels.js?v=2e01f67';
+import { state } from '../state.js?v=2e01f67';
+import { COLORS, heading, text } from '../theme.js?v=2e01f67';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2e01f67';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2e01f67';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2e01f67';
+import { makeNav } from '../pathing.js?v=2e01f67';
+import { startQuestionRun } from '../data/questions.js?v=2e01f67';
+import { audio, musicButton, soundButton } from '../audio.js?v=2e01f67';
+import { Companion } from '../companion.js?v=2e01f67';
+import { startShowcase } from '../showcase.js?v=2e01f67';
+import { startExplorerTour } from '../explorerTour.js?v=2e01f67';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2e01f67';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -457,19 +457,7 @@ export class PlatformerScene extends Phaser.Scene {
           // The art set's dressed door (empty until it's opened), else the plain one.
           const db = !this.blocks && this.art && this.art.door_bonus;
           const dk = db && texKey(this.artName, db.file);
-          const pt = layout.portal && !this.blocks && this.art && this.art.portal;
-          const pk = pt && texKey(this.artName, pt.file);
-          if (pk && this.textures.exists(pk)) {
-            // The biome's portal (the user's, 2026-10-30), always turning,
-            // standing on the floor of its tile.
-            if (!this.anims.exists(pk)) {
-              this.anims.create({ key: pk, frames: this.anims.generateFrameNumbers(pk, {}), frameRate: pt.fps, repeat: -1 });
-            }
-            this.secret = this.physics.add.staticSprite(x, (r + 1) * TILE - pt.frameHeight / 2 + (pt.sink || 0), pk).setDepth(-0.5);
-            this.secret.play(pk);
-            this.secret.body.setSize(80, 128).setOffset((pt.frameWidth - 80) / 2, pt.frameHeight - 128 - (pt.sink || 0));
-            this.secret.portal = pt;
-          } else if (dk && this.textures.exists(dk)) {
+          if (dk && this.textures.exists(dk)) {
             // Set back from an edge, so its plants stand on the ground and
             // don't hang over (the user): the dressing reaches about 112 px
             // each side of the door's middle; move it a tile at a time (up to
@@ -484,6 +472,23 @@ export class PlatformerScene extends Phaser.Scene {
             this.secret.body.setSize(96, 128).setOffset((db.frameWidth - 96) / 2, db.frameHeight - 128);
             this.secret.dressed = db;
           } else this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 48, 'secret-door');
+        } else if (ch === 'Q') {
+          // The secret door (the user, 2026-10-30: "Every level needs a bonus
+          // door and a secret door"): the biome's portal, always turning,
+          // standing on the floor of its tile. A purple block undressed.
+          const pt = !this.blocks && this.art && this.art.portal;
+          const pk = pt && texKey(this.artName, pt.file);
+          if (pk && this.textures.exists(pk)) {
+            if (!this.anims.exists(pk)) {
+              this.anims.create({ key: pk, frames: this.anims.generateFrameNumbers(pk, {}), frameRate: pt.fps, repeat: -1 });
+            }
+            this.secretDoor = this.physics.add.staticSprite(x, (r + 1) * TILE - pt.frameHeight / 2 + (pt.sink || 0), pk).setDepth(-0.5);
+            this.secretDoor.play(pk);
+            this.secretDoor.body.setSize(80, 128).setOffset((pt.frameWidth - 80) / 2, pt.frameHeight - 128 - (pt.sink || 0));
+          } else {
+            this.secretDoor = this.physics.add.staticImage(x, (r + 1) * TILE - 64, this.blockTexture('block-portal', 80, 128, 0x8a5cc2));
+          }
+          this.secretDoor.portal = true;
         } else if (ch === 'P') {
           start = { x, y };
         }
@@ -552,7 +557,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.treasures, (_, t) => { if (!t.taken) this.nearItem = t; });
     if (this.goal) this.physics.add.overlap(this.player, this.goal, () => this.exit('normal'));
     // The bonus level door opens on Up (or the door button), like a hidden door.
-    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => { this.atSecret = true; });
+    if (this.secret) this.physics.add.overlap(this.player, this.secret, () => { this.atSecret = this.secret; });
+    if (this.secretDoor) this.physics.add.overlap(this.player, this.secretDoor, () => { this.atSecret = this.secretDoor; });
 
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12, 0, 60);
     this.cameras.main.setDeadzone(120, 80);
@@ -2035,14 +2041,13 @@ export class PlatformerScene extends Phaser.Scene {
 
   // Reaching the secret door: it swings open on its left hinge to show a
   // dark doorway, the explorer steps in and fades, then the level ends.
-  openSecretDoor() {
+  openSecretDoor(d = this.secret) {
     if (this.done) return;
     this.done = true;                 // no more input while it opens
     const p = this.player;
     const foot = p.body.bottom - p.y;
     p.body.enable = false;
     p.anims.stop();
-    const d = this.secret;
     if (d.portal) {
       // The portal: she's drawn into the middle, turning and shrinking.
       audio.sfx(this, 'door');
@@ -2052,7 +2057,7 @@ export class PlatformerScene extends Phaser.Scene {
         onComplete: () => {
           this.cameras.main.flash(250, 255, 255, 255);
           this.done = false;
-          this.exit('secret');
+          this.exit('secretdoor');
         },
       });
       return;
@@ -2109,12 +2114,21 @@ export class PlatformerScene extends Phaser.Scene {
     this.done = true;
     this.player.body.enable = false;
     const secret = kind === 'secret';
+    const secretDoor = kind === 'secretdoor';
     if (!secret) audio.sfx(this, 'level-end');
     const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0)
       .setScrollFactor(0).setDepth(50).setAlpha(0);
-    const msg = this.add.text(MAP_W / 2, MAP_H / 2 - 30, secret ? 'You found a bonus level door!' : 'Level completed!',
+    const title = secret ? 'You found a bonus level door!' : secretDoor ? 'You found a secret door!' : 'Level completed!';
+    const msg = this.add.text(MAP_W / 2, MAP_H / 2 - 30, title,
       heading(64, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 12 }))
       .setOrigin(0.5).setScrollFactor(0).setDepth(51).setScale(0.6).setAlpha(0);
+    // No secret levels yet: say so, and the level counts as done.
+    if (secretDoor) {
+      const soon = this.add.text(MAP_W / 2, MAP_H / 2 + 100, 'The secret level is coming soon!', text(26, COLORS.parchmentCss, {
+        stroke: COLORS.inkCss, strokeThickness: 6,
+      })).setOrigin(0.5).setScrollFactor(0).setDepth(51).setAlpha(0);
+      this.tweens.add({ targets: soon, alpha: 1, duration: 300, delay: 400 });
+    }
     const tap = this.add.text(MAP_W / 2, MAP_H / 2 + 50, 'Tap to continue', text(24, COLORS.parchmentCss, {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(51).setAlpha(0);
@@ -2132,7 +2146,7 @@ export class PlatformerScene extends Phaser.Scene {
       const run = this.runResults();
       // The bonus level door goes to the bonus level, which ends on the level
       // ending screen; the goal goes straight to it (scenes/LevelEnd.js).
-      if (!secret && !this.test) state.completeLevel(this.levelId, kind);
+      if (!secret && !this.test) state.completeLevel(this.levelId, secretDoor ? 'normal' : kind);
       this.cameras.main.fadeOut(300, 43, 29, 18);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         if (secret) this.scene.start('Bonus', { levelId: this.levelId, levelData, run });
@@ -2504,7 +2518,7 @@ Drag, or arrows / WASD (Shift is faster)`);
       this.doorHint.setPosition(p.x, p.y - 62);
       const up = Phaser.Input.Keyboard.JustDown(k.UP) || Phaser.Input.Keyboard.JustDown(k.W) || this.touchDoor;
       this.touchDoor = false;
-      if (up && atSecret) { this.openSecretDoor(); return; }
+      if (up && atSecret) { this.openSecretDoor(atSecret); return; }
       if (up) { this.goThroughDoor(door); return; }
     }
     this.touchDoor = false;

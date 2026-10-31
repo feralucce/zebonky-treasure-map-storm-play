@@ -7,6 +7,7 @@
 //   F  dorsal-fin rock (scenery)
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
 //   G  goal flag       S  bonus level door (in code: the secret exit)
+//   Q  secret door: the biome's portal (to the secret level, once there are some)
 //   P  player start    .  empty
 //   <  >  ^  [  ]  arrow signposts: left, right, up, up-left, up-right (scenery)
 //   h  a wall you can swim through: water, drawn like the stone round it
