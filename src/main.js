@@ -1,15 +1,15 @@
-import { MAP_W, MAP_H } from './data/world.js?v=85c30a2';
-import { state } from './state.js?v=85c30a2';
-import { audio } from './audio.js?v=85c30a2';
-import { BootScene } from './scenes/Boot.js?v=85c30a2';
-import { OverworldScene } from './scenes/Overworld.js?v=85c30a2';
-import { PlatformerScene } from './scenes/Platformer.js?v=85c30a2';
-import { QuizScene } from './scenes/Quiz.js?v=85c30a2';
-import { BonusScene } from './scenes/Bonus.js?v=85c30a2';
-import { SaveMenuScene } from './scenes/SaveMenu.js?v=85c30a2';
-import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=85c30a2';
-import { LevelEndScene } from './scenes/LevelEnd.js?v=85c30a2';
-import { takeLinkSave } from './savecode.js?v=85c30a2';
+import { MAP_W, MAP_H } from './data/world.js?v=34131d3';
+import { state } from './state.js?v=34131d3';
+import { audio } from './audio.js?v=34131d3';
+import { BootScene } from './scenes/Boot.js?v=34131d3';
+import { OverworldScene } from './scenes/Overworld.js?v=34131d3';
+import { PlatformerScene } from './scenes/Platformer.js?v=34131d3';
+import { QuizScene } from './scenes/Quiz.js?v=34131d3';
+import { BonusScene } from './scenes/Bonus.js?v=34131d3';
+import { SaveMenuScene } from './scenes/SaveMenu.js?v=34131d3';
+import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=34131d3';
+import { LevelEndScene } from './scenes/LevelEnd.js?v=34131d3';
+import { takeLinkSave } from './savecode.js?v=34131d3';
 
 state.load();
 // Opened from a save link: the map asks before loading it.
