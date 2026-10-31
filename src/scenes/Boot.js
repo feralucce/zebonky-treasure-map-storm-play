@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=6a3303d';
-import { testParams, DRAWN } from '../data/levels.js?v=6a3303d';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=6a3303d';
-import { CHARACTERS } from '../data/characters.js?v=6a3303d';
-import { state } from '../state.js?v=6a3303d';
-import { COLORS, heading, text } from '../theme.js?v=6a3303d';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=6a3303d';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=6a3303d';
+import { ARTSETS, texKey } from '../data/artsets.js?v=3f77531';
+import { testParams, DRAWN } from '../data/levels.js?v=3f77531';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3f77531';
+import { CHARACTERS } from '../data/characters.js?v=3f77531';
+import { state } from '../state.js?v=3f77531';
+import { COLORS, heading, text } from '../theme.js?v=3f77531';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=3f77531';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=3f77531';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -120,6 +120,7 @@ export class BootScene extends Phaser.Scene {
           if (b.column) ['top', 'mid', 'bottom'].forEach((k) => add(b.column[k]));
         });
         (data.foreground || []).forEach((f) => add(f.file));
+        if (data.cave_background) add(data.cave_background.file);
         add(data.food);
         (data.foods || []).forEach(add);
         // Chris's "good vibe" sparkle in the colours of this food (tools/make_food.py).

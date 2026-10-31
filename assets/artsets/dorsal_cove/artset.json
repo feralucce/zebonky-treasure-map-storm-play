@@ -417,5 +417,10 @@
   "fps": 10,
   "sink": 20,
   "note": "tools/portal/make_portal.py: the user's pixel portal (Vecteezy, credit it), recoloured for the biome"
+ },
+ "cave_background": {
+  "file": "bg_cave.png",
+  "scroll": 0.3,
+  "note": "MOSS (gaming PC, 2026-10-31) over tools/make_cave_blockin.py, join mended by tools/mend_loop_join.py"
  }
 }

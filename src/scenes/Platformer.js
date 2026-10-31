@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6a3303d';
-import { TILE, layoutFor } from '../data/levels.js?v=6a3303d';
-import { state } from '../state.js?v=6a3303d';
-import { COLORS, heading, text } from '../theme.js?v=6a3303d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6a3303d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6a3303d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=6a3303d';
-import { makeNav } from '../pathing.js?v=6a3303d';
-import { startQuestionRun } from '../data/questions.js?v=6a3303d';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=6a3303d';
-import { Companion } from '../companion.js?v=6a3303d';
-import { startShowcase } from '../showcase.js?v=6a3303d';
-import { startExplorerTour } from '../explorerTour.js?v=6a3303d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=6a3303d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3f77531';
+import { TILE, layoutFor } from '../data/levels.js?v=3f77531';
+import { state } from '../state.js?v=3f77531';
+import { COLORS, heading, text } from '../theme.js?v=3f77531';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3f77531';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3f77531';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=3f77531';
+import { makeNav } from '../pathing.js?v=3f77531';
+import { startQuestionRun } from '../data/questions.js?v=3f77531';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=3f77531';
+import { Companion } from '../companion.js?v=3f77531';
+import { startShowcase } from '../showcase.js?v=3f77531';
+import { startExplorerTour } from '../explorerTour.js?v=3f77531';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3f77531';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -281,6 +281,7 @@ export class PlatformerScene extends Phaser.Scene {
         this.add.image(c0 * TILE, (r - 2) * TILE, 'pit-dark').setOrigin(0)
           .setDisplaySize((c - c0) * TILE, 3 * TILE).setDepth(-1.4);
       }
+      if (this.art && this.art.cave_background) this.buildCaveBackdrop(layout.cave_from, worldW, worldH);
     }
     // Banks: ground beside water. They draw in front of the water, which
     // runs a little way in under them, so the shore is the ledge's own
@@ -1608,16 +1609,11 @@ export class PlatformerScene extends Phaser.Scene {
     if (tileHash(c * 3 + 11, r + 5) > 0.22) return;
     const dr = this.art.dressing || {};
     const hangers = (dr.hangers || []).map((f) => texKey(this.artName, f)).filter((key) => this.textures.exists(key));
-    const top = (r + 1) * TILE - 6;
-    if (hangers.length) {
-      this.add.image(c * TILE + TILE / 2, top, pick(hangers, c, r)).setOrigin(0.5, 0).setDepth(0.45)
-        .setFlipX(tileHash(c, r + 1) < 0.5);
-      return;
-    }
-    const sk = this.art.vine_strand && texKey(this.artName, this.art.vine_strand);
-    if (!sk || !this.textures.exists(sk)) return;
-    const len = TILE * (0.75 + Math.floor(tileHash(c + 7, r) * 3) * 0.5);
-    this.add.tileSprite(c * TILE + TILE / 2, top, TILE, len, sk).setOrigin(0.5, 0).setDepth(0.45);
+    // Only the set's own hangers: the vine strand is the climbing vine, and
+    // dressing must never look climbable. No hangers, a bare stone edge.
+    if (!hangers.length) return;
+    this.add.image(c * TILE + TILE / 2, (r + 1) * TILE - 6, pick(hangers, c, r)).setOrigin(0.5, 0).setDepth(0.45)
+      .setFlipX(tileHash(c, r + 1) < 0.5);
   }
 
   drawArtSolid(ch, isSolid, r, c, x, y, at) {
@@ -1696,6 +1692,23 @@ export class PlatformerScene extends Phaser.Scene {
           .setFlipX(!!layer.mirror_repeat && n % 2 === 1);
       }
     });
+  }
+
+  // The caves' own background (`cave_background` in artset.json): a loop
+  // painted with MOSS (tools/make_cave_blockin.py, tools/mend_loop_join.py),
+  // 4 screen px per art pixel like Chris's. It covers the level's background
+  // from the cave line down, repeating sideways with the same parallax, and
+  // is locked to the level up and down so the caves always see its middle.
+  buildCaveBackdrop(caveFrom, worldW, worldH) {
+    const cb = this.art.cave_background;
+    const key = texKey(this.artName, cb.file);
+    if (!this.textures.exists(key)) return;
+    const sf = cb.scroll ?? 0.3;
+    const w = this.textures.get(key).getSourceImage().width;
+    const span = (worldW - MAP_W) * sf + MAP_W;
+    for (let x = 0; x < span; x += w) {
+      this.add.image(x, caveFrom * TILE, key).setOrigin(0, 0).setScrollFactor(sf, 1).setDepth(-5);
+    }
   }
 
   // A wide background cut into pieces (Chris's biome backgrounds,
