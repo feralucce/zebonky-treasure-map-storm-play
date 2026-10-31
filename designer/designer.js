@@ -1,10 +1,10 @@
-import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js?v=cf6d43d';
-import { readDrawing } from './read-drawing.js?v=cf6d43d';
-import { ARTSETS, BLOCKS } from '../src/data/artsets.js?v=cf6d43d';
-import { LEVELS } from '../src/data/world.js?v=cf6d43d';
-import { TEST_LAYOUT_KEY } from '../src/data/levels.js?v=cf6d43d';
-import { backgroundGuide, tileSheet, svgToImage } from './guides.js?v=cf6d43d';
-import { readArtistFiles } from './artist.js?v=cf6d43d';
+import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES } from './legend.js?v=ea583c1';
+import { readDrawing } from './read-drawing.js?v=ea583c1';
+import { ARTSETS, BLOCKS } from '../src/data/artsets.js?v=ea583c1';
+import { LEVELS } from '../src/data/world.js?v=ea583c1';
+import { TEST_LAYOUT_KEY } from '../src/data/levels.js?v=ea583c1';
+import { backgroundGuide, tileSheet, svgToImage } from './guides.js?v=ea583c1';
+import { readArtistFiles } from './artist.js?v=ea583c1';
 
 const $ = (id) => document.getElementById(id);
 const PREVIEW_SCALE = 0.4;   // 64 px tile -> about 26 px on screen
