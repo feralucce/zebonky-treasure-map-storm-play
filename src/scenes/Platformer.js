@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=697287c';
-import { TILE, layoutFor } from '../data/levels.js?v=697287c';
-import { state } from '../state.js?v=697287c';
-import { COLORS, heading, text } from '../theme.js?v=697287c';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=697287c';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=697287c';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=697287c';
-import { makeNav } from '../pathing.js?v=697287c';
-import { startQuestionRun } from '../data/questions.js?v=697287c';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=697287c';
-import { Companion } from '../companion.js?v=697287c';
-import { startShowcase } from '../showcase.js?v=697287c';
-import { startExplorerTour } from '../explorerTour.js?v=697287c';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=697287c';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=1a11d11';
+import { TILE, layoutFor } from '../data/levels.js?v=1a11d11';
+import { state } from '../state.js?v=1a11d11';
+import { COLORS, heading, text } from '../theme.js?v=1a11d11';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=1a11d11';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=1a11d11';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=1a11d11';
+import { makeNav } from '../pathing.js?v=1a11d11';
+import { startQuestionRun } from '../data/questions.js?v=1a11d11';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=1a11d11';
+import { Companion } from '../companion.js?v=1a11d11';
+import { startShowcase } from '../showcase.js?v=1a11d11';
+import { startExplorerTour } from '../explorerTour.js?v=1a11d11';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=1a11d11';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -2573,6 +2573,19 @@ Drag, or arrows / WASD (Shift is faster)`);
     this.wild.forEach((z) => z.update(time, p));
     if (this.companion) this.companion.update();
     if (this.guide) this.guide.update(time, p);
+    // She got to the end ahead of the guide (off exploring, she can pass it
+    // by; the user, 2026-10-31: "cove 1 has no normal exit"): the guide pops
+    // over to its last stop and the exit shows.
+    const gd = this.guide;
+    if (gd && !gd.revealed && this.goal && Math.abs(p.x - this.goal.x) < 8 * TILE) {
+      const last = gd.points[gd.points.length - 1];
+      this.tweens.killTweensOf(gd.sprite);
+      gd.sprite.setPosition(last.x, last.y).setAlpha(1);
+      gd.index = gd.points.length - 1;
+      gd.travelling = false;
+      gd.revealed = true;
+      this.revealGoal(gd);
+    }
     this.tossed.getChildren().forEach((f) => {
       if (!f.landed && f.body.blocked.down) {
         f.landed = true;
