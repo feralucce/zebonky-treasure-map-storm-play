@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=150701d';
-import { TILE, layoutFor } from '../data/levels.js?v=150701d';
-import { state } from '../state.js?v=150701d';
-import { COLORS, heading, text } from '../theme.js?v=150701d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=150701d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=150701d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=150701d';
-import { makeNav } from '../pathing.js?v=150701d';
-import { startQuestionRun } from '../data/questions.js?v=150701d';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=150701d';
-import { Companion } from '../companion.js?v=150701d';
-import { startShowcase } from '../showcase.js?v=150701d';
-import { startExplorerTour } from '../explorerTour.js?v=150701d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=150701d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6a3303d';
+import { TILE, layoutFor } from '../data/levels.js?v=6a3303d';
+import { state } from '../state.js?v=6a3303d';
+import { COLORS, heading, text } from '../theme.js?v=6a3303d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6a3303d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6a3303d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=6a3303d';
+import { makeNav } from '../pathing.js?v=6a3303d';
+import { startQuestionRun } from '../data/questions.js?v=6a3303d';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=6a3303d';
+import { Companion } from '../companion.js?v=6a3303d';
+import { startShowcase } from '../showcase.js?v=6a3303d';
+import { startExplorerTour } from '../explorerTour.js?v=6a3303d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=6a3303d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -264,6 +264,10 @@ export class PlatformerScene extends Phaser.Scene {
     // level's own background, not a dark fill (the user, 2026-10-31: the
     // flat dark cave and its hard top line looked bad).
     this.deep = layout.cave_from !== undefined;
+    // The guide keeps to the main route over the top: down a hole into the
+    // caves it looked like it fell into a pit (the user, 2026-10-31: "guide
+    // z cannot fall in pits").
+    this.guideAvoid = this.deep ? (r) => r >= layout.cave_from : null;
     this.pitSigns(rows, cols, isSolid, isWater);
     if (this.deep) {
       const r = layout.cave_from;
@@ -1355,9 +1359,10 @@ export class PlatformerScene extends Phaser.Scene {
   // points [{x, y, type}] (feet), or null if there's none.
   // With `closest`, when there's no full route it returns the route to the
   // reachable spot nearest the goal instead.
-  routeBetween(x0, y0, x1, y1, closest = false) {
+  // `avoid(r, c)` rules out landing on those spots.
+  routeBetween(x0, y0, x1, y1, closest = false, avoid = null) {
     const cell = (x, y) => ({ c: Math.floor(x / TILE), r: Math.floor((y - 4) / TILE) });
-    const path = this.nav.find(cell(x0, y0), cell(x1, y1), closest);
+    const path = this.nav.find(cell(x0, y0), cell(x1, y1), closest, avoid);
     if (!path) return null;
     return path.map((p, k) => ({
       type: p.type,

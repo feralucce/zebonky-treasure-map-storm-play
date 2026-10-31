@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=150701d';
-import { texKey } from './data/artsets.js?v=150701d';
+import { TILE } from './data/levels.js?v=6a3303d';
+import { texKey } from './data/artsets.js?v=6a3303d';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
@@ -682,7 +682,7 @@ export class GuideZebonky {
     const to = this.points[i];
     // If the waiting point can't be reached on foot (the designer warns about
     // that), it goes as far toward it as the player could and waits there.
-    const route = this.scene.routeBetween(s.x, s.y, to.x, to.y, true);
+    const route = this.scene.routeBetween(s.x, s.y, to.x, to.y, true, this.scene.guideAvoid);
     const hops = route ? this.hopsAlong(route) : [];
     const next = () => {
       if (this.revealed) return;      // sent on ahead to the exit (Platformer)
