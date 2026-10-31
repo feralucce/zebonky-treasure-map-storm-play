@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=1a11d11';
-import { TILE, layoutFor } from '../data/levels.js?v=1a11d11';
-import { state } from '../state.js?v=1a11d11';
-import { COLORS, heading, text } from '../theme.js?v=1a11d11';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=1a11d11';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=1a11d11';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=1a11d11';
-import { makeNav } from '../pathing.js?v=1a11d11';
-import { startQuestionRun } from '../data/questions.js?v=1a11d11';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=1a11d11';
-import { Companion } from '../companion.js?v=1a11d11';
-import { startShowcase } from '../showcase.js?v=1a11d11';
-import { startExplorerTour } from '../explorerTour.js?v=1a11d11';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=1a11d11';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=150701d';
+import { TILE, layoutFor } from '../data/levels.js?v=150701d';
+import { state } from '../state.js?v=150701d';
+import { COLORS, heading, text } from '../theme.js?v=150701d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=150701d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=150701d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=150701d';
+import { makeNav } from '../pathing.js?v=150701d';
+import { startQuestionRun } from '../data/questions.js?v=150701d';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=150701d';
+import { Companion } from '../companion.js?v=150701d';
+import { startShowcase } from '../showcase.js?v=150701d';
+import { startExplorerTour } from '../explorerTour.js?v=150701d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=150701d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -181,7 +181,7 @@ export class PlatformerScene extends Phaser.Scene {
       const from = c;
       while (c < cols && SOLID_TEXTURES[bottom[c]]) c++;
       if (underKey && this.textures.exists(underKey)) {
-        const earth = this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey).setOrigin(0).setDepth(-1);
+        const earth = this.add.tileSprite(from * TILE, worldH, (c - from) * TILE, 400, underKey, '__BASE').setOrigin(0).setDepth(-1);
         // The skin's rock carries on in line with the tiles above it.
         if (underKey === skinRock) earth.setTilePosition(from * TILE, worldH).setTint(0xe6e6e6);
       } else {
@@ -523,7 +523,9 @@ export class PlatformerScene extends Phaser.Scene {
       let n = 1;
       while (i + n < buriedCells.length && buriedCells[i + n].r === r && buriedCells[i + n].c === c + n) n++;
       if (underKey && this.textures.exists(underKey)) {
-        const strip = this.add.tileSprite(c * TILE, r * TILE, n * TILE, TILE, underKey).setOrigin(0);
+        // the whole rock wall: once drawSkin has cut frames from it, a bare
+        // key would tile just one 64 px slice (the user saw it repeating)
+        const strip = this.add.tileSprite(c * TILE, r * TILE, n * TILE, TILE, underKey, '__BASE').setOrigin(0);
         strip.setTilePosition(c * TILE, r * TILE);
         if (underKey === skinRock) strip.setTint(0xcccccc);   // as dark as drawSkin's deepest tiles
       } else {
@@ -1584,18 +1586,33 @@ export class PlatformerScene extends Phaser.Scene {
       moss.setOrigin(0, 0).setDepth(this.bankCells && this.bankCells.has(`${c},${r}`) ? 6.5 : 0.5);
     }
     // Rock over open space in a level that goes on down: its underside gets
-    // the moss lip too, over the bottom edge and hanging into the space
-    // below, instead of the rock ending in a straight cut (the user,
-    // 2026-10-31: "the under edges also look bad").
+    // the skin's dark stone edge, turned to run along the bottom, and now
+    // and then something hanging from it, instead of a straight cut (the
+    // user, 2026-10-31: "the under edges also look bad"; a grass lip hung
+    // there looked like the ground upside down).
     if (openB && this.deep && !'~hX'.includes(this.cellAt(r + 1, c))) {
-      const mk = k(skin.moss);
-      const mh = this.textures.get(mk).getSourceImage().height;
-      const m = (c + 3) % skin.moss_tiles;
-      // shaded, as it's out of the light
-      this.add.image(x - TILE / 2, (r + 1) * TILE - (skin.moss_top || 0) - 6, mk, this.skinFrame(mk, `m${m}`, m * TILE, 0, TILE, mh))
-        .setOrigin(0, 0).setDepth(0.5).setTint(0x9a9a9a);
+      this.add.image(x, y, k(skin.edge_left)).setAngle(-90).setDepth(0.4);
+      this.underHang(c, r);
     }
     return true;
+  }
+
+  // Now and then, from a cave ceiling: one of the set's hangers, else a
+  // short length of its vine strand.
+  underHang(c, r) {
+    if (tileHash(c * 3 + 11, r + 5) > 0.22) return;
+    const dr = this.art.dressing || {};
+    const hangers = (dr.hangers || []).map((f) => texKey(this.artName, f)).filter((key) => this.textures.exists(key));
+    const top = (r + 1) * TILE - 6;
+    if (hangers.length) {
+      this.add.image(c * TILE + TILE / 2, top, pick(hangers, c, r)).setOrigin(0.5, 0).setDepth(0.45)
+        .setFlipX(tileHash(c, r + 1) < 0.5);
+      return;
+    }
+    const sk = this.art.vine_strand && texKey(this.artName, this.art.vine_strand);
+    if (!sk || !this.textures.exists(sk)) return;
+    const len = TILE * (0.75 + Math.floor(tileHash(c + 7, r) * 3) * 0.5);
+    this.add.tileSprite(c * TILE + TILE / 2, top, TILE, len, sk).setOrigin(0.5, 0).setDepth(0.45);
   }
 
   drawArtSolid(ch, isSolid, r, c, x, y, at) {
