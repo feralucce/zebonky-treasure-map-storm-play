@@ -6,8 +6,8 @@
 // 3. What's left is painted to a canvas and each 64 px square is sampled to
 //    see which legend colour covers most of it.
 
-import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES, rgb } from './legend.js?v=f6eb36b';
-import { makeNav, missableCrates } from '../src/pathing.js?v=f6eb36b';
+import { TILE_PX, TERRAIN, MARKERS, DOOR, WAIT, CRATES, rgb } from './legend.js?v=e41b1d5';
+import { makeNav, missableCrates } from '../src/pathing.js?v=e41b1d5';
 
 const INKSCAPE = 'http://www.inkscape.org/namespaces/inkscape';
 const SHAPES = 'rect,circle,ellipse,path,polygon,polyline,line';

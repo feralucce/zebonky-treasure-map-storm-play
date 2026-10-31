@@ -15,9 +15,19 @@ const SFX_KEY = 'zebonky-tms-sfx-v1';
 const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 
 // Music, by name. Free Fall by TAD (opengameart.org, CC0).
+// Cove: "Loopster" Kevin MacLeod (incompetech.com), Licensed under Creative
+// Commons: By Attribution 4.0 License, http://creativecommons.org/licenses/by/4.0/
+// (credit required: CREDITS.md). Cut to a seamless loop by
+// tools/make_music_loop.py: bars 0-31 at 54 BPM; OGG first (it loops with no
+// gap), MP3 for browsers without OGG.
 export const MUSIC = {
   main: 'assets/audio/music/free-fall.mp3',
+  cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
 };
+
+// Which track a level plays: by its world (the part of its id before the dash).
+const WORLD_MUSIC = { dorsal: 'cove' };
+export const musicFor = (levelId) => WORLD_MUSIC[String(levelId || '').split('-')[0]] || 'main';
 const MUSIC_VOLUME = 0.25;
 const FADE_MS = 1200;
 
