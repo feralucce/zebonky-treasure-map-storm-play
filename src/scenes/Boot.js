@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=9df7102';
-import { testParams, DRAWN } from '../data/levels.js?v=9df7102';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=9df7102';
-import { CHARACTERS } from '../data/characters.js?v=9df7102';
-import { state } from '../state.js?v=9df7102';
-import { COLORS, heading, text } from '../theme.js?v=9df7102';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=9df7102';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=9df7102';
+import { ARTSETS, texKey } from '../data/artsets.js?v=8a35cc4';
+import { testParams, DRAWN } from '../data/levels.js?v=8a35cc4';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=8a35cc4';
+import { CHARACTERS } from '../data/characters.js?v=8a35cc4';
+import { state } from '../state.js?v=8a35cc4';
+import { COLORS, heading, text } from '../theme.js?v=8a35cc4';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=8a35cc4';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=8a35cc4';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -143,6 +143,8 @@ export class BootScene extends Phaser.Scene {
         }
         // The biome's portal (tools/portal/make_portal.py), for a bonus
         // level door hidden somewhere special (a level with `portal`).
+        // What lies at the bottom of a pit (tools/make_pit_spikes.py).
+        if (data.pit_spikes) add(data.pit_spikes.file);
         if (data.portal) {
           this.load.spritesheet(texKey(name, data.portal.file), base + data.portal.file,
             { frameWidth: data.portal.frameWidth, frameHeight: data.portal.frameHeight });

@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9df7102';
-import { TILE, layoutFor } from '../data/levels.js?v=9df7102';
-import { state } from '../state.js?v=9df7102';
-import { COLORS, heading, text } from '../theme.js?v=9df7102';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=9df7102';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=9df7102';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=9df7102';
-import { makeNav } from '../pathing.js?v=9df7102';
-import { startQuestionRun } from '../data/questions.js?v=9df7102';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=9df7102';
-import { Companion } from '../companion.js?v=9df7102';
-import { startShowcase } from '../showcase.js?v=9df7102';
-import { startExplorerTour } from '../explorerTour.js?v=9df7102';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=9df7102';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=8a35cc4';
+import { TILE, layoutFor } from '../data/levels.js?v=8a35cc4';
+import { state } from '../state.js?v=8a35cc4';
+import { COLORS, heading, text } from '../theme.js?v=8a35cc4';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=8a35cc4';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=8a35cc4';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=8a35cc4';
+import { makeNav } from '../pathing.js?v=8a35cc4';
+import { startQuestionRun } from '../data/questions.js?v=8a35cc4';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=8a35cc4';
+import { Companion } from '../companion.js?v=8a35cc4';
+import { startShowcase } from '../showcase.js?v=8a35cc4';
+import { startExplorerTour } from '../explorerTour.js?v=8a35cc4';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=8a35cc4';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -233,7 +233,11 @@ export class PlatformerScene extends Phaser.Scene {
     // into; their neighbours draw as if they were solid, so nothing gives
     // them away (the user, 2026-10-29).
     // h is a wall you can swim through: water, drawn the same way.
-    const isArtSolid = (r, c) => isSolid(r, c) || atWall(r, c) === 'H' || atWall(r, c) === 'l' || atWall(r, c) === 'h';
+    // In a level that goes on down, danger blocks (X) draw as the rock
+    // they're set in, with the art set's pit spikes standing on top.
+    const deepLevel = layout.cave_from !== undefined;
+    const isArtSolid = (r, c) => isSolid(r, c) || atWall(r, c) === 'H' || atWall(r, c) === 'l' || atWall(r, c) === 'h'
+      || (deepLevel && atWall(r, c) === 'X');
     const tunnelCells = [];
     const letterSpots = [];
     this.grounded = this.findGrounded(rows, cols);
@@ -292,8 +296,13 @@ export class PlatformerScene extends Phaser.Scene {
       [...row].forEach((ch, c) => {
         const x = c * TILE + TILE / 2;
         const y = r * TILE + TILE / 2;
-        if (SOLID_TEXTURES[ch]) {
+        if (SOLID_TEXTURES[ch] || (ch === 'X' && deepLevel && !this.blocks)) {
           // Picture only; collision comes from the merged boxes built below.
+          // A danger block borrows the ground beside it, drawn as plain rock
+          // with no grassy top (the pit spikes' own rubble is the floor).
+          const danger = ch === 'X';
+          if (danger) ch = [at(r, c - 1), at(r, c + 1), at(r, c - 2), at(r, c + 2)].find((n) => SOLID_TEXTURES[n]) || 's';
+          const artSolid = danger ? (rr, cc) => rr < r || isArtSolid(rr, cc) : isArtSolid;
           if (buried(r, c)) {
             // Deep in the rock under a level that goes on down: drawn in
             // long strips after the loop (thousands of single tiles slow
@@ -301,7 +310,7 @@ export class PlatformerScene extends Phaser.Scene {
             buriedCells.push({ r, c });
           } else if (this.blocks) {
             this.block(x, y, TILE, BLOCK_COLORS[ch]);
-          } else if (!this.drawArtSolid(ch, isArtSolid, r, c, x, y, at)) {
+          } else if (!this.drawArtSolid(ch, artSolid, r, c, x, y, at)) {
             const [topTex, fillTex] = SOLID_TEXTURES[ch];
             const top = !SOLID_TEXTURES[at(r - 1, c)];
             this.add.image(x, y, top ? topTex : fillTex);
@@ -513,6 +522,7 @@ export class PlatformerScene extends Phaser.Scene {
       }
       i += n;
     }
+    this.pitSpikes(cols);
     this.rows = rows;
     this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
@@ -1352,8 +1362,38 @@ export class PlatformerScene extends Phaser.Scene {
   // How far down a fall goes before it counts as out of the level: the top
   // of the pit's danger blocks, or the bottom of the level.
   pitBottom(x) {
-    const r = this.dangerTop && this.dangerTop[Math.floor(x / TILE)];
-    return r !== undefined ? r * TILE : this.worldH;
+    const c = Math.floor(x / TILE);
+    const r = this.dangerTop && this.dangerTop[c];
+    if (r === undefined) return this.worldH;
+    // With spikes in the pit, she's caught a little way into them.
+    return r * TILE - (this.spikeReach && this.spikeReach[c] || 0);
+  }
+
+  // The art set's pit spikes (tools/make_pit_spikes.py; the user,
+  // 2026-10-31) standing on the danger blocks at the bottom of each pit in
+  // a level that goes on down: a slice of the wide strip as wide as the pit,
+  // tucked a little under the rock walls either side.
+  pitSpikes(cols) {
+    this.spikeReach = {};
+    const ps = this.deep && !this.blocks && this.art && this.art.pit_spikes;
+    const key = ps && texKey(this.artName, ps.file);
+    if (!key || !this.textures.exists(key)) return;
+    const src = this.textures.get(key).getSourceImage();
+    const h = src.height;
+    for (let c = 0; c < cols;) {
+      const r = this.dangerTop[c];
+      if (r === undefined) { c++; continue; }
+      const c0 = c;
+      while (c < cols && this.dangerTop[c] === r) c++;
+      const w = (c - c0) * TILE + 24;
+      // a different stretch of the strip for each pit, away from its ends
+      const off = 64 + ((c0 * 97) % Math.max(1, src.width - w - 128));
+      this.add.tileSprite(c0 * TILE - 12, r * TILE + 8, w, h, key).setOrigin(0, 1)
+        .setTilePosition(off, 0).setDepth(-0.6);
+      // A fall counts 120 px under pitBottom (by her middle): this puts that
+      // moment with her feet among the spikes, not sunk into the rock.
+      for (let k = c0; k < c; k++) this.spikeReach[k] = Math.round(h * 0.5) + 180;
+    }
   }
 
   // The top of the water she is in, if it has air over it (none in a passage

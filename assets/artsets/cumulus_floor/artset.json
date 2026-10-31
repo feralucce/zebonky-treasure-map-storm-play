@@ -242,6 +242,10 @@
   "closed": true,
   "note": "tools/make_bonus_door.py: the bonus level door (LetargicDev \"Portals\", CC0), dressed for this set"
  },
+ "pit_spikes": {
+  "file": "pit_spikes.png",
+  "note": "tools/make_pit_spikes.py: what lies at the bottom of a pit in a level that goes on down"
+ },
  "portal": {
   "file": "portal.png",
   "frameWidth": 134,
