@@ -25,9 +25,13 @@ export const MUSIC = {
   cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
 };
 
-// Which track a level plays: by its world (the part of its id before the dash).
+// Which track a level plays: by its world (the part of its id before the
+// dash), once the level has been redesigned for exploring (`explore` in its
+// file); until then, main. The user, 2026-10-31: "put that song in each of
+// the cove's levels as we redesign them".
 const WORLD_MUSIC = { dorsal: 'cove' };
-export const musicFor = (levelId) => WORLD_MUSIC[String(levelId || '').split('-')[0]] || 'main';
+export const musicFor = (levelId, layout) =>
+  (layout && layout.explore && WORLD_MUSIC[String(levelId || '').split('-')[0]]) || 'main';
 const MUSIC_VOLUME = 0.25;
 const FADE_MS = 1200;
 

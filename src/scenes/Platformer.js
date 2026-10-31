@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=e41b1d5';
-import { TILE, layoutFor } from '../data/levels.js?v=e41b1d5';
-import { state } from '../state.js?v=e41b1d5';
-import { COLORS, heading, text } from '../theme.js?v=e41b1d5';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=e41b1d5';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=e41b1d5';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=e41b1d5';
-import { makeNav } from '../pathing.js?v=e41b1d5';
-import { startQuestionRun } from '../data/questions.js?v=e41b1d5';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=e41b1d5';
-import { Companion } from '../companion.js?v=e41b1d5';
-import { startShowcase } from '../showcase.js?v=e41b1d5';
-import { startExplorerTour } from '../explorerTour.js?v=e41b1d5';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=e41b1d5';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=47c78e8';
+import { TILE, layoutFor } from '../data/levels.js?v=47c78e8';
+import { state } from '../state.js?v=47c78e8';
+import { COLORS, heading, text } from '../theme.js?v=47c78e8';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=47c78e8';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=47c78e8';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=47c78e8';
+import { makeNav } from '../pathing.js?v=47c78e8';
+import { startQuestionRun } from '../data/questions.js?v=47c78e8';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=47c78e8';
+import { Companion } from '../companion.js?v=47c78e8';
+import { startShowcase } from '../showcase.js?v=47c78e8';
+import { startExplorerTour } from '../explorerTour.js?v=47c78e8';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=47c78e8';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -135,6 +135,7 @@ export class PlatformerScene extends Phaser.Scene {
     startQuestionRun(this.levelId);
     // A demo plays the level's saved drawing; a designer test plays the hand-off.
     const layout = layoutFor(this.layoutId, this.test && !this.demo);
+    this.levelFile = layout;
     this.art = layout.artset ? this.cache.json.get(`artset:${layout.artset}`) : null;
     this.artName = layout.artset;
     // "Blocks": the drawing as flat legend-coloured blocks with no scenery.
@@ -2536,7 +2537,7 @@ export class PlatformerScene extends Phaser.Scene {
     fullscreenButton(this, MAP_W - 166, 104);
     musicButton(this, MAP_W - 108, 104);
     soundButton(this, MAP_W - 50, 104);
-    audio.music(this, musicFor(this.levelId));
+    audio.music(this, musicFor(this.levelId, this.levelFile));
     audio.preloadSfx(this);
   }
 
