@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=6deb8ef';
-import { testParams, DRAWN } from '../data/levels.js?v=6deb8ef';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=6deb8ef';
-import { CHARACTERS } from '../data/characters.js?v=6deb8ef';
-import { state } from '../state.js?v=6deb8ef';
-import { COLORS, heading, text } from '../theme.js?v=6deb8ef';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=6deb8ef';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=6deb8ef';
+import { ARTSETS, texKey } from '../data/artsets.js?v=51c842d';
+import { testParams, DRAWN } from '../data/levels.js?v=51c842d';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=51c842d';
+import { CHARACTERS } from '../data/characters.js?v=51c842d';
+import { state } from '../state.js?v=51c842d';
+import { COLORS, heading, text } from '../theme.js?v=51c842d';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=51c842d';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=51c842d';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -134,10 +134,12 @@ export class BootScene extends Phaser.Scene {
         const dr = data.dressing || {};
         [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);
         Object.values(data.canopy || {}).flat().forEach(add);
-        // The bonus level door (tools/make_bonus_door.py): its opening frames.
+        // The bonus level door (tools/make_bonus_door.py): its opening
+        // frames, in each of its five dressings.
         if (data.door_bonus) {
-          this.load.spritesheet(texKey(name, data.door_bonus.file), base + data.door_bonus.file,
-            { frameWidth: data.door_bonus.frameWidth, frameHeight: data.door_bonus.frameHeight });
+          const db = data.door_bonus;
+          (db.variants || [db.file]).forEach((f) => this.load.spritesheet(texKey(name, f), base + f,
+            { frameWidth: db.frameWidth, frameHeight: db.frameHeight }));
         }
         // The biome's portal (tools/portal/make_portal.py), for a bonus
         // level door hidden somewhere special (a level with `portal`).

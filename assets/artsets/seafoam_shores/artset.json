@@ -229,8 +229,10 @@
  "door_bonus": {
   "file": "door_bonus.png",
   "frameWidth": 256,
-  "frameHeight": 144,
+  "frameHeight": 176,
   "frames": 17,
+  "variants": ["door_bonus.png", "door_bonus_2.png", "door_bonus_3.png", "door_bonus_4.png", "door_bonus_5.png"],
+  "closed": true,
   "note": "tools/make_bonus_door.py: the bonus level door (LetargicDev \"Portals\", CC0), dressed for this set"
  },
  "portal": {

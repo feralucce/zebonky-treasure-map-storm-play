@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6deb8ef';
-import { TILE, layoutFor } from '../data/levels.js?v=6deb8ef';
-import { state } from '../state.js?v=6deb8ef';
-import { COLORS, heading, text } from '../theme.js?v=6deb8ef';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6deb8ef';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6deb8ef';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=6deb8ef';
-import { makeNav } from '../pathing.js?v=6deb8ef';
-import { startQuestionRun } from '../data/questions.js?v=6deb8ef';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=6deb8ef';
-import { Companion } from '../companion.js?v=6deb8ef';
-import { startShowcase } from '../showcase.js?v=6deb8ef';
-import { startExplorerTour } from '../explorerTour.js?v=6deb8ef';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=6deb8ef';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=51c842d';
+import { TILE, layoutFor } from '../data/levels.js?v=51c842d';
+import { state } from '../state.js?v=51c842d';
+import { COLORS, heading, text } from '../theme.js?v=51c842d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=51c842d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=51c842d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=51c842d';
+import { makeNav } from '../pathing.js?v=51c842d';
+import { startQuestionRun } from '../data/questions.js?v=51c842d';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=51c842d';
+import { Companion } from '../companion.js?v=51c842d';
+import { startShowcase } from '../showcase.js?v=51c842d';
+import { startExplorerTour } from '../explorerTour.js?v=51c842d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=51c842d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -456,7 +456,11 @@ export class PlatformerScene extends Phaser.Scene {
           // demo always shows a drawn one (it just restarts the level).
           // The art set's dressed door (empty until it's opened), else the plain one.
           const db = !this.blocks && this.art && this.art.door_bonus;
-          const dk = db && texKey(this.artName, db.file);
+          // Five dressings per biome (the user, 2026-10-31): level <biome>-N
+          // gets the Nth, so no two doors in a biome look alike.
+          const n = Number((/-(\d+)$/.exec(this.levelId) || [])[1]) || 1;
+          const dv = db && db.variants ? db.variants[(n - 1) % db.variants.length] : db && db.file;
+          const dk = db && texKey(this.artName, dv);
           if (dk && this.textures.exists(dk)) {
             // Set back from an edge, so its plants stand on the ground and
             // don't hang over (the user): the dressing reaches about 112 px
@@ -468,7 +472,9 @@ export class PlatformerScene extends Phaser.Scene {
             for (const t of [0, -1, 1, -2, 2]) {
               if (fits(x + t * TILE)) { dxs = t * TILE; break; }
             }
-            this.secret = this.physics.add.staticSprite(x + dxs, (r + 1) * TILE - db.frameHeight / 2, dk, db.frames - 1).setDepth(-0.5);
+            // A door that's shut until she opens it (`closed`) shows frame 0;
+            // the old empty arch shows its last frame, the doorway open.
+            this.secret = this.physics.add.staticSprite(x + dxs, (r + 1) * TILE - db.frameHeight / 2, dk, db.closed ? 0 : db.frames - 1).setDepth(-0.5);
             this.secret.body.setSize(96, 128).setOffset((db.frameWidth - 96) / 2, db.frameHeight - 128);
             this.secret.dressed = db;
           } else this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 48, 'secret-door');
