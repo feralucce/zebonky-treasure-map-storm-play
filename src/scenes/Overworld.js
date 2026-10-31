@@ -7,15 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=ea583c1';
-import { state, pathKey } from '../state.js?v=ea583c1';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=ea583c1';
-import { audio, fullscreenButton } from '../audio.js?v=ea583c1';
-import { BUILD } from '../version.js?v=ea583c1';
-import { starsFor, rewardTotals } from '../rewards.js?v=ea583c1';
-import { currency, currencyIcon } from '../currency.js?v=ea583c1';
-import { showCompanionCard } from '../companionCard.js?v=ea583c1';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=ea583c1';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=d69259f';
+import { state, pathKey } from '../state.js?v=d69259f';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=d69259f';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=d69259f';
+import { BUILD } from '../version.js?v=d69259f';
+import { starsFor, rewardTotals } from '../rewards.js?v=d69259f';
+import { currency, currencyIcon } from '../currency.js?v=d69259f';
+import { showCompanionCard } from '../companionCard.js?v=d69259f';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=d69259f';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -764,7 +764,10 @@ export class OverworldScene extends Phaser.Scene {
       padding: { x: 10, y: 4 },
     })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     look.on('pointerup', () => this.openCharacterMenu());
-    fullscreenButton(this, MAP_W - 50, y + 130);
+    const fs = fullscreenButton(this, MAP_W - 50, y + 130);
+    // Music on and off, beside it (in its place where there's no fullscreen):
+    // the same switch as in the levels.
+    musicButton(this, fs ? MAP_W - 108 : MAP_W - 50, y + 130);
     // Which build this is (lesson UI-18), small in the bottom corner.
     this.add.text(8, MAP_H - 6, `build ${BUILD}`, text(12, 'rgba(255,248,232,0.55)')).setOrigin(0, 1).setDepth(30);
     // Inspection mode saves nothing, so no Save or Reset.
