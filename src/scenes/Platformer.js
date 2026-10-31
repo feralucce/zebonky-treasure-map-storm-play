@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=51c842d';
-import { TILE, layoutFor } from '../data/levels.js?v=51c842d';
-import { state } from '../state.js?v=51c842d';
-import { COLORS, heading, text } from '../theme.js?v=51c842d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=51c842d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=51c842d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=51c842d';
-import { makeNav } from '../pathing.js?v=51c842d';
-import { startQuestionRun } from '../data/questions.js?v=51c842d';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=51c842d';
-import { Companion } from '../companion.js?v=51c842d';
-import { startShowcase } from '../showcase.js?v=51c842d';
-import { startExplorerTour } from '../explorerTour.js?v=51c842d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=51c842d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9df7102';
+import { TILE, layoutFor } from '../data/levels.js?v=9df7102';
+import { state } from '../state.js?v=9df7102';
+import { COLORS, heading, text } from '../theme.js?v=9df7102';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=9df7102';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=9df7102';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=9df7102';
+import { makeNav } from '../pathing.js?v=9df7102';
+import { startQuestionRun } from '../data/questions.js?v=9df7102';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=9df7102';
+import { Companion } from '../companion.js?v=9df7102';
+import { startShowcase } from '../showcase.js?v=9df7102';
+import { startExplorerTour } from '../explorerTour.js?v=9df7102';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=9df7102';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -210,6 +210,7 @@ export class PlatformerScene extends Phaser.Scene {
     let start = { x: TILE * 2, y: worldH - TILE * 3 };
     const treasureSpots = [];
     const at = (r, c) => (rows[r] && rows[r][c]) || '.';
+    this.cellAt = at;
 
     // Water and current cells, looked up every frame by the player's position.
     this.water = new Set();
@@ -254,25 +255,22 @@ export class PlatformerScene extends Phaser.Scene {
     }));
     const swimWalls = [];
 
+    // A level that goes on down (`cave_from`): its caves and drops show the
+    // level's own background, not a dark fill (the user, 2026-10-31: the
+    // flat dark cave and its hard top line looked bad).
+    this.deep = layout.cave_from !== undefined;
     this.pitSigns(rows, cols, isSolid, isWater);
-    // Under the ground (a level's `cave_from` row down), open space is a
-    // dark cave, not a window onto the sky behind.
-    if (layout.cave_from !== undefined) {
-      for (let r = layout.cave_from; r < rows.length; r++) {
-        for (let c = 0; c < cols;) {
-          const open = (cc) => cc < cols && !isSolid(r, cc) && at(r, cc) !== 'X';
-          if (!open(c)) { c++; continue; }
-          const c0 = c;
-          while (open(c)) c++;
-          if (r === layout.cave_from && isWater(r - 1, c0)) {
-            // Water carrying on down from a pool above: it darkens over a
-            // few rows, with no line to give the deep part away.
-            this.add.image(c0 * TILE, (r - 2) * TILE, 'pit-dark').setOrigin(0)
-              .setDisplaySize((c - c0) * TILE, 3 * TILE).setDepth(-1.4);
-            continue;
-          }
-          this.add.rectangle(c0 * TILE, r * TILE, (c - c0) * TILE, TILE, 0x16120e, 1).setOrigin(0).setDepth(-1.4);
-        }
+    if (this.deep) {
+      const r = layout.cave_from;
+      for (let c = 0; c < cols;) {
+        const open = (cc) => cc < cols && isWater(r, cc) && isWater(r - 1, cc);
+        if (!open(c)) { c++; continue; }
+        const c0 = c;
+        while (open(c)) c++;
+        // Water carrying on down from a pool above: it darkens over a few
+        // rows, with no line to give the deep part away.
+        this.add.image(c0 * TILE, (r - 2) * TILE, 'pit-dark').setOrigin(0)
+          .setDisplaySize((c - c0) * TILE, 3 * TILE).setDepth(-1.4);
       }
     }
     // Banks: ground beside water. They draw in front of the water, which
@@ -1063,6 +1061,9 @@ export class PlatformerScene extends Phaser.Scene {
     }
     // Dangerous pits fade to black, starting one block below the ground
     // beside them (the user, 2026-10-30), solid by the level's bottom edge.
+    // Not in a level that goes on down: there a drop shows the level's own
+    // background like everywhere else (the user, 2026-10-31: "keep the drop
+    // in cavern with the same background as the rest of the level").
     if (!this.textures.exists('pit-dark')) {
       const cv = Object.assign(document.createElement('canvas'), { width: 4, height: 256 });
       const g = cv.getContext('2d');
@@ -1079,6 +1080,7 @@ export class PlatformerScene extends Phaser.Scene {
       return null;
     };
     const worldH = rows.length * TILE;
+    if (this.deep) return;
     for (let c = 0; c < cols;) {
       if (!open(c)) { c++; continue; }
       const c0 = c;
@@ -1527,6 +1529,18 @@ export class PlatformerScene extends Phaser.Scene {
         moss = this.add.image(left, top, mk, this.skinFrame(mk, `m${m}`, m * TILE, 0, TILE, mh));
       }
       moss.setOrigin(0, 0).setDepth(this.bankCells && this.bankCells.has(`${c},${r}`) ? 6.5 : 0.5);
+    }
+    // Rock over open space in a level that goes on down: its underside gets
+    // the moss lip too, over the bottom edge and hanging into the space
+    // below, instead of the rock ending in a straight cut (the user,
+    // 2026-10-31: "the under edges also look bad").
+    if (openB && this.deep && !'~hX'.includes(this.cellAt(r + 1, c))) {
+      const mk = k(skin.moss);
+      const mh = this.textures.get(mk).getSourceImage().height;
+      const m = (c + 3) % skin.moss_tiles;
+      // shaded, as it's out of the light
+      this.add.image(x - TILE / 2, (r + 1) * TILE - (skin.moss_top || 0) - 6, mk, this.skinFrame(mk, `m${m}`, m * TILE, 0, TILE, mh))
+        .setOrigin(0, 0).setDepth(0.5).setTint(0x9a9a9a);
     }
     return true;
   }
