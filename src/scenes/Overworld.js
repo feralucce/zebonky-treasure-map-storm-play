@@ -7,15 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=87b2a99';
-import { state, pathKey } from '../state.js?v=87b2a99';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=87b2a99';
-import { audio, fullscreenButton } from '../audio.js?v=87b2a99';
-import { BUILD } from '../version.js?v=87b2a99';
-import { starsFor, rewardTotals } from '../rewards.js?v=87b2a99';
-import { currency, currencyIcon } from '../currency.js?v=87b2a99';
-import { showCompanionCard } from '../companionCard.js?v=87b2a99';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=87b2a99';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=cf6d43d';
+import { state, pathKey } from '../state.js?v=cf6d43d';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=cf6d43d';
+import { audio, fullscreenButton } from '../audio.js?v=cf6d43d';
+import { BUILD } from '../version.js?v=cf6d43d';
+import { starsFor, rewardTotals } from '../rewards.js?v=cf6d43d';
+import { currency, currencyIcon } from '../currency.js?v=cf6d43d';
+import { showCompanionCard } from '../companionCard.js?v=cf6d43d';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=cf6d43d';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -743,8 +743,9 @@ export class OverworldScene extends Phaser.Scene {
     g.strokeRoundedRect(cx0, y, cw, 52, 16);
     this.add.image(cx0 + 30, y + 26, currencyIcon(this));
     this.add.text(cx0 + 52, y + 26, `${currency()}`, heading(22, COLORS.inkCss)).setOrigin(0, 0.5);
-    // No music on the map for now; a level's music fades out on the way back.
-    audio.stopMusic();
+    // The map's own track (the explorer's room will share it); a level's
+    // music crossfades into it on the way back.
+    audio.music(this, 'map');
 
     // Reset needs two taps so a stray click can't wipe progress.
     const reset = this.add.text(MAP_W - 26, y + 70, 'Reset progress', text(14, COLORS.parchmentCss, {

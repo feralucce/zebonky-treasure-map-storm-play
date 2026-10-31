@@ -1,6 +1,6 @@
 // Music and sound effects.
 //
-// Levels play music (the map is quiet for now); it carries on from one level
+// The map and levels play music; it carries on from one level
 // to the next and only restarts when a scene asks for a different track. Tracks load in the background the first
 // time they're wanted, so they never hold up the game starting. Browsers keep
 // sound locked until the first tap or key press; anything asked for before
@@ -20,9 +20,14 @@ const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 // (credit required: CREDITS.md). Cut to a seamless loop by
 // tools/make_music_loop.py: bars 0-31 at 54 BPM; OGG first (it loops with no
 // gap), MP3 for browsers without OGG.
+// Map (and the explorer's room, when it's built): "Ascending the Vale" Kevin
+// MacLeod (incompetech.com), Licensed under Creative Commons: By Attribution
+// 4.0 License, http://creativecommons.org/licenses/by/4.0/ (credit required:
+// CREDITS.md). Looped the same way: bars 0-71 at 90 BPM.
 export const MUSIC = {
   main: 'assets/audio/music/free-fall.mp3',
   cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
+  map: ['assets/audio/music/ascending-the-vale.ogg', 'assets/audio/music/ascending-the-vale.mp3'],
 };
 
 // Which track a level plays: by its world (the part of its id before the
