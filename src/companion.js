@@ -8,9 +8,9 @@
 // A new companion sparkles and fades in beside her; one she already has is
 // simply there when the level starts.
 
-import { BIOMES } from './data/world.js?v=d69259f';
-import { ARTSETS, texKey } from './data/artsets.js?v=d69259f';
-import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE, layerFor, LAND_DEPTH } from './actors.js?v=d69259f';
+import { BIOMES } from './data/world.js?v=4acef07';
+import { ARTSETS, texKey } from './data/artsets.js?v=4acef07';
+import { zebonkyArt, ensureAnims, faceArt, play, standOnFeet, crouchTime, FLY_ABOVE, layerFor, LAND_DEPTH } from './actors.js?v=4acef07';
 
 const TILE = 64;
 const SIZE = 64;           // px tall on screen (the picture)

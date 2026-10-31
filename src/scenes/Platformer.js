@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=d69259f';
-import { TILE, layoutFor } from '../data/levels.js?v=d69259f';
-import { state } from '../state.js?v=d69259f';
-import { COLORS, heading, text } from '../theme.js?v=d69259f';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=d69259f';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=d69259f';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=d69259f';
-import { makeNav } from '../pathing.js?v=d69259f';
-import { startQuestionRun } from '../data/questions.js?v=d69259f';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=d69259f';
-import { Companion } from '../companion.js?v=d69259f';
-import { startShowcase } from '../showcase.js?v=d69259f';
-import { startExplorerTour } from '../explorerTour.js?v=d69259f';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=d69259f';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4acef07';
+import { TILE, layoutFor } from '../data/levels.js?v=4acef07';
+import { state } from '../state.js?v=4acef07';
+import { COLORS, heading, text } from '../theme.js?v=4acef07';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4acef07';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4acef07';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=4acef07';
+import { makeNav } from '../pathing.js?v=4acef07';
+import { startQuestionRun } from '../data/questions.js?v=4acef07';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=4acef07';
+import { Companion } from '../companion.js?v=4acef07';
+import { startShowcase } from '../showcase.js?v=4acef07';
+import { startExplorerTour } from '../explorerTour.js?v=4acef07';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=4acef07';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before

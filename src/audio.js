@@ -28,11 +28,16 @@ const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 // Creative Commons: By Attribution 4.0 License,
 // http://creativecommons.org/licenses/by/4.0/ (credit required: CREDITS.md).
 // Looped from bar 8 to bar 191 at 160 BPM (its opening never comes back).
+// Cumulus Rainforest: "Cold Funk" Kevin MacLeod (incompetech.com), Licensed
+// under Creative Commons: By Attribution 4.0 License,
+// http://creativecommons.org/licenses/by/4.0/ (credit required: CREDITS.md).
+// Looped from bar 8 to bar 123 at 112 BPM (past its quiet intro).
 export const MUSIC = {
   main: 'assets/audio/music/free-fall.mp3',
   cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
   map: ['assets/audio/music/ascending-the-vale.ogg', 'assets/audio/music/ascending-the-vale.mp3'],
   caverns: ['assets/audio/music/odyssey.ogg', 'assets/audio/music/odyssey.mp3'],
+  rainforest: ['assets/audio/music/cold-funk.ogg', 'assets/audio/music/cold-funk.mp3'],
 };
 
 // Which track a level plays: by its world (the part of its id before the
@@ -40,11 +45,13 @@ export const MUSIC = {
 // file); until then, main. The user, 2026-10-31: "put that song in each of
 // the cove's levels as we redesign them".
 const WORLD_MUSIC = { dorsal: 'cove' };
-// A level with a track of its own plays it whether redesigned or not. The
-// user, 2026-10-31: "use it for the crystal caverns".
+// A level or a world with a track of its own plays it whether redesigned or
+// not. The user, 2026-10-31: "use it for the crystal caverns", "make it the
+// rainforest".
 const LEVEL_MUSIC = { 'magenta-2': 'caverns' };
+const WORLD_MUSIC_NOW = { cumulus: 'rainforest' };
 export const musicFor = (levelId, layout) =>
-  LEVEL_MUSIC[levelId] ||
+  LEVEL_MUSIC[levelId] || WORLD_MUSIC_NOW[String(levelId || '').split('-')[0]] ||
   (layout && layout.explore && WORLD_MUSIC[String(levelId || '').split('-')[0]]) || 'main';
 const MUSIC_VOLUME = 0.25;
 const FADE_MS = 1200;
