@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=0d80551';
-import { TILE, layoutFor } from '../data/levels.js?v=0d80551';
-import { state } from '../state.js?v=0d80551';
-import { COLORS, heading, text } from '../theme.js?v=0d80551';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=0d80551';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=0d80551';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=0d80551';
-import { makeNav } from '../pathing.js?v=0d80551';
-import { startQuestionRun } from '../data/questions.js?v=0d80551';
-import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=0d80551';
-import { Companion } from '../companion.js?v=0d80551';
-import { startShowcase } from '../showcase.js?v=0d80551';
-import { startExplorerTour } from '../explorerTour.js?v=0d80551';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=0d80551';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=85c30a2';
+import { TILE, layoutFor } from '../data/levels.js?v=85c30a2';
+import { state } from '../state.js?v=85c30a2';
+import { COLORS, heading, text } from '../theme.js?v=85c30a2';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=85c30a2';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=85c30a2';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=85c30a2';
+import { makeNav } from '../pathing.js?v=85c30a2';
+import { startQuestionRun } from '../data/questions.js?v=85c30a2';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=85c30a2';
+import { Companion } from '../companion.js?v=85c30a2';
+import { startShowcase } from '../showcase.js?v=85c30a2';
+import { startExplorerTour } from '../explorerTour.js?v=85c30a2';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=85c30a2';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1701,8 +1701,8 @@ export class PlatformerScene extends Phaser.Scene {
   // painted with MOSS (tools/make_cave_blockin.py, tools/mend_loop_join.py),
   // 4 screen px per art pixel like Chris's. It fills only the open air below
   // the cave line, never water joined to a pool above (the user: "it can't
-  // be over the starting pool"). Each cave has the picture's bottom on its
-  // own floor. Under an opening to the level above it fades in over
+  // be over the starting pool"). Each cave has the picture's water line on
+  // its own water, or on its floor when it has none. Under an opening to the level above it fades in over
   // CAVE_FADE rows, so its top never shows as a hard flat line (the user,
   // 2026-10-31: "it needs a gradient opacity mask"). Drawn as strips of
   // tileSprite that slide the picture sideways at the art set's parallax.
@@ -1726,24 +1726,44 @@ export class PlatformerScene extends Phaser.Scene {
       stack.push([r + 1, c], [r - 1, c], [r, c + 1], [r, c - 1]);
     }
     const inCave = (r, c) => r >= caveFrom && r < nRows && c >= 0 && c < cols && caveOpen(r, c) && !pool.has(id(r, c));
-    // Each cave (joined open cells) and its floor.
-    const floorOf = new Map();
+    // Each cave (joined open cells) and where the picture's water line goes:
+    // on the cave's own water, so the two read as one (the user: "the water
+    // in the cave background should be the same as the water level in the
+    // grotto"), or with no water, on the floor, out of sight behind it.
+    const waterLine = cb.water_line ?? picH;
+    const picTopOf = new Map();
     const seen = new Set();
     for (let r = caveFrom; r < nRows; r++) for (let c = 0; c < cols; c++) {
       if (!inCave(r, c) || seen.has(id(r, c))) continue;
       const cells = [];
       const todo = [[r, c]];
       let floor = r;
+      let wet = Infinity;
       while (todo.length) {
         const [rr, cc] = todo.pop();
         if (!inCave(rr, cc) || seen.has(id(rr, cc))) continue;
         seen.add(id(rr, cc));
         cells.push(id(rr, cc));
         floor = Math.max(floor, rr + 1);
+        if (isWater(rr, cc)) wet = Math.min(wet, rr);
         todo.push([rr + 1, cc], [rr - 1, cc], [rr, cc + 1], [rr, cc - 1]);
       }
-      cells.forEach((i) => floorOf.set(i, floor));
+      const top = (wet < Infinity ? wet : floor) * TILE - waterLine;
+      cells.forEach((i) => picTopOf.set(i, top));
     }
+    // The picture also runs one cell into the rock and pool water round each
+    // cave: ground tiles have see-through pixels at their corners and edges,
+    // and so does a water surface along its top, and the sky behind showed
+    // through them (the user, 2026-10-31: a blue speck on a grass corner).
+    const rim = [];
+    for (let r = caveFrom; r < nRows; r++) for (let c = 0; c < cols; c++) {
+      if (picTopOf.has(id(r, c))) continue;
+      for (const [dr, dc] of [[-1, 0], [0, -1], [0, 1], [1, 0], [-1, -1], [-1, 1], [1, -1], [1, 1]]) {
+        const n = id(r + dr, c + dc);
+        if (r + dr >= caveFrom && c + dc >= 0 && c + dc < cols && picTopOf.has(n)) { rim.push([id(r, c), picTopOf.get(n)]); break; }
+      }
+    }
+    rim.forEach(([i, top]) => picTopOf.set(i, top));
     // How open each column is to the level above, spread two columns either
     // side so the fade has no hard edge at the side of an opening.
     const opening = [];
@@ -1760,39 +1780,43 @@ export class PlatformerScene extends Phaser.Scene {
       return 1 - opening[c] * (1 - t);
     };
     this.caveStrips = [];
-    const strip = (x, y, w, h, floor, alpha) => {
+    const strip = (x, y, w, h, picTop, alpha) => {
       if (alpha <= 0.02) return;
       const s = this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(-5).setAlpha(alpha);
-      s.tilePositionY = y - (floor * TILE - picH);
+      s.tilePositionY = y - picTop;
       this.caveStrips.push(s);
     };
     for (let r = caveFrom; r < nRows; r++) {
       for (let c = 0; c < cols;) {
-        if (!floorOf.has(id(r, c))) { c++; continue; }
-        const floor = floorOf.get(id(r, c));
+        if (!picTopOf.has(id(r, c))) { c++; continue; }
+        const picTop = picTopOf.get(id(r, c));
         const fading = r < caveFrom + CAVE_FADE && opening[c] > 0;
         if (fading) {
           // One cell, in thin strips, each a little more solid.
-          for (let y = r * TILE; y < (r + 1) * TILE; y += STRIP) strip(c * TILE, y, TILE, STRIP, floor, alphaAt(y + STRIP / 2, c));
+          for (let y = r * TILE; y < (r + 1) * TILE; y += STRIP) strip(c * TILE, y, TILE, STRIP, picTop, alphaAt(y + STRIP / 2, c));
           c++;
           continue;
         }
         const c0 = c;
-        while (c < cols && floorOf.get(id(r, c)) === floor && !(r < caveFrom + CAVE_FADE && opening[c] > 0)) c++;
-        strip(c0 * TILE, r * TILE, (c - c0) * TILE, TILE, floor, 1);
+        while (c < cols && picTopOf.get(id(r, c)) === picTop && !(r < caveFrom + CAVE_FADE && opening[c] > 0)) c++;
+        strip(c0 * TILE, r * TILE, (c - c0) * TILE, TILE, picTop, 1);
       }
     }
     // The picture slides at the parallax speed: the strips are fixed to the
     // level, so their picture moves the other way by the camera's travel.
+    // The camera is held here: by the time the scene shuts down,
+    // this.cameras.main is gone, and reaching for it there threw and stopped
+    // the level ending (the user: "Normal exit is crashing - no score card").
+    const cam = this.cameras.main;
     const slide = () => {
-      const camX = this.cameras.main.scrollX;
+      const camX = cam.scrollX;
       this.caveStrips.forEach((s) => { s.tilePositionX = s.x - camX * (1 - sf); });
     };
     this.events.on('postupdate', slide);
-    this.cameras.main.on('followupdate', slide);
+    cam.on('followupdate', slide);
     this.events.once('shutdown', () => {
       this.events.off('postupdate', slide);
-      this.cameras.main.off('followupdate', slide);
+      cam.off('followupdate', slide);
     });
     slide();
   }

@@ -421,6 +421,7 @@
  "cave_background": {
   "file": "bg_cave.png",
   "scroll": 0.3,
+  "water_line": 568,
   "note": "MOSS (gaming PC, 2026-10-31) over tools/make_cave_blockin.py, join mended by tools/mend_loop_join.py"
  }
 }
