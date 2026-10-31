@@ -7,14 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=2e01f67';
-import { state, pathKey } from '../state.js?v=2e01f67';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=2e01f67';
-import { audio } from '../audio.js?v=2e01f67';
-import { starsFor, rewardTotals } from '../rewards.js?v=2e01f67';
-import { currency, currencyIcon } from '../currency.js?v=2e01f67';
-import { showCompanionCard } from '../companionCard.js?v=2e01f67';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=2e01f67';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=6deb8ef';
+import { state, pathKey } from '../state.js?v=6deb8ef';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=6deb8ef';
+import { audio, fullscreenButton } from '../audio.js?v=6deb8ef';
+import { BUILD } from '../version.js?v=6deb8ef';
+import { starsFor, rewardTotals } from '../rewards.js?v=6deb8ef';
+import { currency, currencyIcon } from '../currency.js?v=6deb8ef';
+import { showCompanionCard } from '../companionCard.js?v=6deb8ef';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=6deb8ef';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -762,6 +763,9 @@ export class OverworldScene extends Phaser.Scene {
       padding: { x: 10, y: 4 },
     })).setOrigin(1, 0).setInteractive({ useHandCursor: true });
     look.on('pointerup', () => this.openCharacterMenu());
+    fullscreenButton(this, MAP_W - 50, y + 130);
+    // Which build this is (lesson UI-18), small in the bottom corner.
+    this.add.text(8, MAP_H - 6, `build ${BUILD}`, text(12, 'rgba(255,248,232,0.55)')).setOrigin(0, 1).setDepth(30);
     // Inspection mode saves nothing, so no Save or Reset.
     if (state.inspectAll) { save.setVisible(false); reset.setVisible(false); look.setX(MAP_W - 26); }
 

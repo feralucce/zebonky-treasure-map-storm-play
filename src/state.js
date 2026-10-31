@@ -2,12 +2,25 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=2e01f67';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=2e01f67';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=2e01f67';
-import { bankFor, questionKey } from './data/questions.js?v=2e01f67';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=6deb8ef';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=6deb8ef';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=6deb8ef';
+import { bankFor, questionKey } from './data/questions.js?v=6deb8ef';
+import { BUILD } from './version.js?v=6deb8ef';
 
 const KEY = 'zebonky-tms-save-v1';
+// The save before the last one, kept in case the last one is damaged.
+const BACKUP = `${KEY}-backup`;
+
+// A stored save that reads back as a save, or null.
+function readSave(raw) {
+  try {
+    const d = raw && JSON.parse(raw);
+    return d && typeof d === 'object' && !Array.isArray(d) ? d : null;
+  } catch (e) {
+    return null;
+  }
+}
 
 function fresh() {
   return {
@@ -43,10 +56,18 @@ export const pathKey = (p) => `${p.from}>${p.to}`;
 export const state = {
   data: fresh(),
 
+  // A save that can't be read is copied aside (never overwritten) and the
+  // backup is loaded instead (lesson REL-04, Louis's game-pipeline-kit; it
+  // used to start a blank game and write over the damaged one).
   load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) this.data = { ...fresh(), ...JSON.parse(raw) };
+      let d = readSave(raw);
+      if (raw && !d) {
+        localStorage.setItem(`${KEY}-unreadable-${Date.now()}`, raw);
+        d = readSave(localStorage.getItem(BACKUP));
+      }
+      this.data = d ? { ...fresh(), ...d } : fresh();
     } catch (e) {
       this.data = fresh();
     }
@@ -86,6 +107,10 @@ export const state = {
   save() {
     if (this.noSave) return;
     try {
+      // Which build wrote it (lesson REL-11).
+      this.data.build = BUILD;
+      const prev = localStorage.getItem(KEY);
+      if (readSave(prev)) localStorage.setItem(BACKUP, prev);
       localStorage.setItem(KEY, JSON.stringify(this.data));
     } catch (e) {
       // Storage unavailable: progress lasts for this visit only.

@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2e01f67';
-import { TILE, layoutFor } from '../data/levels.js?v=2e01f67';
-import { state } from '../state.js?v=2e01f67';
-import { COLORS, heading, text } from '../theme.js?v=2e01f67';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2e01f67';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2e01f67';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2e01f67';
-import { makeNav } from '../pathing.js?v=2e01f67';
-import { startQuestionRun } from '../data/questions.js?v=2e01f67';
-import { audio, musicButton, soundButton } from '../audio.js?v=2e01f67';
-import { Companion } from '../companion.js?v=2e01f67';
-import { startShowcase } from '../showcase.js?v=2e01f67';
-import { startExplorerTour } from '../explorerTour.js?v=2e01f67';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2e01f67';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=6deb8ef';
+import { TILE, layoutFor } from '../data/levels.js?v=6deb8ef';
+import { state } from '../state.js?v=6deb8ef';
+import { COLORS, heading, text } from '../theme.js?v=6deb8ef';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=6deb8ef';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=6deb8ef';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=6deb8ef';
+import { makeNav } from '../pathing.js?v=6deb8ef';
+import { startQuestionRun } from '../data/questions.js?v=6deb8ef';
+import { audio, musicButton, soundButton, fullscreenButton } from '../audio.js?v=6deb8ef';
+import { Companion } from '../companion.js?v=6deb8ef';
+import { startShowcase } from '../showcase.js?v=6deb8ef';
+import { startExplorerTour } from '../explorerTour.js?v=6deb8ef';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=6deb8ef';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -935,7 +935,9 @@ export class PlatformerScene extends Phaser.Scene {
     // Junior Explorer has no energy: a bump or a fall only blinks.
     if (this.band.energyBar) this.energy = Math.max(0, this.energy - 1);
     this.safeUntil = this.time.now + HURT_SAFE_MS;
-    this.tweens.add({ targets: this.player, alpha: 0.3, duration: 110, yoyo: true, repeat: 5,
+    // Under 3 flashes a second (lesson ART-15, Louis's game-pipeline-kit):
+    // it was 110 ms each way, about 4.5 a second.
+    this.tweens.add({ targets: this.player, alpha: 0.3, duration: 170, yoyo: true, repeat: 3,
       onComplete: () => this.player.setAlpha(1) });
     this.cameras.main.shake(140, 0.005);
     this.refreshHud();
@@ -2313,6 +2315,7 @@ export class PlatformerScene extends Phaser.Scene {
       backgroundColor: COLORS.parchmentCss, padding: { x: 16, y: 8 },
     })).setOrigin(1, 0).setScrollFactor(0).setDepth(21).setInteractive({ useHandCursor: true });
     map.on('pointerup', () => this.leave());
+    fullscreenButton(this, MAP_W - 166, 104);
     musicButton(this, MAP_W - 108, 104);
     soundButton(this, MAP_W - 50, 104);
     audio.music(this);

@@ -227,6 +227,7 @@ function roundToggle(scene, x, y, depth, isOn, toggle, drawIcon) {
     toggle();
     draw();
   });
+  c.redraw = draw;
   return c;
 }
 
@@ -241,6 +242,48 @@ export function musicButton(scene, x, y, depth = 21) {
     g.fillRect(6, -13, 3, 18);
     g.fillRect(-6, -13, 15, 4);
   });
+}
+
+// Fullscreen on and off (lesson SET-02, Louis's game-pipeline-kit): four
+// corners, pointing out to go fullscreen, in to come back. Nothing where the
+// browser can't (iPhone Safari).
+export function fullscreenButton(scene, x, y, depth = 21) {
+  const sc = scene.scale;
+  if (!sc.fullscreen || !sc.fullscreen.available) return null;
+  // The switch itself happens in the browser's own pointerup, below: a
+  // browser only goes fullscreen inside the player's tap, and Phaser runs its
+  // button handlers a frame later, when it no longer counts.
+  const b = roundToggle(scene, x, y, depth, () => true, () => {}, (g) => {
+    const out = !sc.isFullscreen;
+    g.lineStyle(4, INK, 1);
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => {
+      const cx = sx * 11;
+      const cy = sy * 11;
+      const d = out ? -6 : 6;
+      g.beginPath();
+      g.moveTo(cx, cy + sy * d);
+      g.lineTo(cx, cy);
+      g.lineTo(cx + sx * d, cy);
+      g.strokePath();
+    });
+  });
+  const onUp = (e) => {
+    if (!b.visible || Math.hypot(sc.transformX(e.pageX) - x, sc.transformY(e.pageY) - y) > 28) return;
+    if (sc.isFullscreen) sc.stopFullscreen();
+    else sc.startFullscreen();
+  };
+  const canvas = scene.game.canvas;
+  canvas.addEventListener('pointerup', onUp);
+  // The switch happens a moment later (or by Esc): redraw when it does.
+  const redraw = () => b.redraw();
+  sc.on('enterfullscreen', redraw);
+  sc.on('leavefullscreen', redraw);
+  scene.events.once('shutdown', () => {
+    canvas.removeEventListener('pointerup', onUp);
+    sc.off('enterfullscreen', redraw);
+    sc.off('leavefullscreen', redraw);
+  });
+  return b;
 }
 
 // Sound effects on and off: a speaker.
