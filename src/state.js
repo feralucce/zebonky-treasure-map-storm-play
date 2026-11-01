@@ -2,11 +2,11 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=18f9efe';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=18f9efe';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=18f9efe';
-import { bankFor, questionKey } from './data/questions.js?v=18f9efe';
-import { BUILD } from './version.js?v=18f9efe';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=05b4fb9';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=05b4fb9';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=05b4fb9';
+import { bankFor, questionKey } from './data/questions.js?v=05b4fb9';
+import { BUILD } from './version.js?v=05b4fb9';
 
 const KEY = 'zebonky-tms-save-v1';
 // The save before the last one, kept in case the last one is damaged.

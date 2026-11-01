@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=18f9efe';
-import { TILE, layoutFor } from '../data/levels.js?v=18f9efe';
-import { state } from '../state.js?v=18f9efe';
-import { COLORS, heading, text } from '../theme.js?v=18f9efe';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=18f9efe';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=18f9efe';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=18f9efe';
-import { makeNav } from '../pathing.js?v=18f9efe';
-import { startQuestionRun } from '../data/questions.js?v=18f9efe';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=18f9efe';
-import { Companion } from '../companion.js?v=18f9efe';
-import { startShowcase } from '../showcase.js?v=18f9efe';
-import { startExplorerTour } from '../explorerTour.js?v=18f9efe';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=18f9efe';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=05b4fb9';
+import { TILE, layoutFor } from '../data/levels.js?v=05b4fb9';
+import { state } from '../state.js?v=05b4fb9';
+import { COLORS, heading, text } from '../theme.js?v=05b4fb9';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=05b4fb9';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=05b4fb9';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=05b4fb9';
+import { makeNav } from '../pathing.js?v=05b4fb9';
+import { startQuestionRun } from '../data/questions.js?v=05b4fb9';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=05b4fb9';
+import { Companion } from '../companion.js?v=05b4fb9';
+import { startShowcase } from '../showcase.js?v=05b4fb9';
+import { startExplorerTour } from '../explorerTour.js?v=05b4fb9';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=05b4fb9';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1975,6 +1975,7 @@ export class PlatformerScene extends Phaser.Scene {
           parts.push([img, dy]);
         });
       }
+      this.foregroundParts = (this.foregroundParts || []).concat(parts.map(([img]) => img));
       // The lower the camera goes, the higher it sits.
       if (rise) {
         const cam = this.cameras.main;
@@ -2690,9 +2691,11 @@ export class PlatformerScene extends Phaser.Scene {
       const c = Math.floor(m.x / TILE);
       const r = Math.floor(m.y / TILE);
       panel.setText(`Inspection: column ${c}, row ${r}
-Drag, or arrows / WASD (Shift is faster)`);
+Drag, or arrows / WASD (Shift is faster)
+Zoom ${Math.round(this.cameras.main.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     };
     this.inspectPanel();
+    this.inspectZoomSetup(panel);                             // (after: its buttons go under the full panel)
     // Dragging moves the scene under the finger (or mouse).
     this.input.on('pointermove', (pt) => {
       if (!pt.isDown) return;
@@ -2701,6 +2704,62 @@ Drag, or arrows / WASD (Shift is faster)`);
       m.y = Phaser.Math.Clamp(m.y - (pt.y - pt.prevPosition.y) / zoom, 0, this.worldH);
       this.inspectPanel();
     });
+  }
+
+  // Zoom in and out (the user, 2026-10-31: "Inspection mode needs the
+  // ability to zoom in and out"): the mouse wheel, + and - (or the number
+  // pad's), and two buttons under the panel for touch. The main camera zooms
+  // round the marker; everything fixed to the screen (the HUD, the panel,
+  // the buttons) moves to a second camera that never zooms, or the zoom
+  // would grow and shrink the HUD too. Anything made later is sorted the
+  // same way, by its scroll factor, once it has one.
+  inspectZoomSetup(panel) {
+    const main = this.cameras.main;
+    const ui = this.cameras.add(0, 0, main.width, main.height);
+    const sorted = new WeakSet();
+    let seen = -1;
+    const sort = () => {
+      const list = this.children.list;
+      if (list.length === seen) return;
+      seen = list.length;
+      list.forEach((o) => {
+        if (sorted.has(o)) return;
+        sorted.add(o);
+        if (o.scrollFactorX === 0 && o.scrollFactorY === 0) main.ignore(o);
+        else ui.ignore(o);
+      });
+    };
+    // (a frame late is fine: it is set up before the first draw, and a thing
+    // made later gets its scroll factor in the same line that makes it)
+    this.events.on('prerender', sort);
+    this.events.once('shutdown', () => this.events.off('prerender', sort));
+    const MIN = 0.2;
+    const MAX = 2;
+    const zoomBy = (f) => {
+      let z = Phaser.Math.Clamp(main.zoom * f, MIN, MAX);
+      if (Math.abs(z - 1) < 0.1) z = 1;                        // (wheel and button steps both land back on 100%)
+      main.setZoom(z);
+      // The foreground leaves are made for the screen at 100%: zoomed, they
+      // end up across the middle of the level, so they hide until it's back.
+      (this.foregroundParts || []).forEach((o) => o.setVisible(z === 1));
+      this.inspectPanel();
+    };
+    this.input.on('wheel', (pt, over, dx, dy) => zoomBy(dy > 0 ? 1 / 1.15 : 1.15));
+    const K = Phaser.Input.Keyboard.KeyCodes;
+    this.input.keyboard.on('keydown', (e) => {
+      if ([K.PLUS, K.NUMPAD_ADD].includes(e.keyCode) || e.key === '=' || e.key === '+') zoomBy(1.25);
+      else if ([K.MINUS, K.NUMPAD_SUBTRACT].includes(e.keyCode) || e.key === '-') zoomBy(1 / 1.25);
+    });
+    const button = (x, label, f) => {
+      const b = this.add.text(x, panel.y + panel.height + 10, label, heading(30, '#ffffff', {
+        backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 16, y: 2 },
+      })).setScrollFactor(0).setDepth(40).setInteractive({ useHandCursor: true });
+      b.on('pointerdown', (pt, lx, ly, ev) => { ev.stopPropagation(); zoomBy(f); });
+      return b;
+    };
+    const minus = button(14, '−', 1 / 1.25);
+    button(minus.x + minus.width + 10, '+', 1.25);
+    sort();
   }
 
   inspectUpdate(delta) {
