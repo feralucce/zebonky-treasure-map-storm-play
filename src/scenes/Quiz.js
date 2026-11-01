@@ -2,12 +2,12 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=622060e';
-import { drawQuestion } from '../data/questions.js?v=622060e';
-import { state } from '../state.js?v=622060e';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=622060e';
-import { audio } from '../audio.js?v=622060e';
-import { showCompanionCard } from '../companionCard.js?v=622060e';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=025e2fb';
+import { drawQuestion } from '../data/questions.js?v=025e2fb';
+import { state } from '../state.js?v=025e2fb';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=025e2fb';
+import { audio } from '../audio.js?v=025e2fb';
+import { showCompanionCard } from '../companionCard.js?v=025e2fb';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
