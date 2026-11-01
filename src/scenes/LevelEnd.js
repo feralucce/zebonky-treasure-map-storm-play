@@ -8,11 +8,11 @@
 //   run: what this play did: { nodamage, tamed, questions, hasWild, hasCrates }
 //   levelData: set for a test run, to play it again
 
-import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=b028de5';
-import { state } from '../state.js?v=b028de5';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=b028de5';
-import { LETTERS, REWARDS, REWARD_EACH, award, paid, lettersFound, allLetters, currency } from '../currency.js?v=b028de5';
-import { audio } from '../audio.js?v=b028de5';
+import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=427f38d';
+import { state } from '../state.js?v=427f38d';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=427f38d';
+import { LETTERS, REWARDS, REWARD_EACH, award, paid, lettersFound, allLetters, currency } from '../currency.js?v=427f38d';
+import { audio } from '../audio.js?v=427f38d';
 
 export class LevelEndScene extends Phaser.Scene {
   constructor() {

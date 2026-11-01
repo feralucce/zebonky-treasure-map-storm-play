@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b028de5';
-import { TILE, layoutFor } from '../data/levels.js?v=b028de5';
-import { state } from '../state.js?v=b028de5';
-import { COLORS, heading, text } from '../theme.js?v=b028de5';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b028de5';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b028de5';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=b028de5';
-import { makeNav } from '../pathing.js?v=b028de5';
-import { startQuestionRun } from '../data/questions.js?v=b028de5';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=b028de5';
-import { Companion } from '../companion.js?v=b028de5';
-import { startShowcase } from '../showcase.js?v=b028de5';
-import { startExplorerTour } from '../explorerTour.js?v=b028de5';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=b028de5';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=427f38d';
+import { TILE, layoutFor } from '../data/levels.js?v=427f38d';
+import { state } from '../state.js?v=427f38d';
+import { COLORS, heading, text } from '../theme.js?v=427f38d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=427f38d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=427f38d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=427f38d';
+import { makeNav } from '../pathing.js?v=427f38d';
+import { startQuestionRun } from '../data/questions.js?v=427f38d';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=427f38d';
+import { Companion } from '../companion.js?v=427f38d';
+import { startShowcase } from '../showcase.js?v=427f38d';
+import { startExplorerTour } from '../explorerTour.js?v=427f38d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=427f38d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -305,9 +305,9 @@ export class PlatformerScene extends Phaser.Scene {
     const spikeKey = spikeArt && texKey(this.artName, spikeArt.file);
     const spikeRows = spikeKey && this.textures.exists(spikeKey)
       ? Math.max(0, Math.floor((this.textures.get(spikeKey).getSourceImage().height - SPIKE_TIPS - 16) / TILE)) : 0;
-    if (deepLevel && !this.blocks && this.art && this.art.cave_background) {
+    if (deepLevel && !this.blocks && this.art) {
       const caveOpen = (r, c) => !isArtSolid(r, c) || (at(r, c) === 'X' && r - this.dangerTop[c] < spikeRows);
-      this.buildCaveBackdrop(layout.cave_from, rows.length, cols, caveOpen, isWater);
+      this.buildCaveBackdrop(layout.cave_from, rows.length, cols, caveOpen, isWater, underKey, underKey === skinRock);
     }
     rows.forEach((row, r) => {
       [...row].forEach((ch, c) => {
@@ -1716,10 +1716,18 @@ export class PlatformerScene extends Phaser.Scene {
   // CAVE_FADE rows, so its top never shows as a hard flat line (the user,
   // 2026-10-31: "it needs a gradient opacity mask"). Drawn as strips of
   // tileSprite that slide the picture sideways at the art set's parallax.
-  buildCaveBackdrop(caveFrom, nRows, cols, caveOpen, isWater) {
-    const cb = this.art.cave_background;
-    const key = texKey(this.artName, cb.file);
-    if (!this.textures.exists(key)) return;
+  //
+  // An art set with no cave background of its own (every biome but the
+  // cove, so far) gets its deep rock instead, darkened and fixed to the
+  // level: a cave reads as a hollow in the ground, not a window to the sky
+  // (seen in Seafoam's sea caves, 2026-10-31).
+  buildCaveBackdrop(caveFrom, nRows, cols, caveOpen, isWater, rockKey, rockIsSkin) {
+    const own = this.art.cave_background;
+    const key = own ? texKey(this.artName, own.file) : rockKey;
+    if (!key || !this.textures.exists(key)) return;
+    const cb = own || { scroll: 1 };
+    const frame = own ? undefined : '__BASE';              // (the whole rock picture: drawSkin has cut frames from it)
+    const tint = own ? null : rockIsSkin ? 0x6e6e6e : 0x808080;
     const sf = cb.scroll ?? 0.3;
     const picH = this.textures.get(key).getSourceImage().height;
     const CAVE_FADE = 3;
@@ -1792,7 +1800,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.caveStrips = [];
     const strip = (x, y, w, h, picTop, alpha) => {
       if (alpha <= 0.02) return;
-      const s = this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(-5).setAlpha(alpha);
+      const s = this.add.tileSprite(x, y, w, h, key, frame).setOrigin(0, 0).setDepth(-5).setAlpha(alpha);
+      if (tint) s.setTint(tint);
       s.tilePositionY = y - picTop;
       this.caveStrips.push(s);
     };
@@ -1822,6 +1831,9 @@ export class PlatformerScene extends Phaser.Scene {
       const camX = cam.scrollX;
       this.caveStrips.forEach((s) => { s.tilePositionX = s.x - camX * (1 - sf); });
     };
+    // The rock fallback is fixed to the level: set once, not every frame
+    // (Magenta's caves come to over 2000 strips).
+    if (sf === 1) { slide(); return; }
     this.events.on('postupdate', slide);
     cam.on('followupdate', slide);
     this.events.once('shutdown', () => {
