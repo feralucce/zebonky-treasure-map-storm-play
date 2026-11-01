@@ -7,20 +7,32 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=05b4fb9';
-import { state, pathKey } from '../state.js?v=05b4fb9';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=05b4fb9';
-import { audio, fullscreenButton, musicButton } from '../audio.js?v=05b4fb9';
-import { BUILD } from '../version.js?v=05b4fb9';
-import { starsFor, rewardTotals } from '../rewards.js?v=05b4fb9';
-import { currency, currencyIcon } from '../currency.js?v=05b4fb9';
-import { showCompanionCard } from '../companionCard.js?v=05b4fb9';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=05b4fb9';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=c0150cb';
+import { state, pathKey } from '../state.js?v=c0150cb';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=c0150cb';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=c0150cb';
+import { BUILD } from '../version.js?v=c0150cb';
+import { starsFor, rewardTotals } from '../rewards.js?v=c0150cb';
+import { currency, currencyIcon } from '../currency.js?v=c0150cb';
+import { showCompanionCard } from '../companionCard.js?v=c0150cb';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=c0150cb';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
 const PAW_SIZE = 16;        // px across one paw print
 const ZOOM_MS = 900;        // the zoom into and out of a biome
+// Where each area's name goes on the map: the middle of the name painted
+// there before (tools/paint_out_map_labels.py printed the boxes).
+const MAP_NAMES = {
+  magenta: [275, 305],
+  squvannahs: [528, 399],
+  cumulus: [618, 497],
+  bamboo: [946, 301],
+  seafoam: [966, 513],
+  dorsal: [225, 609],
+};
+// The painted ZEBONKIA title's lower right corner, in map pixels: names keep out.
+const TITLE_BOX = { x1: 470, y1: 285 };
 
 // Zoomed into a biome, the map is drawn K times bigger; dots, prints and
 // the explorer are drawn 1/K the size so they stay the same on screen.
@@ -156,6 +168,7 @@ export class OverworldScene extends Phaser.Scene {
     this.world.add([this.pathLayer, this.nodeLayer, this.badgeLayer]);
     this.buildNodes();
     this.buildBadges();
+    this.buildNames();
     this.buildPlayer();
     this.world.add(this.player);
     this.buildPanel();
@@ -399,6 +412,70 @@ export class OverworldScene extends Phaser.Scene {
       });
     }
     this.currentBiome = current;
+    this.refreshNames(here);
+  }
+
+  // ---------- area names ----------
+
+  // The area names, a layer of their own over the map (the user, 2026-10-31:
+  // "remove the letters on the map and add them as their own layer"; they
+  // chose game text, revealed as areas unlock, styled and animated). The
+  // painted names are gone from the picture (tools/paint_out_map_labels.py);
+  // each name sits where its painted one did. They live in the badge layer,
+  // so they show on the whole map only, not in a close-up.
+  buildNames() {
+    this.names = {};
+    this.namesShown = new Set();
+    this.namesReady = false;
+    Object.entries(MAP_NAMES).forEach(([b, [x, y]]) => {
+      const t = this.add.text(x, y, BIOMES[b].name.toUpperCase(), heading(24, '#ffe14d', {
+        stroke: COLORS.inkCss, strokeThickness: 6,
+      })).setOrigin(0.5).setVisible(false);
+      // Where its area's badge would cover it (the rainforest's sits on its
+      // painted name), the name goes just above the badge instead, or below
+      // it where above runs into the ZEBONKIA title (Magenta Mountains).
+      const badge = this.badges[b];
+      if (badge && Math.abs(badge.y - y) < 44 && Math.abs(badge.x - x) < t.width / 2 + 30) {
+        const above = badge.y - 46;
+        const hitsTitle = x - t.width / 2 < TITLE_BOX.x1 && above - t.height / 2 < TITLE_BOX.y1;
+        t.setY(hitsTitle ? badge.y + 46 : above);
+      }
+      this.badgeLayer.addAt(t, 0);                             // (behind the badges)
+      this.names[b] = t;
+    });
+  }
+
+  // A name shows once its area is open (Bamboo Dunes, with no levels yet,
+  // only in inspection mode). One that opens while the map is up (its path
+  // just revealed) fades and pops in; the area she's in gently pulses.
+  refreshNames(here) {
+    if (!this.names) return;
+    if (this.namePulse) {
+      this.namePulse.stop();
+      this.namePulse = null;
+    }
+    Object.entries(this.names).forEach(([b, t]) => {
+      const open = state.inspectAll || (PLAY_BIOMES.includes(b) && this.biomeOpen(b));
+      if (!open) {
+        t.setVisible(false);
+        return;
+      }
+      t.setVisible(true).setScale(1);
+      if (!this.namesShown.has(b)) {
+        this.namesShown.add(b);
+        if (this.namesReady) {
+          t.setAlpha(0).setScale(0.6);
+          this.tweens.add({ targets: t, alpha: 1, scale: 1, duration: 700, ease: 'Back.Out' });
+          return;
+        }
+      }
+      t.setAlpha(1);
+    });
+    this.namesReady = true;
+    const t = here && this.names[here];
+    if (t && t.visible) {
+      this.namePulse = this.tweens.add({ targets: t, scale: 1.12, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
   }
 
   onBadgeTapped(b) {
