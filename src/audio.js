@@ -32,12 +32,17 @@ const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 // under Creative Commons: By Attribution 4.0 License,
 // http://creativecommons.org/licenses/by/4.0/ (credit required: CREDITS.md).
 // Looped from bar 8 to bar 123 at 112 BPM (past its quiet intro).
+// Magenta Mountains (all but Crystal Caverns): "Sauropod Spotting" Kevin
+// MacLeod (incompetech.com), Licensed under Creative Commons: By Attribution
+// 4.0 License, http://creativecommons.org/licenses/by/4.0/ (credit required:
+// CREDITS.md). Looped as bars 0-59 at 105 BPM.
 export const MUSIC = {
   main: 'assets/audio/music/free-fall.mp3',
   cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
   map: ['assets/audio/music/ascending-the-vale.ogg', 'assets/audio/music/ascending-the-vale.mp3'],
   caverns: ['assets/audio/music/odyssey.ogg', 'assets/audio/music/odyssey.mp3'],
   rainforest: ['assets/audio/music/cold-funk.ogg', 'assets/audio/music/cold-funk.mp3'],
+  mountains: ['assets/audio/music/sauropod-spotting.ogg', 'assets/audio/music/sauropod-spotting.mp3'],
 };
 
 // Which track a level plays: by its world (the part of its id before the
@@ -46,10 +51,11 @@ export const MUSIC = {
 // the cove's levels as we redesign them".
 const WORLD_MUSIC = { dorsal: 'cove' };
 // A level or a world with a track of its own plays it whether redesigned or
-// not. The user, 2026-10-31: "use it for the crystal caverns", "make it the
-// rainforest".
+// not; a level's own track wins over its world's. The user, 2026-10-31:
+// "use it for the crystal caverns", "cold funk is the rainforest - this is
+// the mountains".
 const LEVEL_MUSIC = { 'magenta-2': 'caverns' };
-const WORLD_MUSIC_NOW = { cumulus: 'rainforest' };
+const WORLD_MUSIC_NOW = { cumulus: 'rainforest', magenta: 'mountains' };
 export const musicFor = (levelId, layout) =>
   LEVEL_MUSIC[levelId] || WORLD_MUSIC_NOW[String(levelId || '').split('-')[0]] ||
   (layout && layout.explore && WORLD_MUSIC[String(levelId || '').split('-')[0]]) || 'main';
