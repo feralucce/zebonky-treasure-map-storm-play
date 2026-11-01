@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=bfa89e1';
-import { TILE, layoutFor } from '../data/levels.js?v=bfa89e1';
-import { state } from '../state.js?v=bfa89e1';
-import { COLORS, heading, text } from '../theme.js?v=bfa89e1';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=bfa89e1';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=bfa89e1';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=bfa89e1';
-import { makeNav } from '../pathing.js?v=bfa89e1';
-import { startQuestionRun } from '../data/questions.js?v=bfa89e1';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=bfa89e1';
-import { Companion } from '../companion.js?v=bfa89e1';
-import { startShowcase } from '../showcase.js?v=bfa89e1';
-import { startExplorerTour } from '../explorerTour.js?v=bfa89e1';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=bfa89e1';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=074ca1d';
+import { TILE, layoutFor } from '../data/levels.js?v=074ca1d';
+import { state } from '../state.js?v=074ca1d';
+import { COLORS, heading, text } from '../theme.js?v=074ca1d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=074ca1d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=074ca1d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=074ca1d';
+import { makeNav } from '../pathing.js?v=074ca1d';
+import { startQuestionRun } from '../data/questions.js?v=074ca1d';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=074ca1d';
+import { Companion } from '../companion.js?v=074ca1d';
+import { startShowcase } from '../showcase.js?v=074ca1d';
+import { startExplorerTour } from '../explorerTour.js?v=074ca1d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=074ca1d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -546,6 +546,15 @@ export class PlatformerScene extends Phaser.Scene {
     this.rows = rows;
     this.nav = makeNav(rows);
     this.buildSolidBoxes(rows);
+    // A door standing inside a fake-wall run (a tree hollow in the sky, with
+    // no rock behind it) is drawn as wall too, so it can't be seen from
+    // outside: it shows as the run fades.
+    const inWall = (r, c) => ['H', 'l'].includes(at(r, c));
+    rows.forEach((row, r) => [...row].forEach((ch, c) => {
+      if ((ch === 'Q' || ch === 'S') && inWall(r, c - 1) && inWall(r, c + 1)) {
+        tunnelCells.push({ c, r, x: c * TILE + TILE / 2, y: r * TILE + TILE / 2 });
+      }
+    }));
     this.buildTunnels(tunnelCells, at, isArtSolid);
     this.sparkleGhosts();
     this.markSwimWalls(swimWalls, isWater);
