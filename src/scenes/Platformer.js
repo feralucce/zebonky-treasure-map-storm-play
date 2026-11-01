@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=427f38d';
-import { TILE, layoutFor } from '../data/levels.js?v=427f38d';
-import { state } from '../state.js?v=427f38d';
-import { COLORS, heading, text } from '../theme.js?v=427f38d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=427f38d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=427f38d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=427f38d';
-import { makeNav } from '../pathing.js?v=427f38d';
-import { startQuestionRun } from '../data/questions.js?v=427f38d';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=427f38d';
-import { Companion } from '../companion.js?v=427f38d';
-import { startShowcase } from '../showcase.js?v=427f38d';
-import { startExplorerTour } from '../explorerTour.js?v=427f38d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=427f38d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=18f9efe';
+import { TILE, layoutFor } from '../data/levels.js?v=18f9efe';
+import { state } from '../state.js?v=18f9efe';
+import { COLORS, heading, text } from '../theme.js?v=18f9efe';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=18f9efe';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=18f9efe';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=18f9efe';
+import { makeNav } from '../pathing.js?v=18f9efe';
+import { startQuestionRun } from '../data/questions.js?v=18f9efe';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=18f9efe';
+import { Companion } from '../companion.js?v=18f9efe';
+import { startShowcase } from '../showcase.js?v=18f9efe';
+import { startExplorerTour } from '../explorerTour.js?v=18f9efe';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=18f9efe';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1736,7 +1736,10 @@ export class PlatformerScene extends Phaser.Scene {
     // Water joined, through water, to water above the cave line: a pool.
     const pool = new Set();
     const stack = [];
-    for (let c = 0; c < cols; c++) if (isWater(caveFrom, c) && isWater(caveFrom - 1, c)) stack.push([caveFrom, c]);
+    // (only for the cove's own picture: the rock fallback goes behind deep
+    // pool water too, fading in under it, so a deep pool shows rock, not sky:
+    // the user, 2026-10-31, of Seafoam's sea caves)
+    if (own) for (let c = 0; c < cols; c++) if (isWater(caveFrom, c) && isWater(caveFrom - 1, c)) stack.push([caveFrom, c]);
     while (stack.length) {
       const [r, c] = stack.pop();
       if (r < caveFrom || r >= nRows || c < 0 || c >= cols || pool.has(id(r, c)) || !isWater(r, c)) continue;
@@ -1789,7 +1792,7 @@ export class PlatformerScene extends Phaser.Scene {
       let o = 0;
       for (let d = -2; d <= 2; d++) {
         const cc = c + d;
-        if (cc >= 0 && cc < cols && caveOpen(caveFrom - 1, cc) && !isWater(caveFrom - 1, cc)) o = Math.max(o, 1 - Math.abs(d) / 3);
+        if (cc >= 0 && cc < cols && caveOpen(caveFrom - 1, cc) && (!own || !isWater(caveFrom - 1, cc))) o = Math.max(o, 1 - Math.abs(d) / 3);
       }
       opening.push(o);
     }
