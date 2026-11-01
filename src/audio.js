@@ -40,6 +40,10 @@ const OLD_KEY = 'zebonky-tms-sound-v1'; // the earlier single switch
 // Licensed under Creative Commons: By Attribution 4.0 License,
 // http://creativecommons.org/licenses/by/4.0/ (credit required: CREDITS.md).
 // Looped as bars 0-71 at 119 BPM.
+// Squvannahs: "Wholesome" Kevin MacLeod (incompetech.com), Licensed under
+// Creative Commons: By Attribution 4.0 License,
+// http://creativecommons.org/licenses/by/4.0/ (credit required: CREDITS.md).
+// Looped as bars 0-183 at 128 BPM.
 export const MUSIC = {
   main: 'assets/audio/music/free-fall.mp3',
   cove: ['assets/audio/music/loopster.ogg', 'assets/audio/music/loopster.mp3'],
@@ -48,6 +52,7 @@ export const MUSIC = {
   rainforest: ['assets/audio/music/cold-funk.ogg', 'assets/audio/music/cold-funk.mp3'],
   mountains: ['assets/audio/music/sauropod-spotting.ogg', 'assets/audio/music/sauropod-spotting.mp3'],
   shores: ['assets/audio/music/pleasant-porridge.ogg', 'assets/audio/music/pleasant-porridge.mp3'],
+  savannah: ['assets/audio/music/wholesome.ogg', 'assets/audio/music/wholesome.mp3'],
 };
 
 // Which track a level plays: by its world (the part of its id before the
@@ -58,9 +63,10 @@ const WORLD_MUSIC = { dorsal: 'cove' };
 // A level or a world with a track of its own plays it whether redesigned or
 // not; a level's own track wins over its world's. The user, 2026-10-31:
 // "use it for the crystal caverns", "cold funk is the rainforest - this is
-// the mountains", "use it for seafoam".
+// the mountains", "use it for seafoam", and Wholesome
+// for the Squvannahs.
 const LEVEL_MUSIC = { 'magenta-2': 'caverns' };
-const WORLD_MUSIC_NOW = { cumulus: 'rainforest', magenta: 'mountains', seafoam: 'shores' };
+const WORLD_MUSIC_NOW = { cumulus: 'rainforest', magenta: 'mountains', seafoam: 'shores', squvannahs: 'savannah' };
 export const musicFor = (levelId, layout) =>
   LEVEL_MUSIC[levelId] || WORLD_MUSIC_NOW[String(levelId || '').split('-')[0]] ||
   (layout && layout.explore && WORLD_MUSIC[String(levelId || '').split('-')[0]]) || 'main';
