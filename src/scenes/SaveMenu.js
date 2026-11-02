@@ -7,10 +7,10 @@
 // before anything opens an email app), 'confirm' (load this save? it
 // replaces progress on this device), 'note' (a message and OK).
 
-import { MAP_W, MAP_H } from '../data/world.js?v=beefae9';
-import { state } from '../state.js?v=beefae9';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=beefae9';
-import { qrModules, emailSave, pickSaveFile } from '../savecode.js?v=beefae9';
+import { MAP_W, MAP_H } from '../data/world.js?v=52e600c';
+import { state } from '../state.js?v=52e600c';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=52e600c';
+import { qrModules, emailSave, pickSaveFile } from '../savecode.js?v=52e600c';
 
 const CARD_W = 900;
 const CARD_H = 600;

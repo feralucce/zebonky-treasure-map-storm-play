@@ -15,13 +15,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=beefae9';
-import { texKey } from '../data/artsets.js?v=beefae9';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=beefae9';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=beefae9';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=beefae9';
-import { audio } from '../audio.js?v=beefae9';
-import { COLORS, heading, text } from '../theme.js?v=beefae9';
+import { MAP_W, MAP_H } from '../data/world.js?v=52e600c';
+import { texKey } from '../data/artsets.js?v=52e600c';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=52e600c';
+import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=52e600c';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=52e600c';
+import { audio } from '../audio.js?v=52e600c';
+import { COLORS, heading, text } from '../theme.js?v=52e600c';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -106,6 +106,10 @@ export class BonusRoomScene extends Phaser.Scene {
     this.movedAt = 0;
     this.coinsGot = 0;
     this.fullSpeed = 0;            // the way he's rolling at full speed, or 0
+    this.dir = 0;                  // the arrows held, for the next physics step
+    this.jumpAsked = false;        // a jump pressed since the last step
+    this.jumpHeld = false;
+    this.grounded = false;
   }
 
   create() {
@@ -126,6 +130,9 @@ export class BonusRoomScene extends Phaser.Scene {
     const cam = this.cameras.main;
     cam.setBounds(0, 0, room.width, room.height);
     cam.startFollow(this.shaan, true, 0.12, 0.12);
+    // The physics, once per Matter step (step()).
+    // (Shutting the scene down destroys its world, listener and all.)
+    this.matter.world.on('beforeupdate', () => this.step());
     cam.fadeIn(300, 43, 29, 18);
   }
 
@@ -398,26 +405,25 @@ export class BonusRoomScene extends Phaser.Scene {
     return pts.some((p) => Matter().Query.point(this.ground, p).length > 0);
   }
 
-  update(time) {
+  // Every frame: his picture, the input (kept for the next physics step),
+  // the door, the coins and the fall. The physics itself is in step(), once
+  // per Matter step, so it plays the same on any screen: pushing here, once
+  // a frame, gave a 120 Hz screen twice the push, and holding right alone
+  // got through the whole room there (the user, 2026-11-02).
+  update(time, delta) {
     if (this.leaving) return;
-    const M = Matter();
     const b = this.ball;
     const k = this.keys;
     const s = this.shaan;
     s.setPosition(b.position.x, b.position.y);
+    this.animateWater(delta);
     if (this.finished) return;
 
-    const grounded = this.onGround();
-    if (grounded) this.groundAt = time;
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
-    const dir = (right ? 1 : 0) - (left ? 1 : 0);
-    // A geyser carries him straight up until he slows near the top.
-    if (this.geyserRide && b.velocity.y > -10) this.geyserRide = false;
-    if (dir && !this.geyserRide) {
-      if (grounded) M.Body.setAngularVelocity(b, Phaser.Math.Linear(b.angularVelocity, dir * SPIN, 0.15));
-      M.Body.applyForce(b, b.position, { x: dir * (grounded ? PUSH : AIR_PUSH) * b.mass, y: 0 });
-    }
+    this.dir = (right ? 1 : 0) - (left ? 1 : 0);
+    this.jumpHeld = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump;
+    const grounded = this.grounded;
 
     // At the door: Up (or the door button) goes in, instead of jumping.
     const atDoor = grounded && Math.abs(b.position.x - this.doorAt.x) < 70 && Math.abs(b.position.y - (this.doorAt.y - RADIUS)) < 90;
@@ -430,42 +436,98 @@ export class BonusRoomScene extends Phaser.Scene {
     }
     this.touchDoor = false;
 
-    // Jump (a little after rolling off an edge too); let go early for a hop.
-    const jumpKey = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => Phaser.Input.Keyboard.JustDown(key)) || this.touchJump;
+    // A jump press waits for the next physics step.
+    if ([k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => Phaser.Input.Keyboard.JustDown(key)) || this.touchJump) this.jumpAsked = true;
     this.touchJump = false;
-    if (jumpKey && time - this.groundAt < COYOTE && !this.jumping) {
+
+    // His picture: rolling while he moves or flies, uncurled once stopped.
+    const speed = Math.hypot(b.velocity.x, b.velocity.y);
+    if (speed > 0.8 || !grounded) this.movedAt = time;
+    if (Math.abs(b.velocity.x) > 0.4) s.setFlipX(b.velocity.x > 0);
+    const rolling = time - this.movedAt < UNCURL_AFTER;
+    play(s, this.art, rolling ? 'run' : 'idle');
+    s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
+
+    // Coins.
+    this.coins.forEach((c) => {
+      if (c.got || Math.hypot(c.x - b.position.x, c.y - b.position.y) > RADIUS + 20) return;
+      c.got = true;
+      this.coinsGot += 1;
+      this.coinText.setText(`${this.coinsGot} / ${this.coins.length}`);
+      audio.sfx(this, 'food');
+      this.tweens.killTweensOf(c);
+      this.tweens.add({ targets: c, y: c.y - 50, alpha: 0, scale: 1.6, duration: 300, onComplete: () => c.destroy() });
+    });
+
+    if (b.position.y > this.room.height + 80) this.fellOff();
+  }
+
+  // The geysers' spouts and the falls flowing, by time, not by frame.
+  animateWater(delta) {
+    const f60 = delta / (1000 / 60);
+    this.geysers.forEach((gy) => {
+      this.spout(gy, Math.max(30, gy.spout.height - 18 * f60));
+      if (gy.spout.tilePositionY !== undefined) gy.spout.tilePositionY += 10 * f60;
+    });
+    (this.falls || []).forEach((f) => {
+      if (f.sprite.tilePositionY !== undefined) f.sprite.tilePositionY += 7 * f60;
+    });
+  }
+
+  // A spout's height: its top moves, its foot stays in the hole.
+  spout(gy, h) {
+    gy.spout.setSize(56, h);
+    gy.spout.y = gy.y + 6 - h;
+  }
+
+  // Once per Matter step (60 a second): rolling, jumping, geysers, falls,
+  // full speed and the speed limits.
+  step() {
+    if (this.leaving || this.finished) return;
+    const M = Matter();
+    const b = this.ball;
+    const time = this.time.now;
+    const dir = this.dir || 0;
+    const grounded = this.onGround();
+    this.grounded = grounded;
+    if (grounded) this.groundAt = time;
+
+    // A geyser carries him straight up until he slows near the top.
+    if (this.geyserRide && b.velocity.y > -10) this.geyserRide = false;
+    if (dir && !this.geyserRide) {
+      if (grounded) M.Body.setAngularVelocity(b, Phaser.Math.Linear(b.angularVelocity, dir * SPIN, 0.15));
+      M.Body.applyForce(b, b.position, { x: dir * (grounded ? PUSH : AIR_PUSH) * b.mass, y: 0 });
+    }
+
+    // Jump (a little after rolling off an edge too); let go early for a hop.
+    if (this.jumpAsked && time - this.groundAt < COYOTE && !this.jumping) {
       M.Body.setVelocity(b, { x: b.velocity.x, y: Math.min(b.velocity.y, 0) - JUMP });
       this.jumping = true;
       this.groundAt = 0;
       audio.sfx(this, 'jump');
     }
-    const held = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump;
+    this.jumpAsked = false;
+    const held = this.jumpHeld;
     if (this.jumping && !held && b.velocity.y < -5) M.Body.setVelocity(b, { x: b.velocity.x, y: b.velocity.y * 0.55 });
     if (this.jumping && (b.velocity.y >= 0 || !held)) this.jumping = false;
 
-    // Geysers launch him straight up (the user, 2026-11-02).
+    // Geysers launch him straight up (the user, 2026-11-02): anywhere over
+    // the hole, up to a couple of tiles above it, so rolling over it fast
+    // still catches.
     this.geysers.forEach((gy) => {
-      // Anywhere over the hole, up to a couple of tiles above it, so rolling
-      // over it fast still catches.
       const near = Math.abs(b.position.x - gy.x) < 50 && b.position.y > gy.y - 200 && b.position.y < gy.y + 20;
-      // The spout: tall when it launches, sinking back to a bubble. Its top
-      // moves; its foot stays in the hole.
-      const spoutH = (h) => { gy.spout.setSize(56, h); gy.spout.y = gy.y + 6 - h; };
-      spoutH(Math.max(30, gy.spout.height - 18));
       if (near && time >= gy.readyAt) {
         gy.readyAt = time + 500;
         M.Body.setPosition(b, { x: gy.x, y: b.position.y });
         M.Body.setVelocity(b, { x: 0, y: -gy.speed });
         this.geyserRide = true;
-        spoutH(gy.height * 0.85);
+        this.spout(gy, gy.height * 0.85);
         audio.sfx(this, 'splash');
       }
-      if (gy.spout.tilePositionY !== undefined) gy.spout.tilePositionY += 10;
     });
 
     // Upward waterfalls carry him up.
     (this.falls || []).forEach((f) => {
-      if (f.sprite.tilePositionY !== undefined) f.sprite.tilePositionY += 7;
       const inside = b.position.x > f.x - RADIUS * 0.4 && b.position.x < f.x + f.w + RADIUS * 0.4
         && b.position.y > f.top - 10 && b.position.y < f.bottom;
       if (inside) M.Body.setVelocity(b, { x: b.velocity.x * 0.96, y: Phaser.Math.Linear(b.velocity.y, -FALLS_UP, 0.2) });
@@ -488,27 +550,6 @@ export class BonusRoomScene extends Phaser.Scene {
     // Not too fast.
     if (Math.abs(b.velocity.x) > MAX_SPEED) M.Body.setVelocity(b, { x: Math.sign(b.velocity.x) * MAX_SPEED, y: b.velocity.y });
     if (b.velocity.y > MAX_FALL) M.Body.setVelocity(b, { x: b.velocity.x, y: MAX_FALL });
-
-    // His picture: rolling while he moves or flies, uncurled once stopped.
-    const speed = Math.hypot(b.velocity.x, b.velocity.y);
-    if (speed > 0.8 || !grounded) this.movedAt = time;
-    if (Math.abs(b.velocity.x) > 0.4) s.setFlipX(b.velocity.x > 0);
-    const rolling = time - this.movedAt < UNCURL_AFTER;
-    play(s, this.art, rolling ? 'run' : 'idle');
-    s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
-
-    // Coins.
-    this.coins.forEach((c) => {
-      if (c.got || Math.hypot(c.x - b.position.x, c.y - b.position.y) > RADIUS + 20) return;
-      c.got = true;
-      this.coinsGot += 1;
-      this.coinText.setText(`${this.coinsGot} / ${this.coins.length}`);
-      audio.sfx(this, 'food');
-      this.tweens.killTweensOf(c);
-      this.tweens.add({ targets: c, y: c.y - 50, alpha: 0, scale: 1.6, duration: 300, onComplete: () => c.destroy() });
-    });
-
-    if (b.position.y > this.room.height + 80) this.fellOff();
   }
 
   reachDoor() {

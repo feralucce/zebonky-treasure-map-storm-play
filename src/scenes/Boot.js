@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=beefae9';
-import { testParams, DRAWN } from '../data/levels.js?v=beefae9';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=beefae9';
-import { CHARACTERS } from '../data/characters.js?v=beefae9';
-import { state } from '../state.js?v=beefae9';
-import { COLORS, heading, text } from '../theme.js?v=beefae9';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=beefae9';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=beefae9';
+import { ARTSETS, texKey } from '../data/artsets.js?v=52e600c';
+import { testParams, DRAWN } from '../data/levels.js?v=52e600c';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=52e600c';
+import { CHARACTERS } from '../data/characters.js?v=52e600c';
+import { state } from '../state.js?v=52e600c';
+import { COLORS, heading, text } from '../theme.js?v=52e600c';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=52e600c';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=52e600c';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
