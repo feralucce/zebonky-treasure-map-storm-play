@@ -2,12 +2,12 @@
 // A wrong answer fades out and pops up the hint, and the child tries again
 // until they find it. The right answer saves the treasure.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b243ac9';
-import { drawQuestion } from '../data/questions.js?v=b243ac9';
-import { state } from '../state.js?v=b243ac9';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=b243ac9';
-import { audio } from '../audio.js?v=b243ac9';
-import { showCompanionCard } from '../companionCard.js?v=b243ac9';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9748bee';
+import { drawQuestion } from '../data/questions.js?v=9748bee';
+import { state } from '../state.js?v=9748bee';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=9748bee';
+import { audio } from '../audio.js?v=9748bee';
+import { showCompanionCard } from '../companionCard.js?v=9748bee';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -47,7 +47,7 @@ export class QuizScene extends Phaser.Scene {
     this.onDone = data.onDone;
     this.parentKey = data.parentKey;
     this.setQuestion = data.question; // a given question (layout checks)
-    this.missCharged = false;  // Pioneer: this question's Z-bolt already taken
+    this.missCharged = false;  // this question's Z-bolt already taken
     this.answered = false;
     this.tried = new Set(); // wrong answers already picked
     this.closing = false; // the scene object is reused for every quiz
@@ -139,7 +139,7 @@ export class QuizScene extends Phaser.Scene {
     // Hint: a note that pops up over the card. Tap it to put it away; the
     // button stays so it can be read again.
     this.hintPop = null;
-    if (q.hint) {
+    if (q.hint && this.hintsLeft > 0) {
       this.hintBtn = makeButton(this, x + 100, y + h - 36, 'Hint', () => this.showHint(), {
         width: 120, height: 44, size: 18, fill: COLORS.parchment, textColor: COLORS.inkCss,
       });
@@ -199,10 +199,10 @@ export class QuizScene extends Phaser.Scene {
         onComplete: () => { btn.angle = 0; } });
       this.tweens.add({ targets: btn, alpha: 0.4, duration: 400, delay: 200 });
       const cheer = this.tried.size === 1 ? 'Good try!' : 'So close!';
-      // Pioneer: getting a question wrong costs one Z-bolt, once per
-      // question, whether or not the hint was looked at.
+      // Explorer pays a Z-bolt on the second wrong answer, Pioneer on the
+      // first; once per question, whether or not the hint was looked at.
       let lost = false;
-      if (this.band.missCostsEnergy && !this.missCharged) {
+      if (this.band.missCostsEnergy && !this.missCharged && this.tried.size >= (this.band.missAfter || 1)) {
         this.missCharged = true;
         lost = this.missCost();
       }
@@ -258,7 +258,7 @@ ${this.q.fact}`);
 
   showHint(lead = '') {
     if (this.answered || this.hintPop || !this.q.hint || this.hintsLeft <= 0) return;
-    // Pioneer gets one look at the hint; then the button goes.
+    // Explorer gets one look at the hint; then the button goes.
     this.hintsLeft -= 1;
     if (this.hintsLeft <= 0 && this.hintBtn) this.hintBtn.setVisible(false);
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();

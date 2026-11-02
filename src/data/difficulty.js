@@ -5,11 +5,12 @@
 //
 // - Junior Explorer: falling in a pit lifts you out to the far side; no
 //   energy bar (a wild Zebonky's bump only knocks you back).
-// - Explorer: the game as it was built.
+// - Explorer: one look at each question's hint (it opens on the first wrong
+//   answer); a second wrong answer costs one Z-bolt.
 // - Pioneer: one Z-bolt less; more wild Zebonkies (the e spots in a level);
-//   one look at each question's hint; a question answered wrong costs one
-//   Z-bolt, once per question, hint or no hint (never the last bolt, so a
-//   quiz can't send you back to the start).
+//   no hints; the first wrong answer costs one Z-bolt.
+// A question costs at most one Z-bolt, and never the last one, so a quiz
+// can't send you back to the start (the user, 2026-11-02).
 //
 // Each band draws from its own question bank (src/data/questions*.js). For
 // now Junior and Pioneer are copies of the Explorer questions, and the quiz
@@ -41,14 +42,16 @@ export const DIFFICULTIES = [
     about: [
       '100 questions in each area',
       '6 Z-bolts of energy: a fall or a Zebonky bump costs one',
-      'Hints whenever you want them',
+      'One hint per question',
+      'A second wrong answer costs a Z-bolt',
     ],
     energyBar: true,
     maxEnergy: 6,
     pitLift: false,
     extraWild: false,
-    hints: Infinity,
-    missCostsEnergy: false,
+    hints: 1,
+    missCostsEnergy: true,
+    missAfter: 2,
     testingNote: null,
   },
   {
@@ -59,15 +62,16 @@ export const DIFFICULTIES = [
       '200 questions in each area, the hardest ones',
       '5 Z-bolts of energy instead of 6',
       'More wild Zebonkies in every level',
-      'One hint per question',
+      'No hints',
       'A wrong answer costs a Z-bolt',
     ],
     energyBar: true,
     maxEnergy: 5,
     pitLift: false,
     extraWild: true,
-    hints: 1,
+    hints: 0,
     missCostsEnergy: true,
+    missAfter: 1,
     testingNote: 'Pioneer questions will be harder. We are in the testing phase.',
   },
 ];
