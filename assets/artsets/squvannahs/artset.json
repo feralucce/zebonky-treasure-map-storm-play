@@ -238,7 +238,13 @@
   "frameWidth": 256,
   "frameHeight": 176,
   "frames": 17,
-  "variants": ["door_bonus.png", "door_bonus_2.png", "door_bonus_3.png", "door_bonus_4.png", "door_bonus_5.png"],
+  "variants": [
+   "door_bonus.png",
+   "door_bonus_2.png",
+   "door_bonus_3.png",
+   "door_bonus_4.png",
+   "door_bonus_5.png"
+  ],
   "closed": true,
   "note": "tools/make_bonus_door.py: the bonus level door (LetargicDev \"Portals\", CC0), dressed for this set"
  },
@@ -254,5 +260,11 @@
   "fps": 10,
   "sink": 20,
   "note": "tools/portal/make_portal.py: the user's pixel portal (Vecteezy, credit it), recoloured for the biome"
+ },
+ "cave_background": {
+  "file": "bg_cave.png",
+  "scroll": 0.3,
+  "water_line": 580,
+  "note": "Earthen cave (MOSS on the gaming PC, 2026-11-02): Squvannahs pick 1 of 3, join mended by quilting (tools/finish_cave_bg.py, overlap 96)."
  }
 }
