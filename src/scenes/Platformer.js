@@ -2,21 +2,21 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=3f108c4';
-import { TILE, layoutFor } from '../data/levels.js?v=3f108c4';
-import { state } from '../state.js?v=3f108c4';
-import { COLORS, heading, text } from '../theme.js?v=3f108c4';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=3f108c4';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=3f108c4';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=3f108c4';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=3f108c4';
-import { makeNav } from '../pathing.js?v=3f108c4';
-import { startQuestionRun } from '../data/questions.js?v=3f108c4';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=3f108c4';
-import { Companion } from '../companion.js?v=3f108c4';
-import { startShowcase } from '../showcase.js?v=3f108c4';
-import { startExplorerTour } from '../explorerTour.js?v=3f108c4';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=3f108c4';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2520a1d';
+import { TILE, layoutFor } from '../data/levels.js?v=2520a1d';
+import { state } from '../state.js?v=2520a1d';
+import { COLORS, heading, text } from '../theme.js?v=2520a1d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=2520a1d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2520a1d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2520a1d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2520a1d';
+import { makeNav } from '../pathing.js?v=2520a1d';
+import { startQuestionRun } from '../data/questions.js?v=2520a1d';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=2520a1d';
+import { Companion } from '../companion.js?v=2520a1d';
+import { startShowcase } from '../showcase.js?v=2520a1d';
+import { startExplorerTour } from '../explorerTour.js?v=2520a1d';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2520a1d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1027,14 +1027,18 @@ export class PlatformerScene extends Phaser.Scene {
     p.body.enable = false;
     this.cameras.main.fadeOut(350, 43, 29, 18);
     this.cameras.main.once('camerafadeoutcomplete', () => {
-      p.setPosition(this.start.x, this.start.y);
+      // Where she first stood (16 px above the start cell, as create() puts
+      // her), and the body moved with her: put back exactly at the start
+      // her body sat in the ground, and she fell through the level (the
+      // user, 2026-11-02).
+      p.body.enable = true;
+      p.body.reset(this.start.x, this.start.y - 16);
       p.setVelocity(0, 0);
-      this.safe = { ...this.start };
+      this.safe = { x: this.start.x, y: this.start.y - 16 };
       this.wild.forEach((z) => { if (z.fed) z.catchUpAt(this.start.x, this.floorNear(this.start.x, this.start.y + 48) ?? this.start.y + 32, false); });
       this.energy = this.maxEnergy;
       this.refreshHud();
       this.cameras.main.fadeIn(350, 43, 29, 18);
-      p.body.enable = true;
       this.inDoor = false;
     });
   }

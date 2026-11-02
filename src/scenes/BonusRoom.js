@@ -15,13 +15,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=3f108c4';
-import { texKey } from '../data/artsets.js?v=3f108c4';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=3f108c4';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=3f108c4';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=3f108c4';
-import { audio } from '../audio.js?v=3f108c4';
-import { COLORS, heading, text } from '../theme.js?v=3f108c4';
+import { MAP_W, MAP_H } from '../data/world.js?v=2520a1d';
+import { texKey } from '../data/artsets.js?v=2520a1d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=2520a1d';
+import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=2520a1d';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=2520a1d';
+import { audio } from '../audio.js?v=2520a1d';
+import { COLORS, heading, text } from '../theme.js?v=2520a1d';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -821,7 +821,11 @@ export class BonusRoomScene extends Phaser.Scene {
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
+    const wasWet = this.wet;
     this.wet = this.isWater(b.position.x, b.position.y);
+    // Out of the water a dash ends: carried on in the air, a dash up out of
+    // a pool flew him over the rock, the gap and into the next island.
+    if (wasWet && !this.wet) this.dashUntil = 0;
     // In water gravity doesn't pull him: he's half shark, so he holds still
     // when he isn't swimming (the user, 2026-11-02: he doesn't sink).
     b.ignoreGravity = this.wet;
@@ -916,10 +920,11 @@ export class BonusRoomScene extends Phaser.Scene {
       // (Not in the step he jumps: pinning him to the ground cancelled a
       // jump made mid-dash.)
       const a = grounded && !this.jumping ? this.slopeAt(b.position.x) : null;
+      // Only along the ground: in the air it keeps what speed he has (a dash
+      // started mid-leap out of a pool hit the steep bank at dash speed and
+      // ramped him over the rock, the gap and into the next island).
       if (a !== null && Math.abs(a) <= FULL_SPEED_SLOPE) {
         M.Body.setVelocity(b, { x: this.dashDir * DASH_SPEED * Math.cos(a), y: this.dashDir * DASH_SPEED * Math.sin(a) });
-      } else if (Math.sign(b.velocity.x) !== -this.dashDir) {
-        M.Body.setVelocity(b, { x: this.dashDir * Math.max(Math.abs(b.velocity.x), DASH_SPEED * 0.9), y: b.velocity.y });
       }
     }
 
