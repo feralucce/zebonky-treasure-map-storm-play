@@ -20,7 +20,7 @@
 // Use state.hasTreasure(levelId, itemId) when the level loads to skip
 // spawning items the player already owns.
 
-import { state } from './state.js?v=09c4708';
+import { state } from './state.js?v=abe8148';
 
 export function startQuiz(scene, levelId, itemIndex, onDone) {
   scene.scene.pause();
