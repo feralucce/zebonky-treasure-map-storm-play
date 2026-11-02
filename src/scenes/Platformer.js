@@ -2,20 +2,20 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=abe8148';
-import { TILE, layoutFor } from '../data/levels.js?v=abe8148';
-import { state } from '../state.js?v=abe8148';
-import { COLORS, heading, text } from '../theme.js?v=abe8148';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=abe8148';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=abe8148';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=abe8148';
-import { makeNav } from '../pathing.js?v=abe8148';
-import { startQuestionRun } from '../data/questions.js?v=abe8148';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=abe8148';
-import { Companion } from '../companion.js?v=abe8148';
-import { startShowcase } from '../showcase.js?v=abe8148';
-import { startExplorerTour } from '../explorerTour.js?v=abe8148';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=abe8148';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=b243ac9';
+import { TILE, layoutFor } from '../data/levels.js?v=b243ac9';
+import { state } from '../state.js?v=b243ac9';
+import { COLORS, heading, text } from '../theme.js?v=b243ac9';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=b243ac9';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=b243ac9';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=b243ac9';
+import { makeNav } from '../pathing.js?v=b243ac9';
+import { startQuestionRun } from '../data/questions.js?v=b243ac9';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=b243ac9';
+import { Companion } from '../companion.js?v=b243ac9';
+import { startShowcase } from '../showcase.js?v=b243ac9';
+import { startExplorerTour } from '../explorerTour.js?v=b243ac9';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=b243ac9';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -1723,6 +1723,10 @@ export class PlatformerScene extends Phaser.Scene {
   // (seen in Seafoam's sea caves, 2026-10-31).
   buildCaveBackdrop(caveFrom, nRows, cols, caveOpen, isWater, rockKey, rockIsSkin) {
     const own = this.art.cave_background;
+    // Behind deep pool water too: the rock fallback always, a set's own
+    // picture with `over_pools` (Seafoam's sea caves, 2026-11-02; the
+    // cove's stays off its start pool).
+    const overPools = !own || !!own.over_pools;
     const key = own ? texKey(this.artName, own.file) : rockKey;
     if (!key || !this.textures.exists(key)) return;
     const cb = own || { scroll: 1 };
@@ -1739,7 +1743,7 @@ export class PlatformerScene extends Phaser.Scene {
     // (only for the cove's own picture: the rock fallback goes behind deep
     // pool water too, fading in under it, so a deep pool shows rock, not sky:
     // the user, 2026-10-31, of Seafoam's sea caves)
-    if (own) for (let c = 0; c < cols; c++) if (isWater(caveFrom, c) && isWater(caveFrom - 1, c)) stack.push([caveFrom, c]);
+    if (!overPools) for (let c = 0; c < cols; c++) if (isWater(caveFrom, c) && isWater(caveFrom - 1, c)) stack.push([caveFrom, c]);
     while (stack.length) {
       const [r, c] = stack.pop();
       if (r < caveFrom || r >= nRows || c < 0 || c >= cols || pool.has(id(r, c)) || !isWater(r, c)) continue;
@@ -1792,7 +1796,7 @@ export class PlatformerScene extends Phaser.Scene {
       let o = 0;
       for (let d = -2; d <= 2; d++) {
         const cc = c + d;
-        if (cc >= 0 && cc < cols && caveOpen(caveFrom - 1, cc) && (!own || !isWater(caveFrom - 1, cc))) o = Math.max(o, 1 - Math.abs(d) / 3);
+        if (cc >= 0 && cc < cols && caveOpen(caveFrom - 1, cc) && (overPools || !isWater(caveFrom - 1, cc))) o = Math.max(o, 1 - Math.abs(d) / 3);
       }
       opening.push(o);
     }
