@@ -1,11 +1,11 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=9748bee';
-import { testParams, DRAWN } from '../data/levels.js?v=9748bee';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=9748bee';
-import { CHARACTERS } from '../data/characters.js?v=9748bee';
-import { state } from '../state.js?v=9748bee';
-import { COLORS, heading, text } from '../theme.js?v=9748bee';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=9748bee';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=9748bee';
+import { ARTSETS, texKey } from '../data/artsets.js?v=beefae9';
+import { testParams, DRAWN } from '../data/levels.js?v=beefae9';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=beefae9';
+import { CHARACTERS } from '../data/characters.js?v=beefae9';
+import { state } from '../state.js?v=beefae9';
+import { COLORS, heading, text } from '../theme.js?v=beefae9';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=beefae9';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=beefae9';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -202,6 +202,19 @@ export class BootScene extends Phaser.Scene {
     }
     if (show) {
       this.scene.start('Level', showcaseData(show === '1' ? 'shaan' : show));
+      return;
+    }
+    // index.html?bonus=dorsal-1: that level, straight into its bonus room.
+    const bonus = new URLSearchParams(window.location.search).get('bonus');
+    if (bonus) {
+      this.scene.start('Level', { levelId: playableLevelId(bonus), bonusNow: true });
+      return;
+    }
+    // index.html?bonustest=dorsal-1: that level's bonus room on its own, in
+    // test mode (falling off starts it over).
+    const bonusTest = new URLSearchParams(window.location.search).get('bonustest');
+    if (bonusTest) {
+      this.scene.start('BonusRoom', { levelId: playableLevelId(bonusTest), test: true });
       return;
     }
     const inspect = new URLSearchParams(window.location.search).get('inspect');

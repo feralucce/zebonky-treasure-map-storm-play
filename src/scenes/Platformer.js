@@ -2,20 +2,21 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=9748bee';
-import { TILE, layoutFor } from '../data/levels.js?v=9748bee';
-import { state } from '../state.js?v=9748bee';
-import { COLORS, heading, text } from '../theme.js?v=9748bee';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=9748bee';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=9748bee';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=9748bee';
-import { makeNav } from '../pathing.js?v=9748bee';
-import { startQuestionRun } from '../data/questions.js?v=9748bee';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=9748bee';
-import { Companion } from '../companion.js?v=9748bee';
-import { startShowcase } from '../showcase.js?v=9748bee';
-import { startExplorerTour } from '../explorerTour.js?v=9748bee';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=9748bee';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=beefae9';
+import { TILE, layoutFor } from '../data/levels.js?v=beefae9';
+import { state } from '../state.js?v=beefae9';
+import { COLORS, heading, text } from '../theme.js?v=beefae9';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=beefae9';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=beefae9';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=beefae9';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=beefae9';
+import { makeNav } from '../pathing.js?v=beefae9';
+import { startQuestionRun } from '../data/questions.js?v=beefae9';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=beefae9';
+import { Companion } from '../companion.js?v=beefae9';
+import { startShowcase } from '../showcase.js?v=beefae9';
+import { startExplorerTour } from '../explorerTour.js?v=beefae9';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=beefae9';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -109,6 +110,9 @@ export class PlatformerScene extends Phaser.Scene {
     this.showcase = data.showcase || null;
     // The explorer tour (src/explorerTour.js): an explorer through all her moves.
     this.explorerTour = data.explorerTour || null;
+    // index.html?bonus=<level id>: straight to the bonus level door, to try
+    // the level's bonus room (docs/guides/bonus-rooms.md).
+    this.bonusNow = !!data.bonusNow;
     // A designer test run (or an inspection, showcase or tour) never touches saved progress.
     state.noSave = this.test || this.inspect || !!this.showcase || !!this.explorerTour;
     this.damaged = false;      // the no-damage reward (currency.js)
@@ -647,6 +651,11 @@ export class PlatformerScene extends Phaser.Scene {
     // The companion Zebonky, if they've earned one, rolls along behind her.
     this.companion = state.companion() ? new Companion(this, state.companion()) : null;
 
+    // Back from a bonus room too: keys held there aren't held here.
+    this.events.on('wake', () => {
+      this.input.keyboard.resetKeys();
+      this.touch = { left: false, right: false, jump: false };
+    });
     this.events.on('resume', () => {
       this.input.keyboard.resetKeys();
       this.touch = { left: false, right: false, jump: false };
@@ -664,6 +673,10 @@ export class PlatformerScene extends Phaser.Scene {
     });
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
+    if (this.bonusNow && this.secret) {
+      this.player.setPosition(this.secret.x, this.secret.y);
+      this.time.delayedCall(400, () => this.openSecretDoor(this.secret));
+    }
   }
 
   makeExplorerAnims() {
@@ -796,6 +809,8 @@ export class PlatformerScene extends Phaser.Scene {
       tamed: wild.length > 0 && wild.every((z) => z.fed),
       hasCrates: this.crateCount > 0 && items.length > 0,
       questions: this.crateCount > 0 && items.every((it) => state.hasTreasure(this.levelId, it.id)),
+      bonus: !!this.bonusDone,
+      bonusMedal: this.bonusMedal || 0,
     };
   }
 
@@ -2341,7 +2356,7 @@ export class PlatformerScene extends Phaser.Scene {
     // Touched it mid-jump (coming up over the falls, say): land at its foot.
     this.tweens.add({ targets: p, y: d.y + h / 2 - foot, duration: 200, ease: 'Quad.In' });
     audio.sfx(this, 'door');
-    this.add.rectangle(d.x, d.y + 2, w * 0.82, h * 0.9, 0x1b120b).setDepth(3);
+    this.doorHole = this.add.rectangle(d.x, d.y + 2, w * 0.82, h * 0.9, 0x1b120b).setDepth(3);
     d.setDepth(4).setOrigin(0, 0.5).setX(d.x - w / 2);
     p.setDepth(5);
     this.tweens.add({
@@ -2365,6 +2380,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.player.body.enable = false;
     const secret = kind === 'secret';
     const secretDoor = kind === 'secretdoor';
+    // Where she went in, to come back out there from a bonus level.
+    if (secret) this.doorSpot = { x: this.player.x, y: this.player.y };
     if (!secret) audio.sfx(this, 'level-end');
     const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0)
       .setScrollFactor(0).setDepth(50).setAlpha(0);
@@ -2399,6 +2416,7 @@ export class PlatformerScene extends Phaser.Scene {
       if (!secret && !this.test) state.completeLevel(this.levelId, secretDoor ? 'normal' : kind);
       this.cameras.main.fadeOut(300, 43, 29, 18);
       this.cameras.main.once('camerafadeoutcomplete', () => {
+        if (secret && bonusRoomFor(this.levelId)) { this.enterBonusRoom([shade, msg, tap]); return; }
         if (secret) this.scene.start('Bonus', { levelId: this.levelId, levelData, run });
         else this.scene.start('LevelEnd', { levelId: this.levelId, kind: 'normal', run, levelData });
       });
@@ -2409,6 +2427,38 @@ export class PlatformerScene extends Phaser.Scene {
       shade.on('pointerup', go);
       ['ENTER', 'SPACE'].forEach((k) => this.input.keyboard.once(`keydown-${k}`, go));
     });
+  }
+
+  // A bonus level (data/bonusRooms.js, the user, 2026-11-02): the level
+  // sleeps while it plays, then wakes with her where the door was.
+  enterBonusRoom(overlay) {
+    this.bonusOverlay = overlay;
+    this.scene.launch('BonusRoom', { levelId: this.levelId, parentKey: this.scene.key });
+    this.scene.sleep();
+  }
+
+  // Back from the bonus level, fallen off or through its door: the door is
+  // gone for the rest of this play (back the next time the level starts);
+  // through the door, the bonus reward (by medal) is paid at the end of the
+  // level.
+  backFromBonus(won, medal = 0) {
+    (this.bonusOverlay || []).forEach((o) => { this.tweens.killTweensOf(o); o.destroy(); });
+    this.bonusOverlay = null;
+    if (this.secret) this.secret.disableBody(true, true);
+    if (this.doorHole) this.doorHole.destroy();
+    const p = this.player;
+    this.tweens.killTweensOf(p);
+    if (this.doorSpot) p.setPosition(this.doorSpot.x, this.doorSpot.y);
+    p.setAlpha(1).setScale(1).setAngle(0).setDepth(PLAYER_DEPTH);
+    p.body.enable = true;
+    p.setVelocity(0, 0);
+    if (won) {
+      this.bonusDone = true;
+      this.bonusMedal = Math.max(this.bonusMedal || 0, medal);
+      if (!this.test) state.completeLevel(this.levelId, 'secret');
+    }
+    this.done = false;
+    this.cameras.main.fadeIn(300, 43, 29, 18);
   }
 
   leave() {

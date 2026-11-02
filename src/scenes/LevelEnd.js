@@ -5,14 +5,15 @@
 // its level again).
 //
 // Data: { levelId, kind: 'normal' | 'bonus' | 'secret', run, levelData }
-//   run: what this play did: { nodamage, tamed, questions, hasWild, hasCrates }
+//   run: what this play did: { nodamage, tamed, questions, hasWild, hasCrates,
+//        bonus, bonusMedal (1-3, from a bonus room) }
 //   levelData: set for a test run, to play it again
 
-import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=9748bee';
-import { state } from '../state.js?v=9748bee';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=9748bee';
-import { LETTERS, REWARDS, REWARD_EACH, award, paid, lettersFound, allLetters, currency } from '../currency.js?v=9748bee';
-import { audio } from '../audio.js?v=9748bee';
+import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=beefae9';
+import { state } from '../state.js?v=beefae9';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=beefae9';
+import { LETTERS, REWARDS, REWARD_EACH, MEDALS, award, awardMedal, medalPaid, paid, lettersFound, allLetters, currency } from '../currency.js?v=beefae9';
+import { audio } from '../audio.js?v=beefae9';
 
 export class LevelEndScene extends Phaser.Scene {
   constructor() {
@@ -39,15 +40,22 @@ export class LevelEndScene extends Phaser.Scene {
       nodamage: !!run.nodamage,
       tamed: run.hasWild === false ? null : !!run.tamed,
       questions: run.hasCrates === false ? null : !!run.questions,
-      bonus: this.kind === 'bonus',
+      bonus: this.kind === 'bonus' || !!run.bonus,   // a bonus room plays mid-level (BonusRoom.js)
       secret: this.kind === 'secret',
     };
     const rows = REWARDS.filter((r) => r.key !== 'secret' || this.kind === 'secret' || paid(id, 'secret'))
       .map((r) => {
         const had = paid(id, r.key);
         const now = earnedNow[r.key];
+        // A bonus room's medal pays 1 to 3, less what an earlier one paid.
+        if (r.key === 'bonus' && run.bonusMedal) {
+          const before = medalPaid(id);
+          const got = awardMedal(id, run.bonusMedal);
+          const best = MEDALS[Math.max(before, run.bonusMedal) - 1];
+          return { ...r, label: `${r.label}: ${best.name}`, pays: got, status: got ? 'new' : 'had' };
+        }
         const fresh = now === true && award(id, r.key);
-        return { ...r, status: now === null ? 'none' : fresh ? 'new' : had ? 'had' : 'no' };
+        return { ...r, pays: REWARD_EACH, status: now === null ? 'none' : fresh ? 'new' : had ? 'had' : 'no' };
       });
     const gained = currency() - before;
 
@@ -92,7 +100,7 @@ export class LevelEndScene extends Phaser.Scene {
           })).setOrigin(0.5);
         });
       }
-      const right = { new: `+${REWARD_EACH} currency`, had: 'Earned before', no: 'Not yet', none: 'None in this level' }[r.status];
+      const right = { new: `+${r.pays} currency`, had: 'Earned before', no: 'Not yet', none: 'None in this level' }[r.status];
       this.add.text(x + w - 60, ry, right, heading(18, r.status === 'new' ? '#2f6e50' : '#8a7550')).setOrigin(1, 0.5);
     });
 

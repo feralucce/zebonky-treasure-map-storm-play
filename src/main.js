@@ -1,15 +1,16 @@
-import { MAP_W, MAP_H } from './data/world.js?v=9748bee';
-import { state } from './state.js?v=9748bee';
-import { audio } from './audio.js?v=9748bee';
-import { BootScene } from './scenes/Boot.js?v=9748bee';
-import { OverworldScene } from './scenes/Overworld.js?v=9748bee';
-import { PlatformerScene } from './scenes/Platformer.js?v=9748bee';
-import { QuizScene } from './scenes/Quiz.js?v=9748bee';
-import { BonusScene } from './scenes/Bonus.js?v=9748bee';
-import { SaveMenuScene } from './scenes/SaveMenu.js?v=9748bee';
-import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=9748bee';
-import { LevelEndScene } from './scenes/LevelEnd.js?v=9748bee';
-import { takeLinkSave } from './savecode.js?v=9748bee';
+import { MAP_W, MAP_H } from './data/world.js?v=beefae9';
+import { state } from './state.js?v=beefae9';
+import { audio } from './audio.js?v=beefae9';
+import { BootScene } from './scenes/Boot.js?v=beefae9';
+import { OverworldScene } from './scenes/Overworld.js?v=beefae9';
+import { PlatformerScene } from './scenes/Platformer.js?v=beefae9';
+import { QuizScene } from './scenes/Quiz.js?v=beefae9';
+import { BonusScene } from './scenes/Bonus.js?v=beefae9';
+import { BonusRoomScene } from './scenes/BonusRoom.js?v=beefae9';
+import { SaveMenuScene } from './scenes/SaveMenu.js?v=beefae9';
+import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=beefae9';
+import { LevelEndScene } from './scenes/LevelEnd.js?v=beefae9';
+import { takeLinkSave } from './savecode.js?v=beefae9';
 
 state.load();
 // Opened from a save link: the map asks before loading it.
@@ -44,7 +45,7 @@ async function start() {
       default: 'arcade',
       arcade: { gravity: { y: 1900 }, debug: false },
     },
-    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene, SaveMenuScene, CharacterMenuScene, LevelEndScene],
+    scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene, BonusRoomScene, SaveMenuScene, CharacterMenuScene, LevelEndScene],
   });
   audio.init(window.game);
 }

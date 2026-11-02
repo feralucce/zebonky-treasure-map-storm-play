@@ -9,11 +9,13 @@
 //   nodamage   through the level without taking damage
 //   tamed      every wild Zebonky in the level tamed
 //   questions  every question in the level answered (all its crates opened)
-//   bonus      the bonus level played through
+//   bonus      the bonus level played through; in a bonus room (BonusRoom.js)
+//              it pays by medal, 1, 2 or 3 (MEDALS), and a better medal on
+//              a later play pays the difference
 //   secret     the secret level played through (ready for when it exists)
 // The level ending screen (scenes/LevelEnd.js) pays them.
 
-import { state } from './state.js?v=9748bee';
+import { state } from './state.js?v=beefae9';
 
 export const LETTERS = 'ZEBONKY';
 export const REWARD_EACH = 1;
@@ -58,6 +60,37 @@ export const allLetters = (levelId) => LETTERS.split('').every((ch) => lettersFo
 
 export function paid(levelId, key) {
   return !!rec(levelId).paid[key];
+}
+
+// A bonus room's medal, by how many of its coins were gathered (the user,
+// 2026-11-02: bronze, silver and gold pay 1, 2 and 3 currency). `from` is
+// the share of the room's coins it needs; bronze is for getting through.
+export const MEDALS = [
+  { tier: 1, name: 'Bronze', from: 0, color: 0xcd7f32 },
+  { tier: 2, name: 'Silver', from: 0.5, color: 0xc0c7cf },
+  { tier: 3, name: 'Gold', from: 0.9, color: 0xffc93c },
+];
+
+export const medalNeeds = (medal, total) => Math.ceil(medal.from * total);
+export const medalFor = (got, total) => [...MEDALS].reverse().find((m) => got >= medalNeeds(m, total));
+
+// The medal tier already paid on this level and difficulty (the
+// placeholder card's bonus counts as bronze).
+export const medalPaid = (levelId) => {
+  const b = rec(levelId).paid.bonus;
+  return b === true ? 1 : b || 0;
+};
+
+// Pays a medal: its currency, less what an earlier medal on this level and
+// difficulty already paid. Returns what it paid just now.
+export function awardMedal(levelId, tier) {
+  const r = rec(levelId);
+  const had = medalPaid(levelId);
+  if (tier <= had) return 0;
+  r.paid.bonus = tier;
+  state.data.currency = currency() + (tier - had);
+  state.save();
+  return tier - had;
 }
 
 // The placeholder coin: a gold disc with a C, drawn once.
