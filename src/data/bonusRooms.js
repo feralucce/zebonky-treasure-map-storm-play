@@ -10,11 +10,16 @@
 //             falling off goes back to the level.
 //   geysers   a hole in the ground that launches the Zebonky straight up,
 //             `height` px above the hole
-//   falls     an upward waterfall: inside it, the Zebonky is carried up
+//   falls     an upward waterfall: inside it, the Zebonky is carried up;
+//             out of its top he's tossed `toss` px a step (6 if not given)
 //   coins     where the coins are: `arc` (a curve over a jump), `line`, or
 //             `along` an island's top, `n` of them; or `points`, each one
 //             placed (the jumps' coins: taken from the path the test bot
 //             actually flies, tools/bonus_bot.js `trace`, so they can be got)
+//   rocks     cracked rocks on the ground at `x`, radius `r`: dash into one
+//             (double-tap forward) and it smashes, `coins` spilling out
+//             ahead; rolling, he bounces off
+//   intro     the line shown as it starts
 //   door      the door at the end: reach it and the room is done
 //
 // Shaan's rooms are Dorsal Cove's (docs/bonus-level-ideas.md); Cannonball
@@ -43,7 +48,7 @@ export const BONUS_ROOMS = {
       // 3. Over the top of the falls: a roll down to a gap.
       { top: [[4060, 430], [4300, 430], [4500, 470], [4720, 600]] },
       // 4. Past the gap, a long roll down to a flat edge.
-      { top: [[5100, 570], [5300, 620], [5600, 800], [5820, 880], [6000, 880], [6300, 880], [6500, 930], [6700, 990], [6850, 990], [6960, 990]] },
+      { top: [[5040, 570], [5300, 620], [5600, 800], [5820, 880], [6000, 880], [6300, 880], [6500, 930], [6700, 990], [6850, 990], [6960, 990]] },
       // 5. The second geyser, its hole against a wall: pushing into the wall
       // sits him in it.
       { top: [[7300, 960], [7450, 960], [7540, 1010], [7580, 1050], [7700, 1050], [7740, 990], [7790, 900], [7810, 790]] },
@@ -62,8 +67,9 @@ export const BONUS_ROOMS = {
       { top: [[14650, 860], [14750, 840], [14910, 840], [14950, 880], [15050, 880], [15090, 800], [15120, 680], [15140, 560]] },
       // 13. The highest island: the last long roll, and a gap.
       { under: 150, top: [[15100, 260], [15300, 260], [15650, 330], [15900, 470]] },
-      // 14. Past the last gap, the roll down to the door.
-      { top: [[16300, 430], [16550, 520], [16850, 700], [17050, 800], [17250, 800], [17950, 800], [18330, 800]] },
+      // 14. Past the last gap, the roll down to the door, and a wall behind
+      // it (at speed he rolled past the door and off the end).
+      { top: [[16300, 430], [16550, 520], [16850, 700], [17050, 800], [17250, 800], [17950, 800], [18330, 800], [18380, 700], [18400, 560]] },
     ],
     geysers: [
       { x: 2490, y: 1085, height: 760 },
@@ -72,7 +78,7 @@ export const BONUS_ROOMS = {
     ],
     falls: [
       { x: 3880, w: 120, top: 360, bottom: 1700 },
-      { x: 9330, w: 120, top: 300, bottom: 1700 },
+      { x: 9330, w: 120, top: 300, bottom: 1700, toss: 9 },
     ],
     coins: [
       // Where a run that jumps actually goes: coins no test run could get
@@ -107,6 +113,69 @@ export const BONUS_ROOMS = {
       { along: 14, from: 16650, to: 17750, n: 8 },
     ],
     door: { x: 17900 },
+  },
+
+  // Shaan's second: Shell Bust (the user, 2026-11-02, picked from
+  // docs/bonus-level-ideas.md). Cracked rocks in the way: smash them at
+  // speed for the coins inside. Same rules as Cannonball Cove: every gap
+  // needs a jump (flat or downhill edge, far side a little higher).
+  'dorsal-2': {
+    name: 'Shell Bust',
+    artset: 'dorsal_cove',
+    width: 13300,
+    height: 1700,
+    start: [180, 820],
+    intro: 'Smash the cracked rocks!\nDouble tap forward to dash through them.',
+    islands: [
+      // 0. A long roll down to the first rock, and a flat edge.
+      { top: [[-120, 900], [0, 900], [300, 905], [600, 1000], [900, 1140], [1200, 1200], [1700, 1200], [2200, 1200]] },
+      // 1. Down into a dip, a big rock on the way down.
+      { top: [[2480, 1170], [2700, 1170], [2950, 1260], [3200, 1300], [3500, 1300], [3700, 1240], [3800, 1240]] },
+      // 2. The geyser, its hole against a wall.
+      { top: [[4080, 1210], [4380, 1210], [4420, 1250], [4560, 1250], [4600, 1180], [4650, 1060], [4670, 940]] },
+      // 3. Up top: a slope down to a small rock, and a flat edge.
+      { under: 150, top: [[4600, 600], [4800, 620], [5100, 720], [5300, 760], [5600, 760], [5800, 760]] },
+      // 4. A long roll down to two rocks in a row.
+      { top: [[6080, 730], [6300, 740], [6700, 950], [7100, 1150], [7500, 1200], [8000, 1200], [8300, 1200]] },
+      // 5. Over the falls: down to the biggest rock, and a flat edge.
+      { top: [[8700, 450], [9000, 450], [9300, 520], [9600, 700], [9900, 820], [10200, 820]] },
+      // 6. Down to the last rock, and a flat edge.
+      { top: [[10480, 790], [10700, 790], [11000, 900], [11300, 1000], [11600, 1000], [11700, 1000]] },
+      // 7. The end, with the door and a wall behind it.
+      { top: [[11980, 970], [12200, 950], [12800, 950], [13180, 950], [13230, 850], [13250, 710]] },
+    ],
+    geysers: [{ x: 4490, y: 1250, height: 760 }],
+    falls: [{ x: 8440, w: 120, top: 400, bottom: 1700 }],
+    // Each rock has a good run of ground after it: after a slow break, or a
+    // bounce and a back-up, there's room to get going before the next jump.
+    rocks: [
+      { x: 1500, r: 70, coins: 5 },
+      { x: 3100, r: 90, coins: 6 },
+      { x: 5180, r: 60, coins: 4 },
+      { x: 7650, r: 70, coins: 5 },
+      { x: 7980, r: 70, coins: 5 },
+      { x: 9650, r: 90, coins: 6 },
+      { x: 11100, r: 60, coins: 4 },
+    ],
+    coins: [
+      // Coins no test run could get were moved onto a winning run's path
+      // (tools/bonus_bot.js, `trace`).
+      { along: 0, from: 500, to: 1300, n: 6 },
+      { points: [[2230, 1150], [2307, 1019], [2383, 1009], [2452, 998]] },
+      { points: [[2622, 1014], [2790, 944], [2900, 1174], [3050, 1212], [3200, 1230]] },
+      { points: [[3830, 1190], [3907, 1059], [3983, 1049], [4009, 1028]] },
+      { line: [4490, 1150, 4490, 520], n: 6 },
+      { along: 3, from: 4700, to: 5050, n: 4 },
+      { points: [[5830, 710], [5907, 579], [5983, 569], [6044, 534]] },
+      { points: [[6452, 530], [6662, 644], [6686, 873], [6829, 950], [6971, 1027], [7114, 1084], [7257, 1113], [7400, 1125]] },
+      { points: [[8500, 700], [8500, 580], [8524, 491]] },
+      { along: 5, from: 8800, to: 9800, n: 8 },
+      { points: [[10230, 770], [10307, 639], [10383, 629], [10411, 586]] },
+      { points: [[10549, 570], [10807, 560], [11038, 649], [11125, 877], [11300, 930]] },
+      { points: [[11730, 950], [11807, 819], [11883, 809], [11893, 782]] },
+      { points: [[12086, 730], [12310, 750], [12433, 879], [12600, 879]] },
+    ],
+    door: { x: 12750 },
   },
 };
 

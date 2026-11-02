@@ -15,13 +15,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=52e600c';
-import { texKey } from '../data/artsets.js?v=52e600c';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=52e600c';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=52e600c';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=52e600c';
-import { audio } from '../audio.js?v=52e600c';
-import { COLORS, heading, text } from '../theme.js?v=52e600c';
+import { MAP_W, MAP_H } from '../data/world.js?v=8a63e3d';
+import { texKey } from '../data/artsets.js?v=8a63e3d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=8a63e3d';
+import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=8a63e3d';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=8a63e3d';
+import { audio } from '../audio.js?v=8a63e3d';
+import { COLORS, heading, text } from '../theme.js?v=8a63e3d';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -44,6 +44,16 @@ const GROUND_DEPTH = 150;
 const UNDER_DEPTH = 40;
 const MAX_FALL = 24;        // px a step: about as fast as he falls
 const FULL_SPEED_SLOPE = 0.7; // radians (40 degrees): full speed holds up slopes gentler than this
+// Cracked rocks (Shell Bust, the user, 2026-11-02): rolling into one at this
+// speed per px of its radius or faster smashes it (a 60 px rock needs 7.8,
+// a 90 px one 11.7; full speed is 16).
+const BREAK_PER_RADIUS = 0.13;
+// The dash (the user, 2026-11-02): double-tap forward and he rolls faster
+// for a second. Cracked rocks only break during one.
+const DASH_SPEED = 21;      // px a step, over full speed's 16
+const DASH_MS = 1000;
+const DASH_AGAIN_MS = 1400; // from one dash's start to the next
+const DOUBLE_TAP_MS = 300;  // the second tap within this
 
 // A smooth curve through the points (Catmull-Rom), about every `step` px.
 function smooth(pts, step = 12) {
@@ -105,6 +115,20 @@ export class BonusRoomScene extends Phaser.Scene {
     this.groundAt = 0;
     this.movedAt = 0;
     this.coinsGot = 0;
+    // The scene object is reused for every room: anything a room adds to
+    // starts empty here (a room's falls once carried into the next one).
+    this.falls = [];
+    this.medal = null;
+    this.dashUntil = 0;
+    this.dashAt = -1e9;
+    this.dashDir = 0;
+    this.dashAsked = 0;
+    this.tapAt = { 1: -1e9, '-1': -1e9 };
+    this.tapped = 0;
+    this.geyserRide = false;
+    this.jumping = false;
+    this.touchDoor = false;
+    this.touchJump = false;
     this.fullSpeed = 0;            // the way he's rolling at full speed, or 0
     this.dir = 0;                  // the arrows held, for the next physics step
     this.jumpAsked = false;        // a jump pressed since the last step
@@ -122,6 +146,7 @@ export class BonusRoomScene extends Phaser.Scene {
     (room.falls || []).forEach((f) => this.buildFalls(f, set));
     this.geysers = (room.geysers || []).map((g) => this.buildGeyser(g, set));
     this.buildCoins();
+    this.rocks = (room.rocks || []).map((r, i) => this.buildRock(r, i, set));
     this.buildDoor(set);
     this.buildShaan();
     this.buildHud();
@@ -133,6 +158,20 @@ export class BonusRoomScene extends Phaser.Scene {
     // The physics, once per Matter step (step()).
     // (Shutting the scene down destroys its world, listener and all.)
     this.matter.world.on('beforeupdate', () => this.step());
+    // Rolling into a cracked rock: fast enough, it smashes and he rolls on
+    // through (the contact is cancelled); too slow, he bounces off.
+    this.matter.world.on('collisionstart', (ev) => ev.pairs.forEach((pair) => {
+      const rock = pair.bodyA.rock || pair.bodyB.rock;
+      const ball = pair.bodyA === this.ball || pair.bodyB === this.ball;
+      if (!rock || !ball || rock.broken) return;
+      if (this.dashing && this.lastSpeed >= rock.need) {
+        pair.isActive = false;
+        this.breakRock(rock);
+      } else if (this.time.now > (rock.toldAt || 0) + 800) {
+        rock.toldAt = this.time.now;
+        this.floatText(rock.x, rock.y - rock.r - 30, this.dashing ? 'Faster!' : 'Double tap to dash!');
+      }
+    }));
     cam.fadeIn(300, 43, 29, 18);
   }
 
@@ -313,6 +352,113 @@ export class BonusRoomScene extends Phaser.Scene {
     });
   }
 
+  // A cracked rock sitting on the ground at x: the set's rock, cracked,
+  // drawn once on a canvas (a stand-in until Chris draws one). Its coins
+  // wait inside, hidden, and pop out along the way ahead when it breaks.
+  buildRock(rd, i, set) {
+    const r = rd.r || 70;
+    const isl = this.islandAt(rd.x);
+    const y = (isl ? surfaceY(isl.curve, rd.x) : 900) - r + 6;
+    const key = `bonus-rock-${this.levelId}-${i}`;
+    if (this.textures.exists(key)) this.textures.remove(key);
+    const D = r * 2 + 12;
+    const tex = this.textures.createCanvas(key, D, D);
+    const ctx = tex.getContext();
+    const c = D / 2;
+    const skin = set.skin || {};
+    const rk = texKey(this.room.artset, skin.rock || 'sk_rock.png');
+    ctx.beginPath();
+    ctx.arc(c, c, r, 0, Math.PI * 2);
+    if (this.textures.exists(rk)) {
+      const pat = ctx.createPattern(this.textures.get(rk).getSourceImage(), 'repeat');
+      pat.setTransform(new DOMMatrix().translate(i * 97, i * 53).scale(0.6));
+      ctx.fillStyle = pat;
+    } else ctx.fillStyle = '#8a7a63';
+    ctx.fill();
+    const shade = ctx.createRadialGradient(c - r * 0.35, c - r * 0.35, r * 0.2, c, c, r);
+    shade.addColorStop(0, 'rgba(255,240,210,0.25)');
+    shade.addColorStop(1, 'rgba(30,18,10,0.55)');
+    ctx.fillStyle = shade;
+    ctx.fill();
+    // The cracks: a few jagged lines out from near the middle.
+    ctx.strokeStyle = '#1b120b';
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    for (let k = 0; k < 4; k++) {
+      const a = k * 1.7 + i;
+      ctx.beginPath();
+      ctx.moveTo(c + Math.cos(a) * r * 0.1, c + Math.sin(a) * r * 0.1);
+      for (let s = 1; s <= 4; s++) {
+        const w = (s % 2 ? 0.25 : -0.25);
+        ctx.lineTo(c + Math.cos(a + w) * r * s * 0.22, c + Math.sin(a + w) * r * s * 0.22);
+      }
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(c, c, r, 0, Math.PI * 2);
+    ctx.lineWidth = 6;
+    ctx.stroke();
+    tex.refresh();
+    const sprite = this.add.image(rd.x, y, key).setDepth(3);
+    const body = this.matter.add.circle(rd.x, y, r, { isStatic: true, friction: 0.5, label: 'rock' });
+    const rock = { x: rd.x, y, r, need: r * BREAK_PER_RADIUS, sprite, body, broken: false, coins: [] };
+    body.rock = rock;
+    // Its coins: hidden inside until it breaks, then out along the ground
+    // ahead of it, where he's rolling.
+    const ckey = currencyIcon(this);
+    const n = rd.coins || 4;
+    for (let k = 0; k < n; k++) {
+      // Well ahead, and live from the moment they fly: at full speed he
+      // passed spots close by before the coins got there.
+      const tx = rd.x + r + 220 + k * 80;
+      const ti = this.islandAt(tx);
+      const ty = (ti ? surfaceY(ti.curve, tx) : y) - 70;
+      const coin = this.add.image(rd.x, y, ckey).setDepth(4).setScale(1.1).setVisible(false);
+      coin.hidden = true;
+      coin.to = [tx, ty];
+      rock.coins.push(coin);
+      this.coins.push(coin);
+    }
+    return rock;
+  }
+
+  breakRock(rock) {
+    rock.broken = true;
+    rock.body.isSensor = true;
+    this.time.delayedCall(0, () => this.matter.world.remove(rock.body));
+    rock.sprite.setVisible(false);
+    audio.sfx(this, 'crate');
+    this.cameras.main.shake(140, 0.006);
+    // Chunks flying off.
+    for (let k = 0; k < 9; k++) {
+      const a = -Math.PI * (0.1 + 0.8 * Math.random());
+      const chunk = this.add.circle(rock.x, rock.y, 8 + Math.random() * 10, 0x8a7a63).setStrokeStyle(3, COLORS.ink).setDepth(4);
+      const d = rock.r * (1.2 + Math.random());
+      this.tweens.add({
+        targets: chunk, x: rock.x + Math.cos(a) * d * 2, y: rock.y + Math.sin(a) * d + 260, alpha: 0, angle: 360,
+        duration: 700 + Math.random() * 300, ease: 'Quad.In', onComplete: () => chunk.destroy(),
+      });
+    }
+    // Its coins pop out along the way ahead.
+    rock.coins.forEach((coin, k) => {
+      coin.setVisible(true);
+      coin.hidden = false;
+      this.tweens.add({
+        targets: coin, x: coin.to[0], y: coin.to[1], duration: 260, delay: k * 40, ease: 'Back.Out',
+        onComplete: () => {
+          if (coin.got) return;
+          this.tweens.add({ targets: coin, scaleX: 0.25, duration: 520, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+        },
+      });
+    });
+  }
+
+  floatText(x, y, msg) {
+    const t = this.add.text(x, y, msg, heading(28, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 7 }))
+      .setOrigin(0.5).setDepth(9);
+    this.tweens.add({ targets: t, y: y - 50, alpha: 0, duration: 900, ease: 'Sine.Out', onComplete: () => t.destroy() });
+  }
+
   buildDoor(set) {
     const d = this.room.door;
     const isl = this.islandAt(d.x);
@@ -361,7 +507,7 @@ export class BonusRoomScene extends Phaser.Scene {
     }
     if (this.retry) return;
     // What to do, for a moment.
-    const say = this.add.text(MAP_W / 2, MAP_H / 2 - 120, 'Roll Shaan to the door!\nMind the gaps.', heading(40, COLORS.yellowCss, {
+    const say = this.add.text(MAP_W / 2, MAP_H / 2 - 120, this.room.intro || 'Roll Shaan to the door!\nMind the gaps.', heading(40, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 10, align: 'center',
     })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
     this.tweens.add({ targets: say, alpha: 0, delay: 2600, duration: 500, onComplete: () => say.destroy() });
@@ -374,7 +520,12 @@ export class BonusRoomScene extends Phaser.Scene {
     const y = MAP_H - 80;
     const hold = (img, key) => {
       img.setScrollFactor(0).setAlpha(0.75).setDepth(20).setInteractive();
-      img.on('pointerdown', () => { this.touch[key] = true; img.setAlpha(1); if (key === 'jump') this.touchJump = true; });
+      img.on('pointerdown', () => {
+        this.touch[key] = true;
+        img.setAlpha(1);
+        if (key === 'jump') this.touchJump = true;
+        if (key === 'left' || key === 'right') this.tapped = key === 'right' ? 1 : -1;
+      });
       const up = () => { this.touch[key] = false; img.setAlpha(0.75); };
       img.on('pointerup', up);
       img.on('pointerout', up);
@@ -422,6 +573,16 @@ export class BonusRoomScene extends Phaser.Scene {
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
     this.dir = (right ? 1 : 0) - (left ? 1 : 0);
+    // A double tap that way dashes (asked here, done in the next step).
+    let tap = this.tapped;
+    this.tapped = 0;
+    if (Phaser.Input.Keyboard.JustDown(k.RIGHT) || Phaser.Input.Keyboard.JustDown(k.D)) tap = 1;
+    if (Phaser.Input.Keyboard.JustDown(k.LEFT) || Phaser.Input.Keyboard.JustDown(k.A)) tap = -1;
+    if (tap) {
+      if (time - this.tapAt[tap] < DOUBLE_TAP_MS) this.dashAsked = tap;
+      this.tapAt[tap] = time;
+    }
+    this.dashTrail(time);
     this.jumpHeld = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump;
     const grounded = this.grounded;
 
@@ -450,7 +611,7 @@ export class BonusRoomScene extends Phaser.Scene {
 
     // Coins.
     this.coins.forEach((c) => {
-      if (c.got || Math.hypot(c.x - b.position.x, c.y - b.position.y) > RADIUS + 20) return;
+      if (c.got || c.hidden || Math.hypot(c.x - b.position.x, c.y - b.position.y) > RADIUS + 20) return;
       c.got = true;
       this.coinsGot += 1;
       this.coinText.setText(`${this.coinsGot} / ${this.coins.length}`);
@@ -460,6 +621,20 @@ export class BonusRoomScene extends Phaser.Scene {
     });
 
     if (b.position.y > this.room.height + 80) this.fellOff();
+  }
+
+  get dashing() {
+    return this.time.now < this.dashUntil;
+  }
+
+  // While dashing, fading copies of him trail behind.
+  dashTrail(time) {
+    if (!this.dashing || time - (this.trailAt || 0) < 50) return;
+    this.trailAt = time;
+    const s = this.shaan;
+    const ghost = this.add.sprite(s.x, s.y, s.texture.key, s.frame.name).setOrigin(s.originX, s.originY)
+      .setScale(s.scaleX, s.scaleY).setFlipX(s.flipX).setDepth(s.depth - 0.1).setAlpha(0.5).setTint(0x9be2ff);
+    this.tweens.add({ targets: ghost, alpha: 0, duration: 260, onComplete: () => ghost.destroy() });
   }
 
   // The geysers' spouts and the falls flowing, by time, not by frame.
@@ -488,6 +663,7 @@ export class BonusRoomScene extends Phaser.Scene {
     const b = this.ball;
     const time = this.time.now;
     const dir = this.dir || 0;
+    this.lastSpeed = Math.hypot(b.velocity.x, b.velocity.y);   // for the rocks, before this step
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
@@ -530,7 +706,26 @@ export class BonusRoomScene extends Phaser.Scene {
     (this.falls || []).forEach((f) => {
       const inside = b.position.x > f.x - RADIUS * 0.4 && b.position.x < f.x + f.w + RADIUS * 0.4
         && b.position.y > f.top - 10 && b.position.y < f.bottom;
-      if (inside) M.Body.setVelocity(b, { x: b.velocity.x * 0.96, y: Phaser.Math.Linear(b.velocity.y, -FALLS_UP, 0.2) });
+      // It holds him too: his sideways speed drops to a drift the arrows
+      // steer, or at full speed he shot straight through it.
+      if (inside) {
+        M.Body.setVelocity(b, {
+          // slow, and drawn to its middle: holding right (or coming in at a
+          // dash) he still rides it to the top
+          x: Phaser.Math.Linear(b.velocity.x, dir * 1 + (f.x + f.w / 2 - b.position.x) * 0.06, 0.35),
+          y: Phaser.Math.Linear(b.velocity.y, -FALLS_UP, 0.2),
+        });
+        this.fullSpeed = 0;
+        this.dashUntil = 0;          // a dash ends in it, or it carried him through
+        f.riding = true;
+      } else if (f.riding) {
+        // Out of the top: tossed onto the ledge the way they're pressing,
+        // `toss` px a step (6 if not given): with none he left crawling,
+        // too slow for the hops after Cannonball Cove's second falls (9
+        // there); 9 at its first, and he bounced down the slope beyond.
+        f.riding = false;
+        if (b.position.y < f.top + 40) M.Body.setVelocity(b, { x: (dir || 1) * (f.toss || 6), y: b.velocity.y });
+      }
     });
 
     // Full speed holds (the user, 2026-11-02): once he's reached full speed
@@ -539,7 +734,7 @@ export class BonusRoomScene extends Phaser.Scene {
     // ends it.
     if (dir && Math.sign(b.velocity.x) === dir && Math.abs(b.velocity.x) >= MAX_SPEED * 0.95) this.fullSpeed = dir;
     if (dir !== this.fullSpeed || this.geyserRide) this.fullSpeed = 0;
-    if (this.fullSpeed && grounded) {
+    if (this.fullSpeed && grounded && !this.jumping) {
       const a = this.slopeAt(b.position.x);
       if (a === null || Math.abs(a) > FULL_SPEED_SLOPE) this.fullSpeed = 0;
       else if (Math.hypot(b.velocity.x, b.velocity.y) < MAX_SPEED) {
@@ -547,8 +742,30 @@ export class BonusRoomScene extends Phaser.Scene {
       }
     }
 
+    // The dash: a second at dash speed the way they tapped, along the
+    // ground like full speed; it ends early if they turn round.
+    if (this.dashAsked && time - this.dashAt >= DASH_AGAIN_MS && !this.geyserRide) {
+      this.dashDir = this.dashAsked;
+      this.dashAt = time;
+      this.dashUntil = time + DASH_MS;
+      audio.sfx(this, 'toss');
+    }
+    this.dashAsked = 0;
+    if (this.dashing && dir === -this.dashDir) this.dashUntil = 0;
+    if (this.dashing) {
+      // (Not in the step he jumps: pinning him to the ground cancelled a
+      // jump made mid-dash.)
+      const a = grounded && !this.jumping ? this.slopeAt(b.position.x) : null;
+      if (a !== null && Math.abs(a) <= FULL_SPEED_SLOPE) {
+        M.Body.setVelocity(b, { x: this.dashDir * DASH_SPEED * Math.cos(a), y: this.dashDir * DASH_SPEED * Math.sin(a) });
+      } else if (Math.sign(b.velocity.x) !== -this.dashDir) {
+        M.Body.setVelocity(b, { x: this.dashDir * Math.max(Math.abs(b.velocity.x), DASH_SPEED * 0.9), y: b.velocity.y });
+      }
+    }
+
     // Not too fast.
-    if (Math.abs(b.velocity.x) > MAX_SPEED) M.Body.setVelocity(b, { x: Math.sign(b.velocity.x) * MAX_SPEED, y: b.velocity.y });
+    const top = this.dashing ? DASH_SPEED : MAX_SPEED;
+    if (Math.abs(b.velocity.x) > top) M.Body.setVelocity(b, { x: Math.sign(b.velocity.x) * top, y: b.velocity.y });
     if (b.velocity.y > MAX_FALL) M.Body.setVelocity(b, { x: b.velocity.x, y: MAX_FALL });
   }
 
