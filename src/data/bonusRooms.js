@@ -19,6 +19,10 @@
 //   rocks     cracked rocks on the ground at `x`, radius `r`: dash into one
 //             (double-tap forward) and it smashes, `coins` spilling out
 //             ahead; rolling, he bounces off
+//   pools     deep water over a basin in an island: `x`, `y` (its surface),
+//             `w`, `h`. In it he swims as a shark, any way the arrows say
+//   rings     hoops at `x`, `y`: touch one during a dash to claim it (one
+//             each, or `coins`). With no coins in the room, rings are the score
 //   intro     the line shown as it starts
 //   door      the door at the end: reach it and the room is done
 //
@@ -176,6 +180,43 @@ export const BONUS_ROOMS = {
       { points: [[12086, 730], [12310, 750], [12433, 879], [12600, 879]] },
     ],
     door: { x: 12750 },
+  },
+
+  // Shaan's third: Shark Dash Rings (the user's pick, 2026-11-02). Three
+  // deep pools to swim as a shark, rings to claim with a dash (the score);
+  // swim up hard at a pool's edge to leap out onto the bank. Every gap
+  // between the pools needs a jump.
+  'dorsal-3': {
+    name: 'Shark Dash Rings',
+    artset: 'dorsal_cove',
+    width: 12100,
+    height: 2000,
+    start: [180, 620],
+    intro: 'Claim the rings!\nDouble tap to dash into them, up and down to swim.',
+    islands: [
+      // 0. A roll down into the first pool, and out up its far bank.
+      { top: [[-120, 700], [0, 700], [400, 710], [700, 800], [1000, 820], [1060, 1000], [1100, 1450], [1200, 1550], [3000, 1550], [3100, 1450], [3150, 1000], [3200, 820], [3500, 820], [3700, 820]] },
+      // 1. The second pool.
+      { top: [[3980, 790], [4300, 790], [4360, 1000], [4400, 1400], [4500, 1500], [6200, 1500], [6300, 1400], [6350, 1000], [6400, 790], [6700, 790], [6900, 790]] },
+      // 2. The third and deepest.
+      { top: [[7180, 760], [7500, 760], [7560, 1000], [7600, 1500], [7700, 1650], [9800, 1650], [9900, 1500], [9950, 1000], [10000, 760], [10300, 760], [10500, 760]] },
+      // 3. The end, with the door and a wall behind it.
+      { top: [[10780, 730], [11000, 720], [11600, 720], [11900, 720], [11950, 620], [11970, 480]] },
+    ],
+    pools: [
+      { x: 1030, y: 860, w: 2140, h: 700 },
+      { x: 4330, y: 830, w: 2040, h: 680 },
+      { x: 7530, y: 800, w: 2440, h: 860 },
+    ],
+    rings: [
+      { x: 1500, y: 1100 }, { x: 1950, y: 1350 }, { x: 2400, y: 1000 }, { x: 2800, y: 1300 },
+      { x: 4800, y: 1200 }, { x: 5250, y: 950 }, { x: 5650, y: 1350 }, { x: 6050, y: 1100 },
+      { x: 8000, y: 1100 }, { x: 8450, y: 1500 }, { x: 8900, y: 1200 }, { x: 9300, y: 1500 }, { x: 9650, y: 1050 },
+    ],
+    // No coins: the rings are the score (the user, 2026-11-02), one each;
+    // touch one during a dash to claim it.
+    coins: [],
+    door: { x: 11550 },
   },
 };
 

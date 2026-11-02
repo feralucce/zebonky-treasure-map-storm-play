@@ -15,13 +15,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=8a63e3d';
-import { texKey } from '../data/artsets.js?v=8a63e3d';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=8a63e3d';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=8a63e3d';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=8a63e3d';
-import { audio } from '../audio.js?v=8a63e3d';
-import { COLORS, heading, text } from '../theme.js?v=8a63e3d';
+import { MAP_W, MAP_H } from '../data/world.js?v=3f108c4';
+import { texKey } from '../data/artsets.js?v=3f108c4';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=3f108c4';
+import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=3f108c4';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=3f108c4';
+import { audio } from '../audio.js?v=3f108c4';
+import { COLORS, heading, text } from '../theme.js?v=3f108c4';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -54,6 +54,14 @@ const DASH_SPEED = 21;      // px a step, over full speed's 16
 const DASH_MS = 1000;
 const DASH_AGAIN_MS = 1400; // from one dash's start to the next
 const DOUBLE_TAP_MS = 300;  // the second tap within this
+// Swimming (Shark Dash Rings, the user, 2026-11-02): in a pool he's a shark,
+// steering every way, floating, and dashing through rings.
+const SWIM_PUSH = 0.45;     // px a step per step, any way the arrows say
+const SWIM_SPEED = 9;       // px a step
+const SWIM_DRAG = 0.95;     // what's left of his speed each step
+const WATER_DASH = 17;      // a dash underwater, px a step
+// Rings count one each; in a room with no coins (Shark Dash Rings, the user,
+// 2026-11-02: "the only thing that counts is the ring") they're the score.
 
 // A smooth curve through the points (Catmull-Rom), about every `step` px.
 function smooth(pts, step = 12) {
@@ -80,12 +88,36 @@ function outline(top, under = 300) {
   const curve = smooth(top);
   const [xl, yl] = top[0];
   const [xr, yr] = top[top.length - 1];
-  const low = Math.max(...top.map((p) => p[1]));
   const span = xr - xl;
   const side = Math.min(110, under * 0.37);
-  const rock = smooth([[xr, yr], [xr - 12, yr + side], [xr - span * 0.3, low + under * 0.63], [xl + span * 0.5, low + under],
-    [xl + span * 0.22, low + under * 0.57], [xl + 12, yl + side], [xl, yl]], 24);
-  return { curve, shape: curve.concat(rock.slice(1, -1)) };
+  // How far the rock hangs below the top, across the island (0 at its left
+  // end, 1 at its right): the same tapering shape as before.
+  const prof = [[0, side], [0.22, under * 0.57], [0.5, under], [0.7, under * 0.63], [1, side]];
+  const hang = (t) => {
+    for (let i = 0; i < prof.length - 1; i++) {
+      const [t0, d0] = prof[i];
+      const [t1, d1] = prof[i + 1];
+      if (t <= t1) return d0 + ((d1 - d0) * (t - t0)) / (t1 - t0);
+    }
+    return side;
+  };
+  // Hung from the deepest top nearby, not from one line across the whole
+  // island: across a deep pool's basin that line cut through the pool, a
+  // wedge of rock in the water and an invisible wall in it.
+  const deepest = (x) => Math.max(...curve.filter(([px]) => Math.abs(px - x) < 160).map(([, py]) => py), surfaceY(curve, x));
+  const pts = [[xr, yr]];
+  const n = Math.max(4, Math.ceil(span / 120));
+  for (let i = 0; i <= n; i++) {
+    const x = xr - (span * i) / n;
+    pts.push([x, deepest(x) + hang((x - xl) / span)]);
+  }
+  pts.push([xl, yl]);
+  const rock = smooth(pts, 24);
+  // The curve overshoots past the island's ends where it turns under
+  // (about 14 px): kept inside them, or each lip had a little ramp sticking
+  // out that kicked him across the gap.
+  const below = rock.slice(1, -1).map(([x, y]) => [Phaser.Math.Clamp(x, xl, xr), y]);
+  return { curve, shape: curve.concat(below) };
 }
 
 // Height of the top curve at x.
@@ -111,7 +143,8 @@ export class BonusRoomScene extends Phaser.Scene {
     this.room = bonusRoomFor(this.levelId);
     this.leaving = false;
     this.finished = false;
-    this.touch = { left: false, right: false, jump: false };
+    this.touch = { left: false, right: false, jump: false, down: false };
+    this.wet = false;
     this.groundAt = 0;
     this.movedAt = 0;
     this.coinsGot = 0;
@@ -147,6 +180,9 @@ export class BonusRoomScene extends Phaser.Scene {
     this.geysers = (room.geysers || []).map((g) => this.buildGeyser(g, set));
     this.buildCoins();
     this.rocks = (room.rocks || []).map((r, i) => this.buildRock(r, i, set));
+    this.pools = (room.pools || []).map((w) => this.buildPool(w, set));
+    this.rings = (room.rings || []).map((r) => this.buildRing(r));
+    this.unit = this.coins.length ? 'coins' : 'rings';
     this.buildDoor(set);
     this.buildShaan();
     this.buildHud();
@@ -495,8 +531,12 @@ export class BonusRoomScene extends Phaser.Scene {
     box.lineStyle(3, COLORS.ink, 1);
     box.strokeRoundedRect(MAP_W / 2 - 170, 14, 340, 50, 16);
     this.add.text(MAP_W / 2, 39, this.room.name, heading(24, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(21);
-    this.add.image(MAP_W - 150, 40, 'currency-coin').setScrollFactor(0).setDepth(21);
-    this.coinText = this.add.text(MAP_W - 126, 40, `0 / ${this.coins.length}`, heading(24, '#ffffff', {
+    if (this.unit === 'rings') {
+      const ic = this.add.graphics().setScrollFactor(0).setDepth(21).setPosition(MAP_W - 150, 40);
+      ic.lineStyle(7, COLORS.ink, 1).strokeEllipse(0, 0, 22, 36);
+      ic.lineStyle(4, 0xffc93c, 1).strokeEllipse(0, 0, 22, 36);
+    } else this.add.image(MAP_W - 150, 40, 'currency-coin').setScrollFactor(0).setDepth(21);
+    this.coinText = this.add.text(MAP_W - 126, 40, `0 / ${this.totalCoins()}`, heading(24, '#ffffff', {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
 
@@ -516,7 +556,7 @@ export class BonusRoomScene extends Phaser.Scene {
 
   // The level's buttons, with their keys under them.
   buildControls() {
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,A,D,W,SPACE,Z,J');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,J');
     const y = MAP_H - 80;
     const hold = (img, key) => {
       img.setScrollFactor(0).setAlpha(0.75).setDepth(20).setInteractive();
@@ -533,6 +573,9 @@ export class BonusRoomScene extends Phaser.Scene {
     hold(this.add.image(80, y, 'btn-left'), 'left');
     hold(this.add.image(190, y, 'btn-right'), 'right');
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
+    // In water only: swim down (the jump button swims up).
+    this.btnDown = this.add.image(MAP_W - 210, y, 'btn-jump').setFlipY(true).setVisible(false);
+    hold(this.btnDown, 'down');
     const keyLabel = (x, label) => this.add.text(x, y + 50, label, text(16, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
     })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
@@ -584,6 +627,8 @@ export class BonusRoomScene extends Phaser.Scene {
     }
     this.dashTrail(time);
     this.jumpHeld = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump;
+    // Up and down, for swimming: up is the jump keys too.
+    this.vert = (k.DOWN.isDown || k.S.isDown || this.touch.down ? 1 : 0) - (this.jumpHeld ? 1 : 0);
     const grounded = this.grounded;
 
     // At the door: Up (or the door button) goes in, instead of jumping.
@@ -605,22 +650,131 @@ export class BonusRoomScene extends Phaser.Scene {
     const speed = Math.hypot(b.velocity.x, b.velocity.y);
     if (speed > 0.8 || !grounded) this.movedAt = time;
     if (Math.abs(b.velocity.x) > 0.4) s.setFlipX(b.velocity.x > 0);
-    const rolling = time - this.movedAt < UNCURL_AFTER;
-    play(s, this.art, rolling ? 'run' : 'idle');
-    s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
+    this.btnDown.setVisible(this.wet);
+    if (this.wet && this.art.z.anims.dive) {
+      // In water he's a shark: his dive strip, tilted the way he swims.
+      play(s, this.art, 'dive');
+      s.anims.timeScale = 1;
+      const tilt = Phaser.Math.Clamp(Math.atan2(b.velocity.y, Math.abs(b.velocity.x) + 0.5), -1, 1);
+      // (his art faces right: unflipped, a positive turn points his nose
+      // down; the other way round had it pointing up as he dived)
+      s.setRotation(s.flipX ? -tilt : tilt);
+    } else {
+      s.setRotation(0);
+      const rolling = time - this.movedAt < UNCURL_AFTER;
+      play(s, this.art, rolling ? 'run' : 'idle');
+      s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
+    }
+
+    // Rings: dash through the middle for their coins.
+    this.rings.forEach((r) => {
+      // Touching any of it counts (the user, 2026-11-02), the hoop included.
+      const ex = (b.position.x - r.x) / (r.r * 0.55 + RADIUS);
+      const ey = (b.position.y - r.y) / (r.r + RADIUS);
+      if (r.done || ex * ex + ey * ey > 1) return;
+      if (this.dashing) this.takeRing(r);
+      else if (time > (r.toldAt || 0) + 1000) {
+        r.toldAt = time;
+        this.floatText(r.x, r.y - r.r - 20, 'Dash through!');
+      }
+    });
 
     // Coins.
     this.coins.forEach((c) => {
       if (c.got || c.hidden || Math.hypot(c.x - b.position.x, c.y - b.position.y) > RADIUS + 20) return;
       c.got = true;
       this.coinsGot += 1;
-      this.coinText.setText(`${this.coinsGot} / ${this.coins.length}`);
+      this.coinText.setText(`${this.coinsGot} / ${this.totalCoins()}`);
       audio.sfx(this, 'food');
       this.tweens.killTweensOf(c);
       this.tweens.add({ targets: c, y: c.y - 50, alpha: 0, scale: 1.6, duration: 300, onComplete: () => c.destroy() });
     });
 
     if (b.position.y > this.room.height + 80) this.fellOff();
+  }
+
+  // A pool: the set's water over a basin in an island (data: x, y = its
+  // surface, w, h). Behind the rock (so the basin's walls show) and behind
+  // him and the rings and coins (in front, it washed them all out).
+  buildPool(w, set) {
+    const k = (f) => f && texKey(this.room.artset, f);
+    const water = set.water || {};
+    const body = k(water.body_strip);
+    const top = k(water.top_strip);
+    if (body && this.textures.exists(body)) {
+      this.add.tileSprite(w.x + w.w / 2, w.y + w.h / 2, w.w, w.h, body).setAlpha(water.alpha || 0.62).setDepth(1.5);
+    } else this.add.rectangle(w.x + w.w / 2, w.y + w.h / 2, w.w, w.h, 0x2aa7d8, 0.55).setDepth(1.5);
+    if (top && this.textures.exists(top)) {
+      w.top = this.add.tileSprite(w.x + w.w / 2, w.y + 8, w.w, 64, top).setAlpha(0.9).setDepth(1.6);
+    }
+    return w;
+  }
+
+  isWater(x, y) {
+    return (this.pools || []).some((w) => x > w.x && x < w.x + w.w && y > w.y && y < w.y + w.h);
+  }
+
+  // A ring: a glowing hoop; its coins are counted in the total.
+  buildRing(rd) {
+    const r = rd.r || 70;
+    const g = this.add.graphics().setDepth(5.2).setPosition(rd.x, rd.y);
+    g.lineStyle(14, COLORS.ink, 1).strokeEllipse(0, 0, r * 1.1, r * 2);
+    g.lineStyle(9, 0xffc93c, 1).strokeEllipse(0, 0, r * 1.1, r * 2);
+    g.lineStyle(3, 0xffffff, 0.8).strokeEllipse(0, 0, r * 0.9, r * 1.8);
+    this.tweens.add({ targets: g, scaleX: 1.12, scaleY: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    const icon = this.add.image(rd.x, rd.y, currencyIcon(this)).setDepth(5.3).setAlpha(0.85)
+      .setVisible(!!(this.room.coins || []).length);
+    return { x: rd.x, y: rd.y, r, coins: rd.coins || 1, g, icon, done: false };
+  }
+
+  takeRing(r) {
+    r.done = true;
+    this.coinsGot += r.coins;
+    this.coinText.setText(`${this.coinsGot} / ${this.totalCoins()}`);
+    audio.sfx(this, 'correct');
+    this.floatText(r.x, r.y - r.r - 20, this.unit === 'rings' ? 'Ring!' : `+${r.coins}`);
+    this.tweens.killTweensOf(r.g);
+    this.tweens.add({ targets: [r.g, r.icon], scaleX: 2, scaleY: 2, alpha: 0, duration: 380, onComplete: () => { r.g.destroy(); r.icon.destroy(); } });
+  }
+
+  totalCoins() {
+    return this.coins.length + (this.rings || []).reduce((n, r) => n + r.coins, 0);
+  }
+
+  // One physics step in water: steer any way, float, drag, and the dash
+  // aimed with the arrows too. Swimming up out of the top leaps him out.
+  swim(time, dir) {
+    const M = Matter();
+    const b = this.ball;
+    const vert = this.vert || 0;
+    this.fullSpeed = 0;
+    this.geyserRide = false;
+    this.jumping = false;
+    this.jumpAsked = false;
+    let vx = b.velocity.x + dir * SWIM_PUSH;
+    let vy = b.velocity.y + vert * SWIM_PUSH;
+    if (this.dashAsked && time - this.dashAt >= DASH_AGAIN_MS) {
+      const len = Math.hypot(this.dashAsked, vert) || 1;
+      this.dashVec = { x: this.dashAsked / len, y: vert / len };
+      this.dashDir = this.dashAsked;
+      this.dashAt = time;
+      this.dashUntil = time + DASH_MS * 0.6;
+      audio.sfx(this, 'toss');
+    }
+    this.dashAsked = 0;
+    if (this.dashing && this.dashVec) {
+      vx = this.dashVec.x * WATER_DASH;
+      vy = this.dashVec.y * WATER_DASH;
+    } else {
+      vx *= SWIM_DRAG;
+      vy *= SWIM_DRAG;
+      const sp = Math.hypot(vx, vy);
+      if (sp > SWIM_SPEED) { vx *= SWIM_SPEED / sp; vy *= SWIM_SPEED / sp; }
+    }
+    // Near the surface swimming up: out he leaps.
+    const pool = this.pools.find((w) => b.position.x > w.x && b.position.x < w.x + w.w);
+    if (pool && vert < 0 && b.position.y < pool.y + RADIUS + 10) vy = Math.min(vy, -11);
+    M.Body.setVelocity(b, { x: vx, y: vy });
   }
 
   get dashing() {
@@ -667,6 +821,11 @@ export class BonusRoomScene extends Phaser.Scene {
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
+    this.wet = this.isWater(b.position.x, b.position.y);
+    // In water gravity doesn't pull him: he's half shark, so he holds still
+    // when he isn't swimming (the user, 2026-11-02: he doesn't sink).
+    b.ignoreGravity = this.wet;
+    if (this.wet) { this.swim(time, dir); return; }
 
     // A geyser carries him straight up until he slows near the top.
     if (this.geyserRide && b.velocity.y > -10) this.geyserRide = false;
@@ -746,6 +905,7 @@ export class BonusRoomScene extends Phaser.Scene {
     // ground like full speed; it ends early if they turn round.
     if (this.dashAsked && time - this.dashAt >= DASH_AGAIN_MS && !this.geyserRide) {
       this.dashDir = this.dashAsked;
+      this.dashVec = null;
       this.dashAt = time;
       this.dashUntil = time + DASH_MS;
       audio.sfx(this, 'toss');
@@ -773,7 +933,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.finished = true;
     this.doorHint.setVisible(false);
     this.btnDoor.setVisible(false);
-    this.medal = medalFor(this.coinsGot, this.coins.length);
+    this.medal = medalFor(this.coinsGot, this.totalCoins());
     const b = this.ball;
     Matter().Body.setStatic(b, true);
     audio.sfx(this, 'door');
@@ -785,7 +945,8 @@ export class BonusRoomScene extends Phaser.Scene {
     play(this.shaan, this.art, 'idle');
     this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
-      `You gathered ${this.coinsGot} of ${this.coins.length} coins.`, true, this.medal));
+      this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
+        : `You gathered ${this.coinsGot} of ${this.totalCoins()} coins.`, true, this.medal));
   }
 
   fellOff() {
@@ -816,7 +977,7 @@ export class BonusRoomScene extends Phaser.Scene {
       this.add.text(MAP_W / 2, MAP_H / 2 + 86, `${medal.name} medal: +${medal.tier} currency`, heading(30, COLORS.yellowCss, {
         stroke: COLORS.inkCss, strokeThickness: 8,
       })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-      const goals = MEDALS.filter((m) => m.from > 0).map((m) => `${m.name} ${medalNeeds(m, this.coins.length)} coins`).join('   ');
+      const goals = MEDALS.filter((m) => m.from > 0).map((m) => `${m.name} ${medalNeeds(m, this.totalCoins())} ${this.unit}`).join('   ');
       this.add.text(MAP_W / 2, MAP_H / 2 + 132, goals, text(20, COLORS.parchmentCss, {
         stroke: COLORS.inkCss, strokeThickness: 5,
       })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
