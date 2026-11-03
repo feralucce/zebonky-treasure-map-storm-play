@@ -15,13 +15,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=2520a1d';
-import { texKey } from '../data/artsets.js?v=2520a1d';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=2520a1d';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=2520a1d';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=2520a1d';
-import { audio } from '../audio.js?v=2520a1d';
-import { COLORS, heading, text } from '../theme.js?v=2520a1d';
+import { MAP_W, MAP_H } from '../data/world.js?v=1758cb2';
+import { texKey } from '../data/artsets.js?v=1758cb2';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=1758cb2';
+import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=1758cb2';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=1758cb2';
+import { audio } from '../audio.js?v=1758cb2';
+import { COLORS, heading, text } from '../theme.js?v=1758cb2';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -48,6 +48,10 @@ const FULL_SPEED_SLOPE = 0.7; // radians (40 degrees): full speed holds up slope
 // speed per px of its radius or faster smashes it (a 60 px rock needs 7.8,
 // a 90 px one 11.7; full speed is 16).
 const BREAK_PER_RADIUS = 0.13;
+// Bumpers (Roll Run, 2026-11-02): touch one and it bounces him away at this,
+// and up. The user, 2026-11-03: "make the bumpers knock them back a lot".
+const BUMP = 18;
+const BUMP_UP = 8;
 // The dash (the user, 2026-11-02): double-tap forward and he rolls faster
 // for a second. Cracked rocks only break during one.
 const DASH_SPEED = 21;      // px a step, over full speed's 16
@@ -180,6 +184,8 @@ export class BonusRoomScene extends Phaser.Scene {
     this.geysers = (room.geysers || []).map((g) => this.buildGeyser(g, set));
     this.buildCoins();
     this.rocks = (room.rocks || []).map((r, i) => this.buildRock(r, i, set));
+    (room.walls || []).forEach((w, i) => this.buildWall(w, i, set));
+    this.bumpers = (room.bumpers || []).map((bd) => this.buildBumper(bd));
     this.pools = (room.pools || []).map((w) => this.buildPool(w, set));
     this.rings = (room.rings || []).map((r) => this.buildRing(r));
     this.unit = this.coins.length ? 'coins' : 'rings';
@@ -197,6 +203,8 @@ export class BonusRoomScene extends Phaser.Scene {
     // Rolling into a cracked rock: fast enough, it smashes and he rolls on
     // through (the contact is cancelled); too slow, he bounces off.
     this.matter.world.on('collisionstart', (ev) => ev.pairs.forEach((pair) => {
+      const bump = pair.bodyA.bumper || pair.bodyB.bumper;
+      if (bump && (pair.bodyA === this.ball || pair.bodyB === this.ball)) { this.bounce(bump); return; }
       const rock = pair.bodyA.rock || pair.bodyB.rock;
       const ball = pair.bodyA === this.ball || pair.bodyB === this.ball;
       if (!rock || !ball || rock.broken) return;
@@ -224,6 +232,7 @@ export class BonusRoomScene extends Phaser.Scene {
         if (this.textures.exists(key)) this.add.image(x, 0, key).setOrigin(0).setScale(s).setScrollFactor(sf).setDepth(-10);
       }
     }
+    if (this.room.mist === false) return;
     const g = this.add.graphics().setDepth(6);
     const top = this.room.height - 420;
     g.fillGradientStyle(0xdff4ff, 0xdff4ff, 0xdff4ff, 0xdff4ff, 0, 0, 0.85, 0.85);
@@ -303,10 +312,24 @@ export class BonusRoomScene extends Phaser.Scene {
       const [bx, by] = shape[(k + 1) % shape.length];
       const len = Math.hypot(bx - ax, by - ay);
       if (len < 0.5) continue;
+      // Not the underside right under the top's two ends: those boxes' top
+      // corners poked a few px above the ground at the very end, a step that
+      // stopped him dead rolling back over it (knocked back by a bumper).
+      // The top's own thick boxes cover those sides.
+      if (k >= topEdges) {
+        const [lx, ly] = curve[0];
+        const [rx, ry] = curve[curve.length - 1];
+        const nearL = Math.abs(ax - lx) < 60 && ay < ly + 90;
+        const nearR = Math.abs(ax - rx) < 60 && ay < ry + 90;
+        if (nearL || nearR) continue;
+      }
       const a = Math.atan2(by - ay, bx - ax);
       const nx = -Math.sin(a);
       const ny = Math.cos(a);
-      const depth = k < topEdges ? GROUND_DEPTH : UNDER_DEPTH;
+      // No thicker than the island's own rock at its thinnest (its ends): on
+      // Roll Run's thin stacked ramps 150 hung below one ramp into the gap
+      // over the next, and he wedged between them.
+      const depth = k < topEdges ? Math.min(GROUND_DEPTH, Math.max(40, Math.min(110, (isl.under || 300) * 0.37))) : UNDER_DEPTH;
       const b = this.matter.add.rectangle((ax + bx) / 2 + nx * depth / 2, (ay + by) / 2 + ny * depth / 2,
         len + 4, depth, { isStatic: true, angle: a, friction: 0.9, label: 'ground' });
       this.ground.push(b);
@@ -316,15 +339,22 @@ export class BonusRoomScene extends Phaser.Scene {
 
   // How steep the ground is under x, as an angle (down to the right is
   // positive), or null where there's no island.
-  slopeAt(x) {
-    const isl = this.islandAt(x);
+  slopeAt(x, y) {
+    const isl = this.islandAt(x, y);
     if (!isl) return null;
     return Math.atan2(surfaceY(isl.curve, x + 10) - surfaceY(isl.curve, x - 10), 20);
   }
 
-  // The island under x, for coins and the door.
-  islandAt(x) {
-    return this.islands.find((isl) => x >= isl.left && x <= isl.right) || null;
+  // The island under x, for coins and the door. With ramps stacked over
+  // each other (Roll Run) give y too: the one whose top is at or just below
+  // it, else the nearest.
+  islandAt(x, y = null) {
+    const here = this.islands.filter((isl) => x >= isl.left && x <= isl.right);
+    if (y === null || here.length < 2) return here[0] || null;
+    const below = here.map((isl) => ({ isl, d: surfaceY(isl.curve, x) - y })).filter((h) => h.d >= -80);
+    const pick = (below.length ? below : here.map((isl) => ({ isl, d: Math.abs(surfaceY(isl.curve, x) - y) })))
+      .sort((a, b) => a.d - b.d)[0];
+    return pick.isl;
   }
 
   // An upward waterfall: the cove's falls, flowing up.
@@ -388,12 +418,81 @@ export class BonusRoomScene extends Phaser.Scene {
     });
   }
 
+  // A wall of rock (Roll Run's cliffs): x, y, w, h, drawn from the set's
+  // rock like the islands.
+  buildWall(w, i, set) {
+    const key = `bonus-wall-${this.levelId}-${i}`;
+    if (this.textures.exists(key)) this.textures.remove(key);
+    const tex = this.textures.createCanvas(key, w.w, w.h);
+    const ctx = tex.getContext();
+    const skin = set.skin || {};
+    const rk = texKey(this.room.artset, skin.rock || 'sk_rock.png');
+    if (this.textures.exists(rk)) {
+      const pat = ctx.createPattern(this.textures.get(rk).getSourceImage(), 'repeat');
+      pat.setTransform(new DOMMatrix().translate(-w.x, -w.y).scale(0.75));
+      ctx.fillStyle = pat;
+    } else ctx.fillStyle = '#8a7a63';
+    ctx.fillRect(0, 0, w.w, w.h);
+    ctx.fillStyle = 'rgba(30,18,10,0.25)';
+    ctx.fillRect(0, 0, w.w, w.h);
+    ctx.strokeStyle = '#2b1d12';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, w.w - 6, w.h - 6);
+    tex.refresh();
+    this.add.image(w.x, w.y, key).setOrigin(0).setDepth(2.2);
+    const body = this.matter.add.rectangle(w.x + w.w / 2, w.y + w.h / 2, w.w, w.h, { isStatic: true, friction: 0.2, label: 'wall' });
+    return body;
+  }
+
+  // A bumper on the ground (x on island `on`, or at x, y): a round pad that
+  // bounces him away when he touches it.
+  buildBumper(bd) {
+    const r = bd.r || 45;
+    const isl = bd.on !== undefined ? this.islands[bd.on] : null;
+    const y = bd.y !== undefined ? bd.y : (isl ? surfaceY(isl.curve, bd.x) : 900) - r + 4;
+    const g = this.add.graphics().setDepth(3.5).setPosition(bd.x, y);
+    g.fillStyle(COLORS.ink, 1).fillCircle(3, 4, r + 2);
+    g.fillStyle(0xe8553d, 1).fillCircle(0, 0, r);
+    g.fillStyle(0xffc93c, 1).fillCircle(0, 0, r * 0.62);
+    g.fillStyle(0xffffff, 0.8).fillCircle(-r * 0.25, -r * 0.3, r * 0.18);
+    g.lineStyle(5, COLORS.ink, 1).strokeCircle(0, 0, r);
+    const body = this.matter.add.circle(bd.x, y, r, { isStatic: true, restitution: 1, label: 'bumper' });
+    const bump = { x: bd.x, y, r, g, body };
+    body.bumper = bump;
+    return bump;
+  }
+
+  // Off a bumper: away from its middle, at BUMP, and a little up.
+  bounce(bump) {
+    const b = this.ball;
+    const dx = b.position.x - bump.x;
+    const dy = b.position.y - bump.y;
+    const d = Math.hypot(dx, dy) || 1;
+    this.dashUntil = 0;
+    this.fullSpeed = 0;
+    // Straight back the way he came, full strength, and a hop up; and the
+    // arrows can't fight it for a moment (holding forward cut the knock to
+    // a nudge).
+    const back = Math.sign(dx) || -Math.sign(b.velocity.x) || -1;
+    this.bumpedUntil = this.time.now + 500;
+    // His spin turned round with him: still spinning the old way, the
+    // ground's grip stopped him dead the moment he touched down.
+    this.time.delayedCall(0, () => {
+      Matter().Body.setVelocity(b, { x: back * BUMP, y: -BUMP_UP });
+      Matter().Body.setAngularVelocity(b, (back * BUMP) / RADIUS);
+    });
+    audio.sfx(this, 'jump');
+    this.tweens.killTweensOf(bump.g);
+    bump.g.setScale(1);
+    this.tweens.add({ targets: bump.g, scale: 1.25, duration: 90, yoyo: true });
+  }
+
   // A cracked rock sitting on the ground at x: the set's rock, cracked,
   // drawn once on a canvas (a stand-in until Chris draws one). Its coins
   // wait inside, hidden, and pop out along the way ahead when it breaks.
   buildRock(rd, i, set) {
     const r = rd.r || 70;
-    const isl = this.islandAt(rd.x);
+    const isl = rd.on !== undefined ? this.islands[rd.on] : this.islandAt(rd.x);
     const y = (isl ? surfaceY(isl.curve, rd.x) : 900) - r + 6;
     const key = `bonus-rock-${this.levelId}-${i}`;
     if (this.textures.exists(key)) this.textures.remove(key);
@@ -447,7 +546,7 @@ export class BonusRoomScene extends Phaser.Scene {
       // Well ahead, and live from the moment they fly: at full speed he
       // passed spots close by before the coins got there.
       const tx = rd.x + r + 220 + k * 80;
-      const ti = this.islandAt(tx);
+      const ti = isl && tx <= isl.right && tx >= isl.left ? isl : this.islandAt(tx, y);
       const ty = (ti ? surfaceY(ti.curve, tx) : y) - 70;
       const coin = this.add.image(rd.x, y, ckey).setDepth(4).setScale(1.1).setVisible(false);
       coin.hidden = true;
@@ -497,7 +596,7 @@ export class BonusRoomScene extends Phaser.Scene {
 
   buildDoor(set) {
     const d = this.room.door;
-    const isl = this.islandAt(d.x);
+    const isl = d.on !== undefined ? this.islands[d.on] : this.islandAt(d.x);
     const y = isl ? surfaceY(isl.curve, d.x) : 880;
     const db = set.door_bonus;
     const k = db && texKey(this.room.artset, db.file);
@@ -692,7 +791,6 @@ export class BonusRoomScene extends Phaser.Scene {
 
     if (b.position.y > this.room.height + 80) this.fellOff();
   }
-
   // A pool: the set's water over a basin in an island (data: x, y = its
   // surface, w, h). Behind the rock (so the basin's walls show) and behind
   // him and the rings and coins (in front, it washed them all out).
@@ -831,9 +929,11 @@ export class BonusRoomScene extends Phaser.Scene {
     b.ignoreGravity = this.wet;
     if (this.wet) { this.swim(time, dir); return; }
 
-    // A geyser carries him straight up until he slows near the top.
+    // A geyser carries him straight up until he slows near the top; a
+    // bumper's knock carries him back for a moment.
     if (this.geyserRide && b.velocity.y > -10) this.geyserRide = false;
-    if (dir && !this.geyserRide) {
+    const knocked = time < (this.bumpedUntil || 0);
+    if (dir && !this.geyserRide && !knocked) {
       if (grounded) M.Body.setAngularVelocity(b, Phaser.Math.Linear(b.angularVelocity, dir * SPIN, 0.15));
       M.Body.applyForce(b, b.position, { x: dir * (grounded ? PUSH : AIR_PUSH) * b.mass, y: 0 });
     }
@@ -898,7 +998,7 @@ export class BonusRoomScene extends Phaser.Scene {
     if (dir && Math.sign(b.velocity.x) === dir && Math.abs(b.velocity.x) >= MAX_SPEED * 0.95) this.fullSpeed = dir;
     if (dir !== this.fullSpeed || this.geyserRide) this.fullSpeed = 0;
     if (this.fullSpeed && grounded && !this.jumping) {
-      const a = this.slopeAt(b.position.x);
+      const a = this.slopeAt(b.position.x, b.position.y + RADIUS);
       if (a === null || Math.abs(a) > FULL_SPEED_SLOPE) this.fullSpeed = 0;
       else if (Math.hypot(b.velocity.x, b.velocity.y) < MAX_SPEED) {
         M.Body.setVelocity(b, { x: dir * MAX_SPEED * Math.cos(a), y: dir * MAX_SPEED * Math.sin(a) });
@@ -919,7 +1019,7 @@ export class BonusRoomScene extends Phaser.Scene {
     if (this.dashing) {
       // (Not in the step he jumps: pinning him to the ground cancelled a
       // jump made mid-dash.)
-      const a = grounded && !this.jumping ? this.slopeAt(b.position.x) : null;
+      const a = grounded && !this.jumping ? this.slopeAt(b.position.x, b.position.y + RADIUS) : null;
       // Only along the ground: in the air it keeps what speed he has (a dash
       // started mid-leap out of a pool hit the steep bank at dash speed and
       // ramped him over the rock, the gap and into the next island).

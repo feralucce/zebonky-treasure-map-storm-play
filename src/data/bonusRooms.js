@@ -16,13 +16,17 @@
 //             `along` an island's top, `n` of them; or `points`, each one
 //             placed (the jumps' coins: taken from the path the test bot
 //             actually flies, tools/bonus_bot.js `trace`, so they can be got)
-//   rocks     cracked rocks on the ground at `x`, radius `r`: dash into one
+//   rocks     cracked rocks on the ground at `x` (on island `on`), radius `r`: dash into one
 //             (double-tap forward) and it smashes, `coins` spilling out
 //             ahead; rolling, he bounces off
 //   pools     deep water over a basin in an island: `x`, `y` (its surface),
 //             `w`, `h`. In it he swims as a shark, any way the arrows say
 //   rings     hoops at `x`, `y`: touch one during a dash to claim it (one
 //             each, or `coins`). With no coins in the room, rings are the score
+//   walls     rock walls, `x`, `y`, `w`, `h` (Roll Run's cliffs)
+//   bumpers   round pads on island `on` at `x` (or at `x`, `y`), radius `r`:
+//             touch one and it bounces him away
+//   mist      false: no mist at the bottom (a room with a floor)
 //   intro     the line shown as it starts
 //   door      the door at the end: reach it and the room is done
 //
@@ -271,6 +275,103 @@ export const BONUS_ROOMS = {
       { along: 3, from: 10300, to: 10750, n: 4 },
     ],
     door: { x: 10950 },
+  },
+
+  // Shaan's fifth: Roll Run (the user's pick, 2026-11-02). A descent: six
+  // switchback ramps between two cliff walls, rolling right, then left, and
+  // dropping through the gap at each ramp's low end onto the next. A hole
+  // down the middle of every ramp and the floor, lined up, open at the
+  // bottom (the user: "there is no way to fail it"): fall in and he drops,
+  // onto a lower ramp or out of the bottom, the only way to fail (the
+  // user, 2026-11-03: "if they fall, let them fall"). Bumpers knock him
+  // back hard (jump them); two cracked rocks.
+  'dorsal-5': {
+    name: 'Roll Run',
+    artset: 'dorsal_cove',
+    width: 2400,
+    height: 5300,
+    start: [260, 420],
+    mist: false,
+    intro: 'Roll down the switchbacks!\nJump the holes and the bumpers.',
+    walls: [
+      { x: 0, y: 0, w: 120, h: 5300 },
+      { x: 2280, y: 0, w: 120, h: 5300 },
+    ],
+    // Each ramp in two, either side of the shaft (x 1150 to 1390); the far
+    // side of each hole is a little higher than the edge he leaves from,
+    // and the last 150 px before each edge are nearly flat (a curve there
+    // threw him into the air just as he needed to jump).
+    islands: [
+      // 0, 1: ramp one, down to the right.
+      { under: 130, top: [[120, 500], [600, 560], [1000, 680], [1150, 690]] },
+      { under: 130, top: [[1390, 660], [1800, 800], [2100, 860]] },
+      // 2, 3: ramp two, down to the left.
+      { under: 130, top: [[300, 1700], [900, 1560], [1150, 1390]] },
+      { under: 130, top: [[1390, 1420], [1540, 1412], [2000, 1320], [2280, 1300]] },
+      // 4, 5: ramp three, right.
+      { under: 130, top: [[120, 1900], [700, 1960], [1000, 2050], [1150, 2060]] },
+      { under: 130, top: [[1390, 2030], [1900, 2200], [2100, 2260]] },
+      // 6, 7: ramp four, left.
+      { under: 130, top: [[300, 3100], [900, 2960], [1150, 2830]] },
+      { under: 130, top: [[1390, 2860], [1540, 2852], [2000, 2720], [2280, 2700]] },
+      // 8, 9: ramp five, right.
+      { under: 130, top: [[120, 3300], [700, 3360], [1000, 3450], [1150, 3460]] },
+      { under: 130, top: [[1390, 3430], [1900, 3600], [2100, 3660]] },
+      // 10, 11: ramp six, left.
+      { under: 130, top: [[300, 4500], [900, 4360], [1150, 4270]] },
+      { under: 130, top: [[1390, 4300], [1540, 4292], [2000, 4120], [2280, 4100]] },
+      // 12, 13: the floor, the shaft through it too, and the door.
+      { under: 160, top: [[120, 4900], [700, 4900], [1150, 4900]] },
+      { under: 160, top: [[1390, 4870], [1900, 4870], [2280, 4870]] },
+    ],
+    bumpers: [
+      // One a ramp, past its hole: before it, the jump over the bumper
+      // carried him over the hole too. And not right where he lands from a
+      // drop: with no run-up he bounced back into the wall again and again.
+      { on: 1, x: 1700 }, { on: 2, x: 900 }, { on: 5, x: 1700 },
+      { on: 6, x: 850 }, { on: 9, x: 1650 }, { on: 10, x: 800 },
+    ],
+    rocks: [
+      { on: 2, x: 550, r: 70, coins: 4 },
+      { on: 9, x: 1950, r: 70, coins: 4 },
+    ],
+    coins: [
+      // Coins the test run flew past after jumping a bumper were moved onto
+      // its path (tools/bonus_bot.js, `trace`).
+      { along: 0, from: 300, to: 700, n: 4 },
+      { along: 0, from: 900, to: 1100, n: 3 },
+      { points: [[1146, 570], [1270, 485], [1360, 487]] },
+      { points: [[1468, 490], [1661, 555], [1806, 650], [1900, 754], [2050, 781]] },
+      { line: [2190, 1000, 2190, 1200], n: 3 },
+      { along: 3, from: 2200, to: 1900, n: 3 },
+      { along: 3, from: 1700, to: 1450, n: 3 },
+      { points: [[1405, 1308], [1270, 1215], [1176, 1216]] },
+      { points: [[1083, 1217], [890, 1275], [761, 1353], [665, 1433]] },
+      { line: [210, 1780, 210, 1840], n: 2 },
+      { along: 4, from: 300, to: 680, n: 4 },
+      { along: 4, from: 880, to: 1100, n: 2 },
+      { points: [[1144, 1949], [1270, 1855], [1353, 1860]] },
+      { points: [[1465, 1856], [1658, 1908]] },
+      { points: [[1852, 2032], [1925, 2138], [2050, 2176]] },
+      { points: [[2190, 2400], [2121, 2476], [2088, 2559]] },
+      { points: [[2007, 2680], [2050, 2641], [1900, 2675]] },
+      { along: 7, from: 1700, to: 1450, n: 3 },
+      { points: [[1397, 2753], [1270, 2655], [1199, 2667]] },
+      { points: [[1086, 2659], [844, 2727], [667, 2849], [575, 2970], [400, 3008]] },
+      { along: 8, from: 300, to: 680, n: 4 },
+      { along: 8, from: 880, to: 1100, n: 2 },
+      { points: [[1144, 3339], [1270, 3255], [1356, 3256]] },
+      { points: [[1479, 3262], [1640, 3315]] },
+      { points: [[2190, 3800], [2136, 3871], [2099, 3972]] },
+      { points: [[2006, 4080], [2050, 4039], [1900, 4083]] },
+      { along: 11, from: 1700, to: 1450, n: 3 },
+      { points: [[1404, 4193], [1270, 4095], [1187, 4102]] },
+      { points: [[1093, 4100], [900, 4152], [739, 4250]] },
+      { along: 12, from: 300, to: 1100, n: 5 },
+      { points: [[1146, 4779], [1270, 4695], [1358, 4696]] },
+      { points: [[1466, 4699], [1625, 4800], [1800, 4800]] },
+    ],
+    door: { x: 2000, on: 13 },
   },
 };
 

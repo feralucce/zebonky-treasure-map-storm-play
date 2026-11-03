@@ -2,21 +2,21 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=2520a1d';
-import { TILE, layoutFor } from '../data/levels.js?v=2520a1d';
-import { state } from '../state.js?v=2520a1d';
-import { COLORS, heading, text } from '../theme.js?v=2520a1d';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=2520a1d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=2520a1d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=2520a1d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=2520a1d';
-import { makeNav } from '../pathing.js?v=2520a1d';
-import { startQuestionRun } from '../data/questions.js?v=2520a1d';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=2520a1d';
-import { Companion } from '../companion.js?v=2520a1d';
-import { startShowcase } from '../showcase.js?v=2520a1d';
-import { startExplorerTour } from '../explorerTour.js?v=2520a1d';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=2520a1d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=1758cb2';
+import { TILE, layoutFor } from '../data/levels.js?v=1758cb2';
+import { state } from '../state.js?v=1758cb2';
+import { COLORS, heading, text } from '../theme.js?v=1758cb2';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=1758cb2';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=1758cb2';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=1758cb2';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=1758cb2';
+import { makeNav } from '../pathing.js?v=1758cb2';
+import { startQuestionRun } from '../data/questions.js?v=1758cb2';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=1758cb2';
+import { Companion } from '../companion.js?v=1758cb2';
+import { startShowcase } from '../showcase.js?v=1758cb2';
+import { startExplorerTour } from '../explorerTour.js?v=1758cb2';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=1758cb2';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
