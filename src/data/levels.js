@@ -6,8 +6,8 @@
 //   V  vine wall: hold Up to climb, Down to climb down, Jump to leap off
 //   F  dorsal-fin rock (scenery)
 //   T  quiz treasure (numbered left to right: 1st T is item 0, and so on)
-//   G  goal flag       S  bonus level door (in code: the secret exit)
-//   Q  secret door: the biome's portal (to the secret level, once there are some)
+//   G  goal flag       S  bonus level door, drawn as the biome's portal (in code: the secret exit)
+//   (Q, the old secret door, is gone, 2026-11-04: a letter waits where it was)
 //   P  player start    .  empty
 //   <  >  ^  [  ]  arrow signposts: left, right, up, up-left, up-right (scenery)
 //   h  a wall you can swim through: water, drawn like the stone round it

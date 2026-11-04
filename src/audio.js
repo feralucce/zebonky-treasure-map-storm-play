@@ -78,7 +78,9 @@ const FADE_MS = 1200;
 // jump and toss (cloth), paw (zap up), hint and right answer from Kenney's
 // packs. From OpenGameArt: splash by rubberduck, swimming by jcpmcdonald, food pickup
 // twinkle by Bobjt, eating crunch by StarNinjas, secret door and level end
-// chimes by JaggedStone, crate opening by Oiboo.
+// chimes by JaggedStone, crate opening by Oiboo. The launch pad: two
+// Pixabay effects layered (a short bass by P F, stu9, and a jump by
+// freesound_community; the user, 2026-11-03), see CREDITS.md.
 const fx = (name, volume) => ({ url: [`assets/audio/sfx/${name}.ogg`, `assets/audio/sfx/${name}.mp3`], volume });
 export const SFX = {
   'step-0': fx('step-0', 0.16),
@@ -97,6 +99,7 @@ export const SFX = {
   'level-end': fx('level-end', 0.6),
   crate: fx('crate', 0.35),
   hint: fx('hint', 0.15), // loud files: kept soft
+  pad: fx('pad', 0.3),    // a runner room's launch pad (a loud mix: kept soft)
   correct: fx('correct', 0.18),
 };
 

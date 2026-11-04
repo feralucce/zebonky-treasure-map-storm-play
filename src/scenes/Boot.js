@@ -1,11 +1,12 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=1758cb2';
-import { testParams, DRAWN } from '../data/levels.js?v=1758cb2';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=1758cb2';
-import { CHARACTERS } from '../data/characters.js?v=1758cb2';
-import { state } from '../state.js?v=1758cb2';
-import { COLORS, heading, text } from '../theme.js?v=1758cb2';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=1758cb2';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=1758cb2';
+import { ARTSETS, texKey } from '../data/artsets.js?v=c071cd2';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=c071cd2';
+import { testParams, DRAWN } from '../data/levels.js?v=c071cd2';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=c071cd2';
+import { CHARACTERS } from '../data/characters.js?v=c071cd2';
+import { state } from '../state.js?v=c071cd2';
+import { COLORS, heading, text } from '../theme.js?v=c071cd2';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=c071cd2';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=c071cd2';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -135,6 +136,10 @@ export class BootScene extends Phaser.Scene {
         const dr = data.dressing || {};
         [dr.trunk, ...(dr.ground_plants || []), ...(dr.hangers || [])].forEach(add);
         Object.values(data.canopy || {}).flat().forEach(add);
+        // Bonus rooms with painted islands (tools/moss_bonus_islands.py).
+        Object.entries(BONUS_ROOMS).filter(([, r]) => r.artset === name && r.painted)
+          .forEach(([id, r]) => r.islands.forEach((_, i) => (r.painted === true || r.painted.includes(i))
+            && add(`bonus/${id}-island-${i}.png`)));
         // The bonus level door (tools/make_bonus_door.py): its opening
         // frames, in each of its five dressings.
         if (data.door_bonus) {
@@ -212,6 +217,12 @@ export class BootScene extends Phaser.Scene {
     }
     // index.html?bonustest=dorsal-1: that level's bonus room on its own, in
     // test mode (falling off starts it over).
+    // index.html?bonusinspect=dorsal-1: that room still, in inspection mode.
+    const bonusInspect = new URLSearchParams(window.location.search).get('bonusinspect');
+    if (bonusInspect) {
+      this.scene.start('BonusRoom', { levelId: playableLevelId(bonusInspect), test: true, inspect: true });
+      return;
+    }
     const bonusTest = new URLSearchParams(window.location.search).get('bonustest');
     if (bonusTest) {
       this.scene.start('BonusRoom', { levelId: playableLevelId(bonusTest), test: true });

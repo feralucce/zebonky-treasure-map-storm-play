@@ -11,19 +11,50 @@
 // hills and curves (the user, 2026-11-02). Shaan rolls with his own curl-up
 // strip (the artset's `run`: curl, roll, uncurl when he stops).
 //
+// Inspection mode (index.html?bonusinspect=<level id>, the user,
+// 2026-11-03): the room still, a marker to fly about it, zoom, and every
+// island, geyser, waterfall, pool, rock, bumper and ring labelled with its
+// number, for notes.
+//
 // Test mode (index.html?bonustest=<level id>, the user, 2026-11-02): the
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=1758cb2';
-import { texKey } from '../data/artsets.js?v=1758cb2';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=1758cb2';
-import { zebonkyArt, ensureAnims, faceArt, play } from '../actors.js?v=1758cb2';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=1758cb2';
-import { audio } from '../audio.js?v=1758cb2';
-import { COLORS, heading, text } from '../theme.js?v=1758cb2';
+import { MAP_W, MAP_H } from '../data/world.js?v=c071cd2';
+import { texKey } from '../data/artsets.js?v=c071cd2';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=c071cd2';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=c071cd2';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=c071cd2';
+import { audio } from '../audio.js?v=c071cd2';
+import { COLORS, heading, text } from '../theme.js?v=c071cd2';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
+
+// Runner rooms (`runner: true`; Chimpanzeetah Speedway, the user,
+// 2026-11-03, "a bit like the Donkey Kong Country mine cart levels"): the
+// player drives him ("we drive him - he doesn't run on his own"): holding
+// right he speeds up, quickly to a run and then on, the longer he holds it,
+// to a cheetah's sprint; let go and he slows to a stop; left brakes and
+// runs him back. Fruit gives a boost, used with a double tap forward;
+// launch pads throw him high, always the same; rocks trip him and slow
+// him; he runs through hollow logs. The medal is for his time to the door.
+// Speeds are px a step.
+const RUN = {
+  run: 12,        // where holding right gets him quickly
+  sprint: 16,     // where it carries on to, the longer he holds it
+  back: 8,        // running back, holding left
+  accel: 0.35,    // speeding up to `run`, a step
+  creep: 0.04,    // from `run` on to `sprint`, a step (about 1.7 s)
+  coast: 0.4,     // slowing, with nothing held
+  brake: 0.8,     // slowing, holding the other way
+  rockBack: 3,    // a rock stops him dead and knocks him back this much
+  // A launch pad's throw, always the same, boosted or not (the user,
+  // 2026-11-03: "no boost for a bigger launch. Always launch high"): about
+  // 790 px, a path and more up (34, about 1080, was "way too high").
+  pad: 29,
+  boosts: 3,      // fruit held at most
+  jump: 18,       // his jump (the user, 2026-11-03: "let Charlie jump higher"; 14 elsewhere)
+};
 
 const SCALE = 0.9;          // Shaan's frames (163 x 128) on screen
 const RADIUS = 38;          // the ball: his curled-up shell at this scale
@@ -42,6 +73,14 @@ const UNCURL_AFTER = 300;   // ms stopped before he uncurls
 // don't poke up through the top near an island's ends.
 const GROUND_DEPTH = 150;
 const UNDER_DEPTH = 40;
+// The islands' drawing: the levels' outline colour (Platformer.js
+// skinEdgeTile), and grass only on a top gentler than this (radians, about
+// 45 degrees: the grass is drawn in upright columns, and steeper than that
+// they pull apart).
+const OUTLINE = 'rgb(44,38,56)';
+const GRASS_STEEPEST = 0.8;
+const ART_PX = 4;           // one pixel of Chris's art, in game px
+const CORNER = 16;          // how far down an island's side its rounded top corner reaches
 const MAX_FALL = 24;        // px a step: about as fast as he falls
 const FULL_SPEED_SLOPE = 0.7; // radians (40 degrees): full speed holds up slopes gentler than this
 // Cracked rocks (Shell Bust, the user, 2026-11-02): rolling into one at this
@@ -87,8 +126,12 @@ function smooth(pts, step = 12) {
 }
 
 // The island's whole outline, clockwise: its top, then the rock under it
-// tapering to a point `under` px below its lowest point.
-function outline(top, under = 300) {
+// tapering to a point `under` px below its lowest point. `solid`: an island
+// with a pool in it is one mass of rock, a rounded belly under the whole
+// pool (hung from the top close by, the pool was a thin U of rock: pillar
+// walls, hooked banks, a V underneath; the user, 2026-11-03: "these shapes
+// are bad").
+function outline(top, under = 300, solid = false) {
   const curve = smooth(top);
   const [xl, yl] = top[0];
   const [xr, yr] = top[top.length - 1];
@@ -109,11 +152,51 @@ function outline(top, under = 300) {
   // island: across a deep pool's basin that line cut through the pool, a
   // wedge of rock in the water and an invisible wall in it.
   const deepest = (x) => Math.max(...curve.filter(([px]) => Math.abs(px - x) < 160).map(([, py]) => py), surfaceY(curve, x));
+  // A pool island's underside: one rounded belly under the deep part
+  // (the pool and its walls), eased up to each end of the island.
+  const lowest = Math.max(...curve.map(([, py]) => py));
+  const deep = curve.filter(([, py]) => py >= lowest - 0.5 * (lowest - Math.min(yl, yr)));
+  const xa = Math.max(xl + 1, Math.min(...deep.map(([px]) => px)) - 120);
+  const xb = Math.min(xr - 1, Math.max(...deep.map(([px]) => px)) + 120);
+  const ease = (f) => (1 - Math.cos(Math.PI * f)) / 2;
+  // Each end eased up to the lowest ground within 450 px of it, not to the
+  // end point itself: where an island ends in a wall (behind a door), that
+  // left the wall a thin curled tusk (the user, 2026-11-03: "this looks
+  // silly").
+  const endL = Math.max(...curve.filter(([px]) => px - xl < 450).map(([, py]) => py));
+  const endR = Math.max(...curve.filter(([px]) => xr - px < 450).map(([, py]) => py));
+  // The ends stay half as deep as the belly: eased all the way up, the
+  // underside climbed under the end and kinked flat (an elbow).
+  const tipL = endL + side + 0.5 * Math.max(0, lowest + 90 - endL - side);
+  const tipR = endR + side + 0.5 * Math.max(0, lowest + 90 - endR - side);
+  const belly = (x) => {
+    if (x < xa) return tipL + (lowest + 90 - tipL) * ease((x - xl) / (xa - xl));
+    if (x > xb) return tipR + (lowest + 90 - tipR) * ease((xr - x) / (xr - xb));
+    return lowest + 90 + 60 * Math.sin((Math.PI * (x - xa)) / (xb - xa));
+  };
   const pts = [[xr, yr]];
   const n = Math.max(4, Math.ceil(span / 120));
-  for (let i = 0; i <= n; i++) {
-    const x = xr - (span * i) / n;
-    pts.push([x, deepest(x) + hang((x - xl) / span)]);
+  if (solid) {
+    // Each bottom corner rounded on purpose: the side straight down, a
+    // 40 px turn, then the underside (left to the smoothing, the square
+    // corner came out with a dip and a lip, an elbow).
+    const under = (x) => Math.max(belly(x), surfaceY(curve, x) + 60);
+    const yR = under(xr);
+    const yL = under(xl);
+    const down = (y0, y1) => [0.5, 0.8].map((f) => y0 + (y1 - y0) * f).filter((y) => y1 - y > 30);
+    down(yr, yR - 40).forEach((y) => pts.push([xr, y]));
+    pts.push([xr, yR - 40], [xr - 12, yR - 12], [xr - 40, yR], [xr - 80, under(xr - 80)]);
+    for (let i = 1; i < n; i++) {
+      const x = xr - (span * i) / n;
+      if (x < xr - 80 && x > xl + 80) pts.push([x, under(x)]);
+    }
+    pts.push([xl + 80, under(xl + 80)], [xl + 40, yL], [xl + 12, yL - 12], [xl, yL - 40]);
+    down(yl, yL - 40).reverse().forEach((y) => pts.push([xl, y]));
+  } else {
+    for (let i = 0; i <= n; i++) {
+      const x = xr - (span * i) / n;
+      pts.push([x, deepest(x) + hang((x - xl) / span)]);
+    }
   }
   pts.push([xl, yl]);
   const rock = smooth(pts, 24);
@@ -143,6 +226,10 @@ export class BonusRoomScene extends Phaser.Scene {
     this.levelId = data.levelId;
     this.parentKey = data.parentKey;
     this.test = !!data.test;
+    this.inspect = !!data.inspect;
+    // Islands with no dressing (index.html?bonusinspect=<id>&bare), to
+    // export as the input for a MOSS repaint.
+    this.bare = this.inspect && new URLSearchParams(location.search).has('bare');
     this.retry = !!data.retry;     // test mode, starting over: no opening line
     this.room = bonusRoomFor(this.levelId);
     this.leaving = false;
@@ -171,6 +258,12 @@ export class BonusRoomScene extends Phaser.Scene {
     this.jumpAsked = false;        // a jump pressed since the last step
     this.jumpHeld = false;
     this.grounded = false;
+    this.runSpeed = 0;               // runner rooms
+    this.boosts = 0;
+    this.runSteps = -1;              // physics steps since GO (-1: not yet)
+    // A runner room counts down first (the user, 2026-11-03: "start with
+    // 'Go Fast!' and then a count down"); `quick` skips it (the test bot).
+    this.waiting = !!this.room && !!this.room.runner && !data.quick;
   }
 
   create() {
@@ -180,6 +273,20 @@ export class BonusRoomScene extends Phaser.Scene {
     this.buildBackdrop(set);
     this.ground = [];
     this.islands = room.islands.map((isl, i) => this.buildIsland(isl, i, set));
+    // A runner room's higher paths are one way (the user, 2026-11-03: "jump
+    // up through the platforms but not down through them"): every path but
+    // the lowest lets him pass up through from below and land on top.
+    if (room.runner) {
+      // (By each one's lowest ground: the last stretch ends in the wall
+      // behind the door, high up.)
+      const ends = this.islands.map((isl) => Math.max(...isl.curve.map(([, y]) => y)));
+      const low = Math.max(...ends);
+      this.islands.forEach((isl, i) => {
+        if (ends[i] > low - 120) return;
+        isl.oneWay = true;
+        isl.bodies.forEach((bd) => { bd.oneWay = isl; });
+      });
+    }
     (room.falls || []).forEach((f) => this.buildFalls(f, set));
     this.geysers = (room.geysers || []).map((g) => this.buildGeyser(g, set));
     this.buildCoins();
@@ -190,6 +297,9 @@ export class BonusRoomScene extends Phaser.Scene {
     this.rings = (room.rings || []).map((r) => this.buildRing(r));
     this.unit = this.coins.length ? 'coins' : 'rings';
     this.buildDoor(set);
+    if (room.runner) this.buildRunner(set);
+    // Painted islands carry their own plants.
+    if (!this.bare && !room.painted) this.dressIslands(set);
     this.buildShaan();
     this.buildHud();
     this.buildControls();
@@ -217,6 +327,114 @@ export class BonusRoomScene extends Phaser.Scene {
       }
     }));
     cam.fadeIn(300, 43, 29, 18);
+    if (this.inspect) this.startInspect();
+  }
+
+  // Inspection: no Shaan rolling, a marker instead; the panel says where it
+  // is and what's under it.
+  startInspect() {
+    const M = Matter();
+    M.Body.setStatic(this.ball, true);
+    if (this.intro && this.intro.active) this.intro.destroy();
+    const [sx, sy] = this.room.start;
+    const m = this.add.container(sx, sy).setDepth(30);
+    m.add(this.add.circle(0, 0, 20, 0xff3b6b, 0.85).setStrokeStyle(4, 0xffffff));
+    m.add(this.add.circle(0, 0, 3, 0xffffff));
+    this.marker = m;
+    const cam = this.cameras.main;
+    cam.stopFollow();
+    cam.startFollow(m, true, 0.18, 0.18);
+    this.inspectKeys = this.input.keyboard.addKeys('SHIFT,UP,DOWN,LEFT,RIGHT,W,A,S,D');
+    // Everything numbered, as the data file has it.
+    const tag = (x, y, label, color) => this.add.text(x, y, label, heading(22, '#ffffff', {
+      backgroundColor: color, padding: { x: 8, y: 2 },
+    })).setOrigin(0.5, 1).setDepth(29);
+    this.islands.forEach((isl, i) => tag(isl.left + 50, surfaceY(isl.curve, isl.left + 50) - 50, `island ${i}`, 'rgba(43,29,18,0.85)'));
+    (this.room.geysers || []).forEach((g, i) => tag(g.x, g.y - 70, `geyser ${i}`, 'rgba(30,90,140,0.85)'));
+    (this.falls || []).forEach((f, i) => tag(f.x + f.w / 2, f.top - 20, `falls ${i}`, 'rgba(30,90,140,0.85)'));
+    (this.pools || []).forEach((w, i) => tag(w.x + 80, w.y - 10, `pool ${i}`, 'rgba(30,90,140,0.85)'));
+    (this.rocks || []).forEach((r, i) => tag(r.x, r.y - r.r - 10, `rock ${i}`, 'rgba(110,70,40,0.9)'));
+    (this.bumpers || []).forEach((b, i) => tag(b.x, b.y - b.r - 10, `bumper ${i}`, 'rgba(170,50,40,0.9)'));
+    (this.rings || []).forEach((r, i) => tag(r.x, r.y - r.r - 10, `ring ${i}`, 'rgba(150,110,20,0.9)'));
+    (this.pads || []).forEach((pd, i) => tag(pd.x, pd.y - 60, `pad ${i}`, 'rgba(40,130,60,0.9)'));
+    (this.stumbles || []).forEach((r, i) => tag(r.x, r.y - 110, `trip rock ${i}`, 'rgba(110,70,40,0.9)'));
+    (this.logs || []).forEach((lg, i) => tag(lg.x, lg.y - 165, `log ${i}`, 'rgba(110,70,40,0.9)'));
+    (this.fruit || []).forEach((f, i) => tag(f.x, f.y - 30, `fruit ${i}`, 'rgba(170,120,20,0.9)'));
+    const panel = this.add.text(14, 112, '', text(16, '#ffffff', {
+      backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 10, y: 6 }, lineSpacing: 2,
+    })).setScrollFactor(0).setDepth(40);
+    this.inspectPanel = () => {
+      const isl = this.islandAt(m.x, m.y);
+      const i = isl ? this.islands.indexOf(isl) : -1;
+      panel.setText(`Inspection: x ${Math.round(m.x)}, y ${Math.round(m.y)}${i >= 0 ? `   (over island ${i})` : ''}
+Drag, or arrows / WASD (Shift is faster)
+Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
+    };
+    this.inspectPanel();
+    this.inspectZoom(panel);
+    this.input.on('pointermove', (pt) => {
+      if (!pt.isDown) return;
+      m.x = Phaser.Math.Clamp(m.x - (pt.x - pt.prevPosition.x) / cam.zoom, 0, this.room.width);
+      m.y = Phaser.Math.Clamp(m.y - (pt.y - pt.prevPosition.y) / cam.zoom, 0, this.room.height);
+      this.inspectPanel();
+    });
+  }
+
+  // Zoom as in the levels' inspection (Platformer.js inspectZoomSetup): the
+  // main camera zooms round the marker, anything fixed to the screen goes to
+  // a second camera that never zooms.
+  inspectZoom(panel) {
+    const main = this.cameras.main;
+    main.setBounds(-2000, -2000, this.room.width + 4000, this.room.height + 4000);
+    const ui = this.cameras.add(0, 0, main.width, main.height);
+    const sorted = new WeakSet();
+    let seen = -1;
+    const sort = () => {
+      const list = this.children.list;
+      if (list.length === seen) return;
+      seen = list.length;
+      list.forEach((o) => {
+        if (sorted.has(o)) return;
+        sorted.add(o);
+        if (o.scrollFactorX === 0 && o.scrollFactorY === 0) main.ignore(o);
+        else ui.ignore(o);
+      });
+    };
+    this.events.on('prerender', sort);
+    this.events.once('shutdown', () => this.events.off('prerender', sort));
+    const zoomBy = (f) => {
+      let z = Phaser.Math.Clamp(main.zoom * f, 0.1, 2);
+      if (Math.abs(z - 1) < 0.1) z = 1;
+      main.setZoom(z);
+      this.inspectPanel();
+    };
+    this.input.on('wheel', (pt, over, dx, dy) => zoomBy(dy > 0 ? 1 / 1.15 : 1.15));
+    const K = Phaser.Input.Keyboard.KeyCodes;
+    this.input.keyboard.on('keydown', (e) => {
+      if ([K.PLUS, K.NUMPAD_ADD].includes(e.keyCode) || e.key === '=' || e.key === '+') zoomBy(1.25);
+      else if ([K.MINUS, K.NUMPAD_SUBTRACT].includes(e.keyCode) || e.key === '-') zoomBy(1 / 1.25);
+    });
+    const button = (x, label, f) => {
+      const b = this.add.text(x, panel.y + panel.height + 10, label, heading(30, '#ffffff', {
+        backgroundColor: 'rgba(43,29,18,0.8)', padding: { x: 16, y: 2 },
+      })).setScrollFactor(0).setDepth(40).setInteractive({ useHandCursor: true });
+      b.on('pointerdown', (pt, lx, ly, ev) => { ev.stopPropagation(); zoomBy(f); });
+      return b;
+    };
+    const minus = button(14, '\u2212', 1 / 1.25);
+    button(minus.x + minus.width + 10, '+', 1.25);
+    sort();
+  }
+
+  inspectUpdate(delta) {
+    const k = this.inspectKeys;
+    const speed = (k.SHIFT.isDown ? 1800 : 600) * (delta / 1000) / Math.max(0.5, this.cameras.main.zoom);
+    const dx = (k.RIGHT.isDown || k.D.isDown ? 1 : 0) - (k.LEFT.isDown || k.A.isDown ? 1 : 0);
+    const dy = (k.DOWN.isDown || k.S.isDown ? 1 : 0) - (k.UP.isDown || k.W.isDown ? 1 : 0);
+    const m = this.marker;
+    m.x = Phaser.Math.Clamp(m.x + dx * speed, 0, this.room.width);
+    m.y = Phaser.Math.Clamp(m.y + dy * speed, 0, this.room.height);
+    if (dx || dy) this.inspectPanel();
   }
 
   // The cove's own backdrop pieces, far off, and a mist where the bottom
@@ -242,12 +460,15 @@ export class BonusRoomScene extends Phaser.Scene {
   // One island: its rock drawn on a canvas (the cove's rock, the moss along
   // its top) and its outline as a chain of thin static boxes.
   buildIsland(isl, i, set) {
-    const { curve, shape } = outline(isl.top, isl.under);
+    const pooled = (this.room.pools || []).some((w) => w.x < isl.top[isl.top.length - 1][0] && w.x + w.w > isl.top[0][0]);
+    const { curve, shape } = outline(isl.top, isl.under, pooled);
     const pad = 70;
     const xs = shape.map((p) => p[0]);
     const ys = shape.map((p) => p[1]);
-    const x0 = Math.min(...xs) - pad;
-    const y0 = Math.min(...ys) - pad;
+    // On the art's pixel grid, or every column of grass lands blurred
+    // between two pixels.
+    const x0 = Math.floor((Math.min(...xs) - pad) / ART_PX) * ART_PX;
+    const y0 = Math.floor((Math.min(...ys) - pad) / ART_PX) * ART_PX;
     const w = Math.ceil(Math.max(...xs) + pad - x0);
     const h = Math.ceil(Math.max(...ys) + pad - y0);
     const key = `bonus-island-${this.levelId}-${i}`;
@@ -264,12 +485,16 @@ export class BonusRoomScene extends Phaser.Scene {
       const k = file && texKey(this.room.artset, file);
       return k && this.textures.exists(k) ? this.textures.get(k).getSourceImage() : null;
     };
-    const skin = set.skin || {};
+    // The set's ground skin (its rock, moss and the moss's end pieces), as
+    // the levels draw their ground (Platformer.js drawSkin).
+    const skin = set.skin || (Object.values(set.sets || {}).find((g) => g.skin) || {}).skin || {};
     const rock = img(skin.rock || 'sk_rock.png');
     path();
     if (rock) {
       const pat = ctx.createPattern(rock, 'repeat');
-      pat.setTransform(new DOMMatrix().translate(x0, y0).scale(0.75));
+      // 1:1 like the levels' tiles, and not smoothed: pixel art.
+      ctx.imageSmoothingEnabled = false;
+      pat.setTransform(new DOMMatrix().translate(x0, y0));
       ctx.fillStyle = pat;
     } else ctx.fillStyle = '#8a7a63';
     ctx.fill();
@@ -281,31 +506,221 @@ export class BonusRoomScene extends Phaser.Scene {
     path();
     ctx.fillStyle = shade;
     ctx.fill();
+
+    // The top, a bit of curve at a time; grass only where it's gentle (the
+    // user's notes, 2026-11-03: it ran up the walls as a green band, and
+    // fanned out into spikes round the tight bends).
+    const segs = [];
+    for (let k = 0; k < curve.length - 1; k++) {
+      const [ax, ay] = curve[k];
+      const [bx, by] = curve[k + 1];
+      const a = Math.atan2(by - ay, bx - ax);
+      segs.push({ ax, ay, bx, by, a, len: Math.hypot(bx - ax, by - ay), grass: Math.abs(a) <= GRASS_STEEPEST });
+    }
+    // The rounded corner and the grass's end pieces fit a flat, grassy end
+    // only: on a slope rock showed above the piece's rounded corner, and on a
+    // bare steep tip the step left stray outline pixels in the air.
+    const flat = (g) => g.grass && Math.abs(g.a) < 0.3;
+    const roundL = flat(segs[0]);
+    const roundR = flat(segs[segs.length - 1]);
+    // The steep bare faces, each whole (the top comes in short pieces).
+    const faces = [];
+    segs.forEach((g) => {
+      if (g.grass) return;
+      const f = faces[faces.length - 1];
+      if (f && Math.abs(f.bx - g.ax) < 1 && Math.abs(f.by - g.ay) < 1) { f.bx = g.bx; f.by = g.by; f.len += g.len; f.pts.push([g.bx, g.by]); }
+      else faces.push({ ...g, pts: [[g.ax, g.ay], [g.bx, g.by]] });
+    });
+    // Dressed as the levels' rock walls are (the user's note, 2026-11-03:
+    // "this needs better dressing"): shaded in from the edge (the skin's
+    // edge pieces, dark at the edge fading in), and leaves clinging to the
+    // face inside the rock, as on the levels' side tiles, cut off by the
+    // outline and fading out toward the inside. Never vines: in the levels
+    // the vine strand is the climbing vine.
+    ctx.save();
     path();
+    ctx.clip();
+    ctx.lineCap = 'round';
+    [[44, 0.1], [28, 0.12], [14, 0.16]].forEach(([wid, al]) => {
+      ctx.lineWidth = wid;
+      ctx.strokeStyle = `rgba(30,18,24,${al})`;
+      faces.forEach((f) => {
+        ctx.beginPath();
+        f.pts.forEach(([x, y], k) => (k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.stroke();
+      });
+    });
+    const leaves = ((set.dressing || {}).ground_plants || []).filter((f) => /leaf|grass/.test(f)).map((f) => img(f)).filter(Boolean)
+      .map((im) => {
+        // Faded out over its lower half, so no flat bottom shows on the rock.
+        const c = document.createElement('canvas');
+        c.width = im.width;
+        c.height = im.height;
+        const cc = c.getContext('2d');
+        cc.drawImage(im, 0, 0);
+        cc.globalCompositeOperation = 'destination-in';
+        const fade = cc.createLinearGradient(0, 0, 0, im.height);
+        fade.addColorStop(0.45, 'rgba(0,0,0,1)');
+        fade.addColorStop(1, 'rgba(0,0,0,0)');
+        cc.fillStyle = fade;
+        cc.fillRect(0, 0, im.width, im.height);
+        return c;
+      });
+    if (leaves.length && !this.bare) {
+      let n = 0;
+      faces.forEach((f, fi) => {
+        if (f.len < 40) return;
+        // A face falling to the right has its rock on the left.
+        const out = (f.by > f.ay) === (f.bx > f.ax) ? 1 : -1;
+        let d = 0;
+        let at = 24 + ((fi * 37 + i * 11) % 30);
+        for (let k = 1; k < f.pts.length; k++) {
+          const [ax, ay] = f.pts[k - 1];
+          const [bx, by] = f.pts[k];
+          const l = Math.hypot(bx - ax, by - ay);
+          while (at <= d + l) {
+            const t = (at - d) / Math.max(1e-6, l);
+            const x = ax + (bx - ax) * t;
+            const y = ay + (by - ay) * t;
+            const lf = leaves[(n++ * 7 + fi) % leaves.length];
+            ctx.save();
+            ctx.translate(Math.round((x - out * lf.width * 0.18) / ART_PX) * ART_PX, Math.round((y - lf.height * 0.35) / ART_PX) * ART_PX);
+            if (out < 0) ctx.scale(-1, 1);
+            ctx.drawImage(lf, -lf.width / 2, 0);
+            ctx.restore();
+            at += 70 + ((n * 23) % 40);
+          }
+          d += l;
+        }
+      });
+    }
+    ctx.restore();
+
+    // The outline: round the sides and the underside, and along the top
+    // only where there's no grass (along the grass it ran as a dark line
+    // over it). The levels' outline colour.
     ctx.lineWidth = 6;
-    ctx.strokeStyle = '#2b1d12';
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    // (The sides stop short of the top: there the corner is stepped, as
+    // below; run all the way up, the outline poked up past the grass.)
+    for (let k = curve.length - 1; k < shape.length; k++) {
+      const [x, y] = shape[k];
+      if (k === curve.length - 1) ctx.moveTo(x, y + (roundR ? CORNER : 0)); else ctx.lineTo(x, y);
+    }
+    ctx.lineTo(shape[0][0], shape[0][1] + (roundL ? CORNER : 0));
     ctx.stroke();
-    // The moss along the top, a slice of the strip for each bit of curve.
+    // The top corners rounded as the levels' tiles are (Platformer.js
+    // skinEdgeTile): 3, then 2, then 1 art pixels cleared on the top rows,
+    // an outline pixel at the end of each, the grass's end piece over it
+    // (the user's note, 2026-11-03: "look at the corners").
+    const corner = (cx, cy, left) => {
+      const y0 = Math.round(cy / ART_PX) * ART_PX;
+      const x0 = Math.round(cx / ART_PX) * ART_PX;
+      [3, 2, 1].forEach((n, row) => {
+        const y = y0 + row * ART_PX;
+        if (left) {
+          ctx.clearRect(x0 - ART_PX, y, (n + 1) * ART_PX, ART_PX);
+          ctx.fillStyle = OUTLINE;
+          ctx.fillRect(x0 + n * ART_PX - ART_PX, y, ART_PX, ART_PX);
+        } else {
+          ctx.clearRect(x0 - n * ART_PX, y, (n + 1) * ART_PX, ART_PX);
+          ctx.fillStyle = OUTLINE;
+          ctx.fillRect(x0 - n * ART_PX, y, ART_PX, ART_PX);
+        }
+      });
+      // the side's outline picks up under the step
+      ctx.fillStyle = OUTLINE;
+      ctx.fillRect(left ? x0 - ART_PX : x0 - ART_PX, y0 + 3 * ART_PX, ART_PX, CORNER - 3 * ART_PX + 4);
+    };
+    if (roundL) corner(curve[0][0], curve[0][1], true);
+    if (roundR) corner(curve[curve.length - 1][0], curve[curve.length - 1][1], false);
+    segs.filter((g) => !g.grass).forEach((g) => {
+      ctx.beginPath();
+      ctx.moveTo(g.ax, g.ay);
+      ctx.lineTo(g.bx, g.by);
+      ctx.stroke();
+    });
+
+    // The grass, never rotated (rotated, the pixel art went blurry and
+    // jagged, fanned into spikes on bends and smeared in hollows: the
+    // user, 2026-11-03, "it looks worse now"). Instead, as 2D games draw
+    // slopes: the strip in columns one art pixel wide, each moved up or down
+    // onto the curve and snapped to the art's pixel grid, so it stays as
+    // crisp as the levels' tiles. Only on a top gentle enough for that
+    // (GRASS_STEEPEST); steeper is bare rock with the outline. Each run
+    // starts and ends with the set's end pieces, in columns too, and the
+    // whole run is kept inside the rock.
     const moss = img(skin.moss || 'sk_moss.png');
+    const capL = img(skin.moss_left || 'sk_moss_left.png');
+    const capR = img(skin.moss_right || 'sk_moss_right.png');
+    const top = skin.moss_top ?? 16;
+    const runs = [];
+    segs.forEach((g, k) => {
+      if (!g.grass) return;
+      const last = runs[runs.length - 1];
+      if (last && last.end === k - 1) { last.xb = g.bx; last.end = k; } else runs.push({ xa: g.ax, xb: g.bx, start: k, end: k });
+    });
     if (moss) {
-      let along = 0;
-      for (let k = 0; k < curve.length - 1; k++) {
-        const [ax, ay] = curve[k];
-        const [bx, by] = curve[k + 1];
-        const len = Math.hypot(bx - ax, by - ay);
-        const sx = along % (moss.width - 16);
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate(Math.atan2(by - ay, bx - ax));
-        ctx.drawImage(moss, sx, 0, Math.ceil(len) + 2, moss.height, 0, -14, Math.ceil(len) + 2, moss.height);
-        ctx.restore();
-        along += len;
-      }
+      // First, nothing of the rock above the grass: its smoothed edge
+      // peeked out as a thin grey line along the top of some ends.
+      runs.forEach((run) => {
+        const xa = Math.round(run.xa / ART_PX) * ART_PX;
+        const xb = Math.round(run.xb / ART_PX) * ART_PX;
+        for (let x = xa; x < xb; x += ART_PX) {
+          const ground = Math.min(surfaceY(curve, x), surfaceY(curve, x + ART_PX));
+          const y = Math.floor((ground - top - 1) / ART_PX) * ART_PX;
+          // Not at the foot of a wall: there the band cut a notch out of
+          // the wall itself (Shark Dash Rings' pool floors).
+          const nearWall = [-24, -12, 12, 24].some((d) => surfaceY(curve, x + d) < ground - 12);
+          if (!nearWall) ctx.clearRect(x, y + top - 24, ART_PX, 24);
+        }
+      });
+      ctx.save();
+      path();
+      ctx.clip();
+      runs.forEach((run) => {
+        const xa = Math.round(run.xa / ART_PX) * ART_PX;
+        const xb = Math.round(run.xb / ART_PX) * ART_PX;
+        // End pieces only on flat ends where the ground drops away (the
+        // island's ends, a ledge's edge), not against a wall rising beside
+        // the grass: rounded off there, they left a notch at the foot of
+        // each pool wall.
+        const fits = capL && capR && xb - xa >= capL.width + capR.width;
+        const before = segs[run.start - 1];
+        const after = segs[run.end + 1];
+        const capsL = fits && flat(segs[run.start]) && !(before && before.by > before.ay);
+        const capsR = fits && flat(segs[run.end]) && !(after && after.by < after.ay);
+        for (let x = xa; x < xb; x += ART_PX) {
+          // At the column's highest ground, rounded up: rounded to the
+          // nearest, a sliver of the rock's sloping edge showed above it.
+          const ground = Math.min(surfaceY(curve, x), surfaceY(curve, x + ART_PX));
+          // (and a pixel up: level with the rock's edge, its smoothing
+          // showed as a thin grey line along the top)
+          const y = Math.floor((ground - top - 1) / ART_PX) * ART_PX;
+          let src = moss;
+          let sx = (x - xa) % moss.width;
+          if (capsL && x - xa < capL.width) { src = capL; sx = x - xa; }
+          else if (capsR && xb - x <= capR.width) { src = capR; sx = capR.width - (xb - x); }
+          ctx.drawImage(src, sx, 0, ART_PX, src.height, x, y, ART_PX, src.height);
+        }
+      });
+      ctx.restore();
     }
     tex.refresh();
-    this.add.image(x0, y0, key).setOrigin(0).setDepth(2);
+    // A room with painted islands shows those instead (the same size and
+    // place as this canvas, so the ground under him is unchanged).
+    const p = this.room.painted;
+    const painted = (p === true || (Array.isArray(p) && p.includes(i))) && !this.bare && texKey(this.room.artset, `bonus/${this.levelId}-island-${i}.png`);
+    // (Only while it still fits, as a check: an island reshaped since its
+    // painting comes off the room's `painted` list until it is repainted.)
+    const fits = painted && this.textures.exists(painted)
+      && this.textures.get(painted).getSourceImage().width === w && this.textures.get(painted).getSourceImage().height === h;
+    this.add.image(x0, y0, fits ? painted : key).setOrigin(0).setDepth(2);
 
     // The body: each edge of the outline a box on the inside of it.
+    const firstBody = this.ground.length;
     const topEdges = curve.length - 1;
     for (let k = 0; k < shape.length; k++) {
       const [ax, ay] = shape[k];
@@ -334,7 +749,117 @@ export class BonusRoomScene extends Phaser.Scene {
         len + 4, depth, { isStatic: true, angle: a, friction: 0.9, label: 'ground' });
       this.ground.push(b);
     }
-    return { curve, left: isl.top[0][0], right: isl.top[isl.top.length - 1][0] };
+    return { curve, left: isl.top[0][0], right: isl.top[isl.top.length - 1][0], faces, shape, bodies: this.ground.slice(firstBody) };
+  }
+
+  // The set's ground plants (artset dressing.ground_plants), the same every
+  // time: some on the gentle grass, as the levels scatter them
+  // (ground_chance), and leafy ones growing out of the steep faces, leaning
+  // out over the drop. Clear of the geysers, falls, rocks, bumpers, pools
+  // and the door, and behind Shaan.
+  dressIslands(set) {
+    const dr = set.dressing || {};
+    // (In a runner room no rocks among them: only the ones that trip him.)
+    const all = (dr.ground_plants || []).filter((f) => this.textures.exists(texKey(this.room.artset, f)) && !(this.room.runner && /rock/.test(f)));
+    if (!all.length) return;
+    const leafy = all.filter((f) => /leaf|bush_(small|medium)|grass/.test(f));
+    const chance = dr.ground_chance ?? 0.22;
+    const busy = [
+      ...(this.room.geysers || []).map((g) => g.x),
+      ...(this.falls || []).flatMap((f) => [f.x, f.x + f.w]),
+      ...(this.rocks || []).map((r) => r.x),
+      ...(this.bumpers || []).map((b) => b.x),
+      this.doorAt.x,
+    ];
+    const clear = (x, y, d) => !busy.some((b) => Math.abs(b - x) < d)
+      && !(this.pools || []).some((w) => x > w.x - 40 && x < w.x + w.w + 40 && y > w.y - 80);
+    let seed = 7;
+    const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const put = (files, x, y, flip) => this.add.image(Math.round(x / ART_PX) * ART_PX, Math.round(y / ART_PX) * ART_PX,
+      texKey(this.room.artset, files[Math.floor(rand() * files.length)])).setOrigin(0.5, 1).setDepth(2.5).setFlipX(flip);
+    this.islands.forEach((isl) => {
+      for (let x = isl.left + 90; x < isl.right - 90; x += 70) {
+        if (rand() > chance * 1.6) continue;
+        const y = surfaceY(isl.curve, x);
+        if (!clear(x, y, 140)) continue;
+        if (Math.abs(Math.atan2(surfaceY(isl.curve, x + 20) - surfaceY(isl.curve, x - 20), 40)) > 0.35) continue;
+        put(all, x, y + 8, rand() > 0.5);
+        x += 60;
+      }
+      // The fan-shaped ones: their narrow base hides in the rock.
+      const fans = leafy.filter((f) => /leaf|grass/.test(f));
+      if (!fans.length) return;
+      // Plants also grow out of the steep faces: the whole base on the
+      // rock, just inside the edge (stood on the edge they sat on shelves in
+      // the air; tucked behind it only their tips showed). Where a face is
+      // too sheer or too thin for one, it has only its clinging leaves.
+      const { faces } = isl;
+      // Where a plant's bottom rows have leaves, left to right.
+      const feet = {};
+      const foot = (key) => {
+        if (feet[key]) return feet[key];
+        const im = this.textures.get(key).getSourceImage();
+        const c = document.createElement('canvas');
+        c.width = im.width;
+        c.height = im.height;
+        const cx2 = c.getContext('2d');
+        cx2.drawImage(im, 0, 0);
+        const d = cx2.getImageData(0, im.height - 4, im.width, 4).data;
+        let l = im.width;
+        let r = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i] > 40) { const x = (i >> 2) % im.width; l = Math.min(l, x); r = Math.max(r, x); }
+        return (feet[key] = [l, r]);
+      };
+      const inside = (poly, px, py) => {
+        let hit = false;
+        for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+          const [xi, yi] = poly[i];
+          const [xj, yj] = poly[j];
+          if ((yi > py) !== (yj > py) && px < xi + ((py - yi) * (xj - xi)) / (yj - yi)) hit = !hit;
+        }
+        return hit;
+      };
+      // Where the face is at height y (the end nearest, past either end).
+      const faceX = (f, y) => {
+        const pts = f.pts[0][1] < f.pts[f.pts.length - 1][1] ? f.pts : [...f.pts].reverse();
+        if (y <= pts[0][1]) return pts[0][0];
+        for (let k = 1; k < pts.length; k++) {
+          const [ax, ay] = pts[k - 1];
+          const [bx, by] = pts[k];
+          if (y <= by) return ax + (bx - ax) * ((y - ay) / Math.max(1e-6, by - ay));
+        }
+        return pts[pts.length - 1][0];
+      };
+      faces.forEach((f) => {
+        if (f.len < 60) return;
+        if (Math.abs(Math.atan2(Math.abs(f.by - f.ay), Math.abs(f.bx - f.ax))) > 1.2) return;
+        // A face falling to the right has its rock on the left.
+        const out = (f.by > f.ay) === (f.bx > f.ax) ? 1 : -1;
+        const n = Math.max(1, Math.round(f.len / 110));
+        for (let k = 0; k < n; k++) {
+          if (rand() > 0.8) continue;
+          const x = f.ax + (f.bx - f.ax) * ((k + 0.3 + rand() * 0.4) / n);
+          const y = surfaceY(isl.curve, x);
+          if (!clear(x, y, 40)) continue;
+          const key = texKey(this.room.artset, fans[Math.floor(rand() * fans.length)]);
+          const { width: w, height: h } = this.textures.get(key).getSourceImage();
+          // As shallow as it can sit with its base row in the rock, or it
+          // shows as a flat edge in the air (at a face's top end, by the
+          // waterfall).
+          const [l, r] = foot(key);
+          const spot = [0.15, 0.25, 0.35, 0.5].map((sink) => {
+            const yb = y + h * sink;
+            // Its base's outer end just inside the face (flipped, the
+            // picture's right end is still the outer one).
+            return [faceX(f, yb) - out * (r - w / 2 + 4), yb];
+          }).find(([cx, yb]) => [l, (l + r) / 2, r].every((u) => inside(isl.shape, cx - w / 2 + (out < 0 ? w - u : u), yb - 4)));
+          if (!spot) continue;
+          const [cx, yb] = spot;
+          this.add.image(Math.round(cx / ART_PX) * ART_PX, Math.round(yb / ART_PX) * ART_PX, key)
+            .setOrigin(0.5, 1).setDepth(2.5).setFlipX(out < 0);
+        }
+      });
+    });
   }
 
   // How steep the ground is under x, as an angle (down to the right is
@@ -613,14 +1138,17 @@ export class BonusRoomScene extends Phaser.Scene {
     this.art = zebonkyArt(this, this.room.artset);
     ensureAnims(this, this.art);
     const s = this.add.sprite(x, y, texKey(this.art.name, this.art.z.anims.idle.file), 0)
-      .setScale(SCALE).setOrigin(0.5, CENTRE_Y).setDepth(5);
+      .setScale(SCALE).setOrigin(0.5, this.room.runner ? FEET_ROW / this.art.z.frameHeight : CENTRE_Y).setDepth(5);
     faceArt(s, this.art);
     s.setFlipX(true);
     play(s, this.art, 'idle');
     this.shaan = s;
+    // (A runner's speed is set every step, so no friction to fight it.)
+    const run = this.room.runner;
     this.ball = this.matter.add.circle(x, y, RADIUS, {
-      friction: 0.8, frictionStatic: 0.9, frictionAir: 0.004, restitution: 0.05, label: 'shaan',
+      friction: run ? 0 : 0.8, frictionStatic: run ? 0 : 0.9, frictionAir: run ? 0 : 0.004, restitution: 0.05, label: 'shaan',
     });
+    if (run) Matter().Body.setInertia(this.ball, Infinity);
   }
 
   buildHud() {
@@ -630,20 +1158,29 @@ export class BonusRoomScene extends Phaser.Scene {
     box.lineStyle(3, COLORS.ink, 1);
     box.strokeRoundedRect(MAP_W / 2 - 170, 14, 340, 50, 16);
     this.add.text(MAP_W / 2, 39, this.room.name, heading(24, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(21);
-    if (this.unit === 'rings') {
+    if (this.room.runner) {
+      // His time, instead of coins (the user, 2026-11-03: "the awards
+      // based on speed").
+      this.coinText = this.add.text(MAP_W - 180, 40, 'Time 0.0', heading(24, '#ffffff', {
+        stroke: COLORS.inkCss, strokeThickness: 6,
+      })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    } else if (this.unit === 'rings') {
       const ic = this.add.graphics().setScrollFactor(0).setDepth(21).setPosition(MAP_W - 150, 40);
       ic.lineStyle(7, COLORS.ink, 1).strokeEllipse(0, 0, 22, 36);
       ic.lineStyle(4, 0xffc93c, 1).strokeEllipse(0, 0, 22, 36);
     } else this.add.image(MAP_W - 150, 40, 'currency-coin').setScrollFactor(0).setDepth(21);
-    this.coinText = this.add.text(MAP_W - 126, 40, `0 / ${this.totalCoins()}`, heading(24, '#ffffff', {
-      stroke: COLORS.inkCss, strokeThickness: 6,
-    })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    if (!this.room.runner) {
+      this.coinText = this.add.text(MAP_W - 126, 40, `0 / ${this.totalCoins()}`, heading(24, '#ffffff', {
+        stroke: COLORS.inkCss, strokeThickness: 6,
+      })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    }
 
     if (this.test) {
-      this.add.text(20, 20, 'TEST MODE', heading(20, '#ffffff', {
+      this.add.text(20, 20, this.inspect ? 'INSPECTION' : 'TEST MODE', heading(20, '#ffffff', {
         backgroundColor: '#b3261e', padding: { x: 10, y: 4 },
       })).setScrollFactor(0).setDepth(21);
     }
+    if (this.room.runner && !this.inspect) { this.countdown(); return; }
     if (this.retry) return;
     // What to do, for a moment.
     const say = this.add.text(MAP_W / 2, MAP_H / 2 - 120, this.room.intro || 'Roll Shaan to the door!\nMind the gaps.', heading(40, COLORS.yellowCss, {
@@ -651,6 +1188,33 @@ export class BonusRoomScene extends Phaser.Scene {
     })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
     this.tweens.add({ targets: say, alpha: 0, delay: 2600, duration: 500, onComplete: () => say.destroy() });
     this.intro = say;
+  }
+
+  // A runner room's start: "Go Fast!", then 3, 2, 1, GO! He can't move
+  // until GO, and the clock starts there. What to do shows underneath.
+  countdown() {
+    if (!this.waiting) { this.runSteps = 0; return; }
+    const big = (msg, color = COLORS.yellowCss) => this.add.text(MAP_W / 2, MAP_H / 2 - 90, msg, heading(96, color, {
+      stroke: COLORS.inkCss, strokeThickness: 14,
+    })).setOrigin(0.5).setScrollFactor(0).setDepth(22);
+    const how = this.add.text(MAP_W / 2, MAP_H / 2 + 30, this.room.intro || '', heading(30, '#ffffff', {
+      stroke: COLORS.inkCss, strokeThickness: 8, align: 'center',
+    })).setOrigin(0.5).setScrollFactor(0).setDepth(22);
+    this.intro = how;
+    const show = (msg, at, hold, color) => this.time.delayedCall(at, () => {
+      const t = big(msg, color).setScale(0.4);
+      this.tweens.add({ targets: t, scale: 1, duration: 220, ease: 'Back.Out' });
+      this.tweens.add({ targets: t, alpha: 0, delay: hold, duration: 200, onComplete: () => t.destroy() });
+      if (msg !== 'Go Fast!') audio.sfx(this, msg === 'GO!' ? 'correct' : 'hint');
+    });
+    show('Go Fast!', 0, 1100);
+    ['3', '2', '1'].forEach((n, i) => show(n, 1400 + i * 800, 550, '#ffffff'));
+    show('GO!', 1400 + 3 * 800, 600, '#7dff7a');
+    this.time.delayedCall(1400 + 3 * 800, () => {
+      this.waiting = false;
+      this.runSteps = 0;
+      this.tweens.add({ targets: how, alpha: 0, delay: 1200, duration: 400, onComplete: () => how.destroy() });
+    });
   }
 
   // The level's buttons, with their keys under them.
@@ -695,7 +1259,15 @@ export class BonusRoomScene extends Phaser.Scene {
   onGround() {
     const { x, y } = this.ball.position;
     const pts = [[0, 1], [-0.5, 0.87], [0.5, 0.87]].map(([dx, dy]) => ({ x: x + dx * (RADIUS + 6), y: y + dy * (RADIUS + 6) }));
-    return pts.some((p) => Matter().Query.point(this.ground, p).length > 0);
+    return pts.some((p) => Matter().Query.point(this.ground, p).some((bd) => !bd.oneWay || !this.belowOneWay(bd.oneWay)));
+  }
+
+  // Going up through a one-way path, or still below its top.
+  belowOneWay(isl) {
+    const b = this.ball;
+    if (b.velocity.y < -0.5) return true;
+    const x = Phaser.Math.Clamp(b.position.x, isl.left, isl.right);
+    return b.position.y + RADIUS > surfaceY(isl.curve, x) + 14;
   }
 
   // Every frame: his picture, the input (kept for the next physics step),
@@ -708,8 +1280,9 @@ export class BonusRoomScene extends Phaser.Scene {
     const b = this.ball;
     const k = this.keys;
     const s = this.shaan;
-    s.setPosition(b.position.x, b.position.y);
+    s.setPosition(b.position.x, b.position.y + (this.room.runner ? RADIUS + GRASS_SINK : 0));
     this.animateWater(delta);
+    if (this.inspect) { this.inspectUpdate(delta); return; }
     if (this.finished) return;
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
@@ -758,6 +1331,12 @@ export class BonusRoomScene extends Phaser.Scene {
       // (his art faces right: unflipped, a positive turn points his nose
       // down; the other way round had it pointing up as he dived)
       s.setRotation(s.flipX ? -tilt : tilt);
+    } else if (this.room.runner) {
+      // Running, his run strip faster the faster he goes; in the air, his jump.
+      s.setRotation(0);
+      if (!grounded && this.art.z.anims.jump) play(s, this.art, 'jump');
+      else play(s, this.art, Math.abs(b.velocity.x) > 0.8 && this.time.now - (this.blockedAt || -1e9) > 120 ? 'run' : 'idle');
+      s.anims.timeScale = grounded ? Phaser.Math.Clamp(Math.abs(b.velocity.x) / 9, 0.6, 2.2) : 1;
     } else {
       s.setRotation(0);
       const rolling = time - this.movedAt < UNCURL_AFTER;
@@ -788,6 +1367,11 @@ export class BonusRoomScene extends Phaser.Scene {
       this.tweens.killTweensOf(c);
       this.tweens.add({ targets: c, y: c.y - 50, alpha: 0, scale: 1.6, duration: 300, onComplete: () => c.destroy() });
     });
+
+    if (this.room.runner) {
+      this.runnerPickups(time);
+      this.coinText.setText(`Time ${this.runTime().toFixed(1)}`);
+    }
 
     if (b.position.y > this.room.height + 80) this.fellOff();
   }
@@ -910,7 +1494,7 @@ export class BonusRoomScene extends Phaser.Scene {
   // Once per Matter step (60 a second): rolling, jumping, geysers, falls,
   // full speed and the speed limits.
   step() {
-    if (this.leaving || this.finished) return;
+    if (this.leaving || this.finished || this.inspect) return;
     const M = Matter();
     const b = this.ball;
     const time = this.time.now;
@@ -928,6 +1512,7 @@ export class BonusRoomScene extends Phaser.Scene {
     // when he isn't swimming (the user, 2026-11-02: he doesn't sink).
     b.ignoreGravity = this.wet;
     if (this.wet) { this.swim(time, dir); return; }
+    if (this.room.runner) { this.runStep(time, dir, grounded); return; }
 
     // A geyser carries him straight up until he slows near the top; a
     // bumper's knock carries him back for a moment.
@@ -1034,11 +1619,265 @@ export class BonusRoomScene extends Phaser.Scene {
     if (b.velocity.y > MAX_FALL) M.Body.setVelocity(b, { x: b.velocity.x, y: MAX_FALL });
   }
 
+  // A runner room's pieces: fruit (the area's food), launch pads,
+  // stumbling rocks and hollow logs, and the boost count on screen.
+  buildRunner(set) {
+    const room = this.room;
+    const placeY = (x, on, lift = 0) => {
+      const isl = on !== undefined ? this.islands[on] : this.islandAt(x);
+      return (isl ? surfaceY(isl.curve, x) : 900) - lift;
+    };
+    const food = set.food && texKey(room.artset, set.food);
+    // The bananalopes: big, on a glowing ring that pulses (the user,
+    // 2026-11-03: "bigger and more obvious"; at half size they were 25 px).
+    this.fruit = (room.fruit || []).map((f) => {
+      const y = f.y !== undefined ? f.y : placeY(f.x, f.on, 100);
+      const img = this.add.container(f.x, y).setDepth(4.5);
+      const glow = this.add.circle(0, 0, 56, 0xfff3a0, 0.45).setStrokeStyle(6, 0xffd23c, 0.95);
+      img.add(glow);
+      img.add(food && this.textures.exists(food)
+        ? this.add.image(0, 0, food).setScale(1.9)
+        : this.add.circle(0, 0, 40, 0xffd23c).setStrokeStyle(5, COLORS.ink));
+      this.tweens.add({ targets: img, y: y - 14, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.tweens.add({ targets: glow, scale: 1.25, alpha: 0.2, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      return { x: f.x, y, img, got: false };
+    });
+    // Launch pads: a springy leaf (drawn here for now), its arrow up.
+    this.pads = (room.pads || []).map((pd) => {
+      const y = placeY(pd.x, pd.on);
+      const g = this.add.graphics().setDepth(4).setPosition(pd.x, y);
+      const [base, lite] = [0x4cc35a, 0xb8f06a];
+      // Wide (the user, 2026-11-03: "pads need to be wider"; were 100).
+      g.fillStyle(COLORS.ink, 1).fillEllipse(0, -6, 216, 32);
+      g.fillStyle(base, 1).fillEllipse(0, -8, 208, 26);
+      g.fillStyle(lite, 1).fillEllipse(0, -12, 150, 10);
+      [-50, 0, 50].forEach((ax) => {
+        g.fillStyle(0xffd23c, 1).fillTriangle(ax - 14, -30, ax + 14, -30, ax, -54);
+        g.lineStyle(3, COLORS.ink, 1).strokeTriangle(ax - 14, -30, ax + 14, -30, ax, -54);
+      });
+      return { x: pd.x, y, g, readyAt: 0 };
+    });
+    // Rocks he trips on: the set's small rocks, sat on the ground.
+    // (They blended into the bushes, the user, 2026-11-03: so a thick dark
+    // outline and a bright orange rim round each, against the green.)
+    const rk = texKey(room.artset, 'pt_rock_medium.png');
+    this.stumbles = (room.stumbles || []).map((r) => {
+      const y = placeY(r.x, r.on) + 6;
+      const img = this.add.container(r.x, y).setDepth(5.5);
+      if (this.textures.exists(rk)) {
+        // A dark edge, a bright orange rim inside it (filled copies, Phaser
+        // 4's FILL tint mode), then the rock itself as drawn (the user: "an
+        // outline, not a complete cover").
+        const fill = (dx, dy, color) => img.add(this.add.image(dx, dy, rk).setOrigin(0.5, 1)
+          .setTintMode(Phaser.TintModes.FILL).setTint(color));
+        [[-10, 0], [10, 0], [0, -10], [0, 6], [-7, -7], [7, -7]].forEach(([dx, dy]) => fill(dx, dy, 0x1a1210));
+        [[-5, 0], [5, 0], [0, -5], [0, 3], [-4, -4], [4, -4]].forEach(([dx, dy]) => fill(dx, dy, 0xff8a1f));
+        img.add(this.add.image(0, 0, rk).setOrigin(0.5, 1));
+      } else img.add(this.add.circle(0, -30, 30, 0xb08a60).setStrokeStyle(5, COLORS.ink));
+      const src = this.textures.exists(rk) ? this.textures.get(rk).getSourceImage() : { width: 60, height: 60 };
+      return { x: r.x, y, img, half: src.width * 0.4, h: src.height * 0.85, hit: false };
+    });
+    // Hollow logs: the back half behind him, the rim in front (drawn here
+    // for now, until there's art).
+    this.logs = (room.logs || []).map((lg) => {
+      const y = placeY(lg.x, lg.on);
+      const w = lg.w || 360;
+      const h = 150;
+      const back = this.add.graphics().setDepth(4.2).setPosition(lg.x, y);
+      back.fillStyle(COLORS.ink, 1).fillRoundedRect(-w / 2 - 4, -h - 4, w + 8, h + 8, 40);
+      back.fillStyle(0x6b4423, 1).fillRoundedRect(-w / 2, -h, w, h, 36);
+      back.fillStyle(0x3d2412, 1).fillRoundedRect(-w / 2 + 20, -h + 22, w - 40, h - 30, 24);
+      const front = this.add.graphics().setDepth(6).setPosition(lg.x, y);
+      front.fillStyle(0x8a5a30, 1).fillRect(-w / 2 + 30, -h, w - 60, 22);
+      front.lineStyle(4, COLORS.ink, 1).strokeRect(-w / 2 + 30, -h, w - 60, 22);
+      [-1, 1].forEach((side) => {
+        front.fillStyle(COLORS.ink, 1).fillEllipse(side * w / 2, -h / 2, 58, h + 8);
+        front.fillStyle(0xc89058, 1).fillEllipse(side * w / 2, -h / 2, 50, h);
+        front.lineStyle(3, 0x8a5a30, 1).strokeEllipse(side * w / 2, -h / 2, 30, h * 0.6);
+        front.fillStyle(0x3d2412, 1).fillEllipse(side * w / 2 + side * 6, -h / 2 + 6, 26, h - 40);
+      });
+      return { x: lg.x, y, w };
+    });
+    // The fruit held, top left: one picture each, up to three.
+    this.boostIcons = Array.from({ length: RUN.boosts }, (_, i) => {
+      const ic = food && this.textures.exists(food)
+        ? this.add.image(50 + i * 80, MAP_H - 200, food).setScale(1.2)
+        : this.add.circle(50 + i * 90, MAP_H - 200, 28, 0xffd23c);
+      return ic.setScrollFactor(0).setDepth(21).setAlpha(0.25);
+    });
+  }
+
+  // Seconds since he set off, by physics steps (the same on any screen).
+  runTime() {
+    return Math.max(0, this.runSteps) / 60;
+  }
+
+  // A runner room's medal: by his time (`medalTimes`: under `gold` s for
+  // gold, under `silver` for silver; through the door at all is bronze).
+  runMedal(t) {
+    const mt = this.room.medalTimes || {};
+    const tier = t <= mt.gold ? 3 : t <= mt.silver ? 2 : 1;
+    return MEDALS.find((m) => m.tier === tier);
+  }
+
+  showBoosts() {
+    (this.boostIcons || []).forEach((ic, i) => ic.setAlpha(i < this.boosts ? 1 : 0.25));
+  }
+
+  // Fruit (a boost each) and the rocks he trips on.
+  runnerPickups(time) {
+    const b = this.ball;
+    this.fruit.forEach((f) => {
+      if (f.got || Math.hypot(f.x - b.position.x, f.y - b.position.y) > RADIUS + 60) return;
+      f.got = true;
+      this.boosts = Math.min(RUN.boosts, this.boosts + 1);
+      this.showBoosts();
+      audio.sfx(this, 'food');
+      this.floatText(f.x, f.y - 40, this.boosts === 1 ? 'Double tap → to boost!' : 'Boost!');
+      this.tweens.killTweensOf(f.img);
+      this.tweens.add({ targets: f.img, y: f.y - 60, alpha: 0, scale: 1.6, duration: 300, onComplete: () => f.img.destroy() });
+    });
+    // (Rocks are in runStep: they hold him there, in the physics step.)
+  }
+
+  // Rocks stop him dead (the user, 2026-11-03: "the rocks need to stop
+  // him"): he has to jump them. Running into one, he's held against its
+  // side, his speed gone (done here in the physics step: knocked back once
+  // a frame, he skipped and flickered against it). Boosted, he smashes it.
+  rockStep(time) {
+    const b = this.ball;
+    const M = Matter();
+    const feet = b.position.y + RADIUS;
+    this.stumbles.forEach((r) => {
+      if (r.hit || feet < r.y - r.h + 8 || feet > r.y + 30) return;
+      const side = b.position.x < r.x ? -1 : 1;
+      const contact = r.x + side * (RADIUS + r.half);
+      const nextX = b.position.x + b.velocity.x;
+      // Only if this step would take him into it (or he's already in it).
+      if ((side < 0 && nextX <= contact) || (side > 0 && nextX >= contact)) return;
+      if (this.dashing) {
+        r.hit = true;
+        this.floatText(r.x, r.y - r.h - 30, 'Smash!');
+        audio.sfx(this, 'crate');
+        this.tweens.add({ targets: r.img, x: r.x + 260, y: r.y + 80, angle: 220, alpha: 0, duration: 600, ease: 'Sine.In' });
+        return;
+      }
+      M.Body.setPosition(b, { x: contact, y: b.position.y });
+      M.Body.setVelocity(b, { x: 0, y: b.velocity.y });
+      this.runSpeed = 0;
+      this.blockedAt = time;
+      if (time > (r.toldAt || 0) + 1500) {
+        r.toldAt = time;
+        this.floatText(r.x, r.y - r.h - 30, 'Jump it!');
+      }
+    });
+  }
+
+  // One physics step in a runner room.
+  runStep(time, dir, grounded) {
+    const M = Matter();
+    const b = this.ball;
+    // One-way paths: see-through (a sensor) while he's rising through one
+    // or below its top, solid once he's above it. (Cancelling the contact in
+    // the collision events came too late: the hit was already resolved.)
+    this.islands.forEach((isl) => {
+      if (!isl.oneWay) return;
+      const near = b.position.x > isl.left - 120 && b.position.x < isl.right + 120;
+      const open = near && this.belowOneWay(isl);
+      if (isl.open === open) return;
+      isl.open = open;
+      isl.bodies.forEach((bd) => { bd.isSensor = open; });
+    });
+    // Held still until the countdown's GO; the clock runs from there.
+    if (this.waiting) {
+      this.jumpAsked = false;
+      this.dashAsked = 0;
+      M.Body.setVelocity(b, { x: 0, y: Math.max(0, b.velocity.y) });
+      return;
+    }
+    if (this.runSteps >= 0) this.runSteps += 1;
+    // Driven: right speeds him up (to a run, then on to a sprint), left
+    // brakes and runs him back, nothing held and he slows to a stop. He
+    // eases to a stop at the door.
+    const sp = this.runSpeed;
+    let target = dir > 0 ? RUN.sprint : dir < 0 ? -RUN.back : 0;
+    const toDoor = this.doorAt.x - b.position.x;
+    if (toDoor < 360 && toDoor > -60 && target > 0) target = Math.min(target, Math.max(0, toDoor * 0.04));
+    if (Math.sign(sp) && Math.sign(target) !== Math.sign(sp)) {
+      // slowing: braking against it, or coasting
+      const drop = dir && Math.sign(dir) !== Math.sign(sp) ? RUN.brake : RUN.coast;
+      this.runSpeed = sp > 0 ? Math.max(target > 0 ? target : 0, sp - drop) : Math.min(target < 0 ? target : 0, sp + drop);
+      if (Math.sign(this.runSpeed) !== Math.sign(sp) && target) this.runSpeed = 0;
+    } else if (Math.abs(sp) < Math.abs(target)) {
+      const rate = Math.abs(sp) < RUN.run ? RUN.accel : RUN.creep;
+      this.runSpeed = sp + Math.sign(target) * Math.min(rate, Math.abs(target) - Math.abs(sp));
+    } else this.runSpeed = sp > 0 ? Math.max(target, sp - RUN.coast) : Math.min(target, sp + RUN.coast);
+
+    // Jump (a little after running off an edge too); let go early for a hop.
+    if (this.jumpAsked && time - this.groundAt < COYOTE && !this.jumping) {
+      M.Body.setVelocity(b, { x: b.velocity.x, y: Math.min(b.velocity.y, 0) - RUN.jump });
+      this.jumping = true;
+      this.groundAt = 0;
+      audio.sfx(this, 'jump');
+    }
+    this.jumpAsked = false;
+    if (this.jumping && !this.jumpHeld && b.velocity.y < -5) M.Body.setVelocity(b, { x: b.velocity.x, y: b.velocity.y * 0.55 });
+    if (this.jumping && (b.velocity.y >= 0 || !this.jumpHeld)) this.jumping = false;
+
+    // The boost: a double tap forward spends a fruit.
+    if (this.dashAsked === 1 && time - this.dashAt >= DASH_AGAIN_MS) {
+      if (this.boosts > 0) {
+        this.boosts -= 1;
+        this.showBoosts();
+        this.dashDir = 1;
+        this.dashAt = time;
+        this.dashUntil = time + DASH_MS * 1.5;
+        audio.sfx(this, 'toss');
+      } else if (time > (this.toldBoostAt || 0) + 1500) {
+        this.toldBoostAt = time;
+        this.floatText(b.position.x, b.position.y - 90, 'Grab fruit to boost!');
+      }
+    }
+    this.dashAsked = 0;
+
+    // Launch pads: up he goes, much higher boosted.
+    const feet = b.position.y + RADIUS;
+    this.pads.forEach((pd) => {
+      // Any speed, on it or landing on it (the user, 2026-11-03: "launch
+      // him no matter the speed"): the catch reaches up a fall's step.
+      if (time < pd.readyAt || Math.abs(b.position.x - pd.x) > 112 || feet < pd.y - 40 - Math.max(0, b.velocity.y) || feet > pd.y + 24 || b.velocity.y < -4) return;
+      pd.readyAt = time + 600;
+      M.Body.setPosition(b, { x: b.position.x, y: pd.y - RADIUS - 2 });
+      M.Body.setVelocity(b, { x: b.velocity.x, y: -RUN.pad });
+      this.padUntil = time + 250;
+      this.jumping = false;
+      this.groundAt = 0;
+      audio.sfx(this, 'pad');
+      this.tweens.add({ targets: pd.g, scaleY: 0.6, duration: 80, yoyo: true });
+    });
+
+    // Along the ground at his speed; in the air, his speed forward and
+    // gravity's say up and down.
+    const v = this.dashing ? DASH_SPEED : this.runSpeed;
+    const a = grounded && !this.jumping && time > (this.padUntil || 0) ? this.slopeAt(b.position.x, b.position.y + RADIUS) : null;
+    // In the air against rock in front (an island's side, under a missed
+    // ravine), he stops pushing on and drops: pushed into it, its grip held
+    // him there.
+    const ahead = Math.sign(v) || 1;
+    const blocked = !grounded && [-0.6, 0, 0.6].some((dy) => M.Query.point(this.ground, { x: b.position.x + ahead * (RADIUS + 4), y: b.position.y + dy * RADIUS })
+      .some((bd) => !bd.oneWay));
+    if (a !== null && Math.abs(a) <= FULL_SPEED_SLOPE) M.Body.setVelocity(b, { x: v * Math.cos(a), y: v * Math.sin(a) });
+    else M.Body.setVelocity(b, { x: blocked ? 0 : v, y: b.velocity.y });
+    this.rockStep(time);
+    if (b.velocity.y > MAX_FALL) M.Body.setVelocity(b, { x: b.velocity.x, y: MAX_FALL });
+  }
+
   reachDoor() {
     this.finished = true;
     this.doorHint.setVisible(false);
     this.btnDoor.setVisible(false);
-    this.medal = medalFor(this.coinsGot, this.totalCoins());
+    const t = this.runTime();
+    this.medal = this.room.runner ? this.runMedal(t) : medalFor(this.coinsGot, this.totalCoins());
     const b = this.ball;
     Matter().Body.setStatic(b, true);
     audio.sfx(this, 'door');
@@ -1050,15 +1889,48 @@ export class BonusRoomScene extends Phaser.Scene {
     play(this.shaan, this.art, 'idle');
     this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
-      this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
-        : `You gathered ${this.coinsGot} of ${this.totalCoins()} coins.`, true, this.medal));
+      this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
+        : this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
+          : `You gathered ${this.coinsGot} of ${this.totalCoins()} coins.`, true, this.medal));
   }
 
   fellOff() {
+    if (this.room.runner) { this.backBeforeGap(); return; }
     this.finished = true;
     Matter().Body.setStatic(this.ball, true);
     if (this.test) { this.startOver(); return; }
     this.endCard('Whoops!', 'Back to the level.', false);
+  }
+
+  // A runner room: no fall (the user, 2026-11-03: "instead of falling ...
+  // have him appear right before the gap he fell in"). He's put back on the
+  // lowest path just before the gap, standing; the clock runs on, so the
+  // fall costs him time.
+  backBeforeGap() {
+    const b = this.ball;
+    const M = Matter();
+    const x = b.position.x;
+    // The lowest path's islands: their tops at the right end the lowest.
+    const ends = this.islands.map((isl) => ({ isl, y: surfaceY(isl.curve, isl.right - 1) }));
+    const low = Math.max(...ends.map((e) => e.y));
+    const before = ends.filter((e) => e.y > low - 120 && e.isl.right <= x + 60)
+      .sort((p, q) => q.isl.right - p.isl.right)[0];
+    const isl = before ? before.isl : this.islands[0];
+    // Far enough back to get up speed again (260 px put him, stopped, in
+    // front of a rock just before the gap: he could never clear both), and
+    // not up against a rock.
+    let nx = Math.max(isl.left + 80, isl.right - 700);
+    (this.stumbles || []).forEach((r) => {
+      if (!r.hit && r.x > nx - 60 && r.x < nx + 200 && Math.abs(r.y - surfaceY(isl.curve, r.x)) < 60) nx = Math.max(isl.left + 80, r.x - 260);
+    });
+    M.Body.setPosition(b, { x: nx, y: surfaceY(isl.curve, nx) - RADIUS - 4 });
+    M.Body.setVelocity(b, { x: 0, y: 0 });
+    this.runSpeed = 0;
+    this.dashUntil = 0;
+    this.jumping = false;
+    this.cameras.main.flash(250, 255, 255, 255);
+    this.floatText(nx, surfaceY(isl.curve, nx) - 140, 'Whoops! Go again!');
+    audio.sfx(this, 'splash');
   }
 
   // Test mode: the room from the start again.
@@ -1082,7 +1954,9 @@ export class BonusRoomScene extends Phaser.Scene {
       this.add.text(MAP_W / 2, MAP_H / 2 + 86, `${medal.name} medal: +${medal.tier} currency`, heading(30, COLORS.yellowCss, {
         stroke: COLORS.inkCss, strokeThickness: 8,
       })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
-      const goals = MEDALS.filter((m) => m.from > 0).map((m) => `${m.name} ${medalNeeds(m, this.totalCoins())} ${this.unit}`).join('   ');
+      const mt = this.room.medalTimes || {};
+      const goals = this.room.runner ? `Gold under ${mt.gold} s   Silver under ${mt.silver} s`
+        : MEDALS.filter((m) => m.from > 0).map((m) => `${m.name} ${medalNeeds(m, this.totalCoins())} ${this.unit}`).join('   ');
       this.add.text(MAP_W / 2, MAP_H / 2 + 132, goals, text(20, COLORS.parchmentCss, {
         stroke: COLORS.inkCss, strokeThickness: 5,
       })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
