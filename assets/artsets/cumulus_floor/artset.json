@@ -254,6 +254,8 @@
  },
  "portal": {
   "file": "portal.png",
+  "inside": "portal_inside.png",
+  "glow": "#54e34f",
   "frameWidth": 134,
   "frameHeight": 194,
   "frames": 24,

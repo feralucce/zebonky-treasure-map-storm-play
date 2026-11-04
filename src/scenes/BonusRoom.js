@@ -20,13 +20,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=c071cd2';
-import { texKey } from '../data/artsets.js?v=c071cd2';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=c071cd2';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=c071cd2';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=c071cd2';
-import { audio } from '../audio.js?v=c071cd2';
-import { COLORS, heading, text } from '../theme.js?v=c071cd2';
+import { MAP_W, MAP_H } from '../data/world.js?v=8d8529f';
+import { texKey } from '../data/artsets.js?v=8d8529f';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=8d8529f';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=8d8529f';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=8d8529f';
+import { audio } from '../audio.js?v=8d8529f';
+import { COLORS, heading, text } from '../theme.js?v=8d8529f';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 

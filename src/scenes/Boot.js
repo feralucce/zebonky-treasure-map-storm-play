@@ -1,12 +1,12 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=c071cd2';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=c071cd2';
-import { testParams, DRAWN } from '../data/levels.js?v=c071cd2';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=c071cd2';
-import { CHARACTERS } from '../data/characters.js?v=c071cd2';
-import { state } from '../state.js?v=c071cd2';
-import { COLORS, heading, text } from '../theme.js?v=c071cd2';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=c071cd2';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=c071cd2';
+import { ARTSETS, texKey } from '../data/artsets.js?v=8d8529f';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=8d8529f';
+import { testParams, DRAWN } from '../data/levels.js?v=8d8529f';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=8d8529f';
+import { CHARACTERS } from '../data/characters.js?v=8d8529f';
+import { state } from '../state.js?v=8d8529f';
+import { COLORS, heading, text } from '../theme.js?v=8d8529f';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=8d8529f';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=8d8529f';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -154,6 +154,8 @@ export class BootScene extends Phaser.Scene {
         if (data.portal) {
           this.load.spritesheet(texKey(name, data.portal.file), base + data.portal.file,
             { frameWidth: data.portal.frameWidth, frameHeight: data.portal.frameHeight });
+          // its clear middle, where the scene behind shows, warped (src/portalWarp.js)
+          if (data.portal.inside) add(data.portal.inside);
         }
         // The region's Zebonky: one strip of frames per animation.
         const z = data.zebonky;

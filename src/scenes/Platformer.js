@@ -2,21 +2,22 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=c071cd2';
-import { TILE, layoutFor } from '../data/levels.js?v=c071cd2';
-import { state } from '../state.js?v=c071cd2';
-import { COLORS, heading, text } from '../theme.js?v=c071cd2';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=c071cd2';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=c071cd2';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=c071cd2';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=c071cd2';
-import { makeNav } from '../pathing.js?v=c071cd2';
-import { startQuestionRun } from '../data/questions.js?v=c071cd2';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=c071cd2';
-import { Companion } from '../companion.js?v=c071cd2';
-import { startShowcase } from '../showcase.js?v=c071cd2';
-import { startExplorerTour } from '../explorerTour.js?v=c071cd2';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=c071cd2';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=8d8529f';
+import { TILE, layoutFor } from '../data/levels.js?v=8d8529f';
+import { state } from '../state.js?v=8d8529f';
+import { COLORS, heading, text } from '../theme.js?v=8d8529f';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=8d8529f';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=8d8529f';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=8d8529f';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=8d8529f';
+import { makeNav } from '../pathing.js?v=8d8529f';
+import { startQuestionRun } from '../data/questions.js?v=8d8529f';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=8d8529f';
+import { Companion } from '../companion.js?v=8d8529f';
+import { startShowcase } from '../showcase.js?v=8d8529f';
+import { startExplorerTour } from '../explorerTour.js?v=8d8529f';
+import { addPortalWarp } from '../portalWarp.js?v=8d8529f';
+import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=8d8529f';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -496,6 +497,8 @@ export class PlatformerScene extends Phaser.Scene {
             this.secret = this.physics.add.staticSprite(x, (r + 1) * TILE - pt.frameHeight / 2 + (pt.sink || 0), pk).setDepth(-0.5);
             this.secret.play(pk);
             this.secret.body.setSize(80, 128).setOffset((pt.frameWidth - 80) / 2, pt.frameHeight - 128 - (pt.sink || 0));
+            // Its middle is see-through, the scene behind it swirled (the user, 2026-11-04).
+            if (pt.inside) this.portalWarp = addPortalWarp(this, this.secret, pt, texKey(this.artName, pt.inside));
           } else {
             this.secret = this.physics.add.staticImage(x, (r + 1) * TILE - 64, this.blockTexture('block-portal', 80, 128, 0x8a5cc2));
           }
@@ -2293,8 +2296,10 @@ export class PlatformerScene extends Phaser.Scene {
     p.body.enable = false;
     p.anims.stop();
     if (d.portal) {
-      // The portal: she's drawn into the middle, turning and shrinking.
+      // The portal: she's drawn into the middle, turning and shrinking, and
+      // its swirl tightens round her.
       audio.sfx(this, 'door');
+      if (this.portalWarp) this.tweens.add({ targets: this.portalWarp, pull: 1, duration: 900, ease: 'Sine.In' });
       p.setDepth(-0.4);
       this.tweens.add({
         targets: p, x: d.x, y: d.y, angle: 360, scale: 0.2, alpha: 0, duration: 900, ease: 'Sine.In',
