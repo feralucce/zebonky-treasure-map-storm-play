@@ -16,18 +16,20 @@
 //             `along` an island's top, `n` of them; or `points`, each one
 //             placed (the jumps' coins: taken from the path the test bot
 //             actually flies, tools/bonus_bot.js `trace`, so they can be got)
-//   rocks     cracked rocks on the ground at `x` (on island `on`), radius `r`: dash into one
-//             (double-tap forward) and it smashes, `coins` spilling out
-//             ahead; rolling, he bounces off
+//   rocks     cracked rocks on the ground at `x` (on island `on`), radius `r`: roll
+//             into one at a run and it smashes (his Wrecking Ball), `coins`
+//             spilling out ahead; too slow, he bounces off
 //   pools     deep water over a basin in an island: `x`, `y` (its surface),
 //             `w`, `h`. In it he swims as a shark, any way the arrows say
-//   rings     hoops at `x`, `y`: touch one during a dash to claim it (one
+//   rings     hoops at `x`, `y`: touch one to claim it (one
 //             each, or `coins`). With no coins in the room, rings are the score
 //   walls     rock walls, `x`, `y`, `w`, `h` (Roll Run's cliffs)
 //   bumpers   round pads on island `on` at `x` (or at `x`, `y`), radius `r`:
 //             touch one and it bounces him away
 //   mist      false: no mist at the bottom (a room with a floor)
 //   intro     the line shown as it starts
+//   power     the Z-Power's name, shown as it fires (Wrecking Ball, on
+//             smashing a rock, or Hyper Dash in a runner room, if not given)
 //   door      the door at the end: reach it and the room is done
 //
 // Shaan's rooms are Dorsal Cove's (docs/bonus-level-ideas.md); Cannonball
@@ -143,7 +145,7 @@ export const BONUS_ROOMS = {
     width: 13300,
     height: 1700,
     start: [180, 820],
-    intro: 'Smash the cracked rocks!\nDouble tap forward to dash through them.',
+    intro: 'Smash the cracked rocks!\nWrecking Ball: roll right through them.',
     islands: [
       // 0. A long roll down to the first rock, and a flat edge.
       { top: [[-120, 900], [0, 900], [300, 905], [600, 1000], [900, 1140], [1200, 1200], [1700, 1200], [2200, 1200]] },
@@ -199,7 +201,8 @@ export const BONUS_ROOMS = {
   },
 
   // Shaan's third: Shark Dash Rings (the user's pick, 2026-11-02). Three
-  // deep pools to swim as a shark, rings to claim with a dash (the score);
+  // deep pools to swim as a shark, rings to claim by swimming through (the
+  // score; a dash until 2026-11-04, when Shaan lost his dash);
   // swim up hard at a pool's edge to leap out onto the bank. Every gap
   // between the pools needs a jump.
   'dorsal-3': {
@@ -210,7 +213,7 @@ export const BONUS_ROOMS = {
     width: 12100,
     height: 2000,
     start: [180, 620],
-    intro: 'Claim the rings!\nDouble tap to dash into them, up and down to swim.',
+    intro: 'Claim the rings!\nSwim through them, up and down to steer.',
     islands: [
       // 0. A roll down into the first pool, and out up its far bank.
       { top: [[-120, 700], [0, 700], [400, 710], [700, 800], [1000, 820], [1060, 1000], [1091, 1350], [1096, 1410], [1100, 1450], [1107, 1486], [1122, 1514], [1143, 1534], [1173, 1546], [1209, 1550], [1249, 1550], [1309, 1550], [2889, 1550], [2949, 1550], [2989, 1550], [3025, 1546], [3055, 1534], [3077, 1514], [3092, 1486], [3100, 1450], [3104, 1410], [3111, 1351], [3150, 1000], [3200, 820], [3500, 820], [3700, 820]] },
@@ -233,14 +236,14 @@ export const BONUS_ROOMS = {
       { x: 8000, y: 1100 }, { x: 8450, y: 1500 }, { x: 8900, y: 1200 }, { x: 9300, y: 1500 }, { x: 9650, y: 1050 },
     ],
     // No coins: the rings are the score (the user, 2026-11-02), one each;
-    // touch one during a dash to claim it.
+    // touch one to claim it.
     coins: [],
     door: { x: 11550 },
   },
 
   // Shaan's fourth: Tide Pool Tour (the user's pick, 2026-11-02). All his
   // moves: roll along the shore, swim five tide pools (a ring in each),
-  // dash through cracked rocks, jump the gaps.
+  // roll through cracked rocks at a run, jump the gaps.
   'dorsal-4': {
     name: 'Tide Pool Tour',
     artset: 'dorsal_cove',
@@ -249,7 +252,7 @@ export const BONUS_ROOMS = {
     width: 11500,
     height: 2000,
     start: [180, 620],
-    intro: 'Tour the tide pools!\nRoll, swim, dash and jump.',
+    intro: 'Tour the tide pools!\nRoll, swim and jump.',
     islands: [
       // 0. The shore, the first pool, a rock, and a flat edge.
       { top: [[-120, 700], [0, 700], [400, 710], [600, 760], [700, 780], [740, 900], [750, 952], [762, 1011], [770, 1050], [781, 1086], [799, 1114], [823, 1134], [853, 1146], [890, 1150], [930, 1150], [990, 1150], [1260, 1150], [1320, 1150], [1360, 1150], [1397, 1146], [1427, 1134], [1451, 1114], [1469, 1086], [1480, 1050], [1488, 1011], [1500, 952], [1510, 900], [1550, 780], [2000, 780], [2300, 800], [2400, 800]] },
@@ -417,7 +420,7 @@ export const BONUS_ROOMS = {
     width: 37320,
     height: 2150,
     start: [180, 1699],
-    intro: 'Run, Charlie, run! Hold \u2192 to speed up.\nGrab fruit, then double tap \u2192 to boost.',
+    intro: 'Run, Charlie, run! Hold \u2192 to speed up.\nGrab fruit, then double tap \u2192 to Hyper Dash.',
     islands: [
       // The lowest path: rolling, three gaps a section, each section's wider.
       { top: [[-120, 1763], [180, 1779], [480, 1781], [780, 1773], [1080, 1766], [1380, 1767], [1680, 1765], [1980, 1750], [2070, 1750]] },  // 0

@@ -20,13 +20,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=8d8529f';
-import { texKey } from '../data/artsets.js?v=8d8529f';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=8d8529f';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=8d8529f';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=8d8529f';
-import { audio } from '../audio.js?v=8d8529f';
-import { COLORS, heading, text } from '../theme.js?v=8d8529f';
+import { MAP_W, MAP_H } from '../data/world.js?v=0366523';
+import { texKey } from '../data/artsets.js?v=0366523';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=0366523';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=0366523';
+import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=0366523';
+import { audio } from '../audio.js?v=0366523';
+import { COLORS, heading, text } from '../theme.js?v=0366523';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -83,9 +83,9 @@ const ART_PX = 4;           // one pixel of Chris's art, in game px
 const CORNER = 16;          // how far down an island's side its rounded top corner reaches
 const MAX_FALL = 24;        // px a step: about as fast as he falls
 const FULL_SPEED_SLOPE = 0.7; // radians (40 degrees): full speed holds up slopes gentler than this
-// Cracked rocks (Shell Bust, the user, 2026-11-02): rolling into one at this
-// speed per px of its radius or faster smashes it (a 60 px rock needs 7.8,
-// a 90 px one 11.7; full speed is 16).
+// Cracked rocks: rolling into one at this speed per px of its radius or
+// faster smashes it (a 60 px rock needs 7.8, a 90 px one 11.7; full speed is
+// 16), so it takes a run at it.
 const BREAK_PER_RADIUS = 0.13;
 // Bumpers (Roll Run, 2026-11-02): touch one and it bounces him away at this,
 // and up. The user, 2026-11-03: "make the bumpers knock them back a lot".
@@ -310,20 +310,24 @@ export class BonusRoomScene extends Phaser.Scene {
     // The physics, once per Matter step (step()).
     // (Shutting the scene down destroys its world, listener and all.)
     this.matter.world.on('beforeupdate', () => this.step());
-    // Rolling into a cracked rock: fast enough, it smashes and he rolls on
-    // through (the contact is cancelled); too slow, he bounces off.
+    // Rolling into a cracked rock at a run smashes it, no dash needed, and he
+    // rolls on through (the contact is cancelled): his Wrecking Ball (the
+    // user, 2026-11-04: "Have Shaan plow through the rocks without a dash",
+    // "That is wrecking ball", "make it so it works at a run"). Too slow, he
+    // bounces off.
     this.matter.world.on('collisionstart', (ev) => ev.pairs.forEach((pair) => {
       const bump = pair.bodyA.bumper || pair.bodyB.bumper;
       if (bump && (pair.bodyA === this.ball || pair.bodyB === this.ball)) { this.bounce(bump); return; }
       const rock = pair.bodyA.rock || pair.bodyB.rock;
       const ball = pair.bodyA === this.ball || pair.bodyB === this.ball;
       if (!rock || !ball || rock.broken) return;
-      if (this.dashing && this.lastSpeed >= rock.need) {
+      if (this.lastSpeed >= rock.need) {
         pair.isActive = false;
         this.breakRock(rock);
+        this.floatText(rock.x, rock.y - rock.r - 30, `${this.powerName()}!`);
       } else if (this.time.now > (rock.toldAt || 0) + 800) {
         rock.toldAt = this.time.now;
-        this.floatText(rock.x, rock.y - rock.r - 30, this.dashing ? 'Faster!' : 'Double tap to dash!');
+        this.floatText(rock.x, rock.y - rock.r - 30, 'Roll faster!');
       }
     }));
     cam.fadeIn(300, 43, 29, 18);
@@ -1113,6 +1117,21 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     });
   }
 
+  // The Z-Power's name as it fires (zebonky.com's Z-Stats; the user,
+  // 2026-11-04: "Shaan gets wrecking ball in their bonus level and
+  // charlie's speed boost is hyper dash"). Shaan's Wrecking Ball is
+  // plowing through the cracked rocks (shown over each rock he smashes);
+  // Charlie's Hyper Dash is his fruit boost (shown over him, callPower).
+  // A room can name its own (`power`).
+  powerName() {
+    return this.room.power || (this.room.runner ? 'Hyper Dash' : 'Wrecking Ball');
+  }
+
+  callPower() {
+    const b = this.ball;
+    this.floatText(b.position.x, b.position.y - RADIUS - 50, `${this.powerName()}!`);
+  }
+
   floatText(x, y, msg) {
     const t = this.add.text(x, y, msg, heading(28, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 7 }))
       .setOrigin(0.5).setDepth(9);
@@ -1288,13 +1307,15 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
     this.dir = (right ? 1 : 0) - (left ? 1 : 0);
-    // A double tap that way dashes (asked here, done in the next step).
+    // A double tap that way is Charlie's Hyper Dash (asked here, done in the
+    // next step). Only in a runner room: Shaan doesn't get a dash (the user,
+    // 2026-11-04), his Wrecking Ball is rolling through rocks at a run.
     let tap = this.tapped;
     this.tapped = 0;
     if (Phaser.Input.Keyboard.JustDown(k.RIGHT) || Phaser.Input.Keyboard.JustDown(k.D)) tap = 1;
     if (Phaser.Input.Keyboard.JustDown(k.LEFT) || Phaser.Input.Keyboard.JustDown(k.A)) tap = -1;
     if (tap) {
-      if (time - this.tapAt[tap] < DOUBLE_TAP_MS) this.dashAsked = tap;
+      if (this.room.runner && time - this.tapAt[tap] < DOUBLE_TAP_MS) this.dashAsked = tap;
       this.tapAt[tap] = time;
     }
     this.dashTrail(time);
@@ -1344,17 +1365,14 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
     }
 
-    // Rings: dash through the middle for their coins.
+    // Rings: swim through for their coins. Touching any of it counts (the
+    // user, 2026-11-02), the hoop included; with no dash any more (the user,
+    // 2026-11-04), a touch is all it takes.
     this.rings.forEach((r) => {
-      // Touching any of it counts (the user, 2026-11-02), the hoop included.
       const ex = (b.position.x - r.x) / (r.r * 0.55 + RADIUS);
       const ey = (b.position.y - r.y) / (r.r + RADIUS);
       if (r.done || ex * ex + ey * ey > 1) return;
-      if (this.dashing) this.takeRing(r);
-      else if (time > (r.toldAt || 0) + 1000) {
-        r.toldAt = time;
-        this.floatText(r.x, r.y - r.r - 20, 'Dash through!');
-      }
+      this.takeRing(r);
     });
 
     // Coins.
@@ -1500,6 +1518,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const time = this.time.now;
     const dir = this.dir || 0;
     this.lastSpeed = Math.hypot(b.velocity.x, b.velocity.y);   // for the rocks, before this step
+    // Shaan doesn't get a dash (the user, 2026-11-04): only a runner room's
+    // Hyper Dash uses it. Dropped here too, whoever asked (the test bot asks
+    // directly).
+    if (!this.room.runner) { this.dashAsked = 0; this.dashUntil = 0; }
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
@@ -1733,7 +1755,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.boosts = Math.min(RUN.boosts, this.boosts + 1);
       this.showBoosts();
       audio.sfx(this, 'food');
-      this.floatText(f.x, f.y - 40, this.boosts === 1 ? 'Double tap → to boost!' : 'Boost!');
+      this.floatText(f.x, f.y - 40, this.boosts === 1 ? 'Double tap → to Hyper Dash!' : '+1 Hyper Dash!');
       this.tweens.killTweensOf(f.img);
       this.tweens.add({ targets: f.img, y: f.y - 60, alpha: 0, scale: 1.6, duration: 300, onComplete: () => f.img.destroy() });
     });
@@ -1833,9 +1855,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
         this.dashAt = time;
         this.dashUntil = time + DASH_MS * 1.5;
         audio.sfx(this, 'toss');
+        this.callPower();
       } else if (time > (this.toldBoostAt || 0) + 1500) {
         this.toldBoostAt = time;
-        this.floatText(b.position.x, b.position.y - 90, 'Grab fruit to boost!');
+        this.floatText(b.position.x, b.position.y - 90, 'Grab fruit to Hyper Dash!');
       }
     }
     this.dashAsked = 0;

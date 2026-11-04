@@ -9,11 +9,11 @@
 //        bonus, bonusMedal (1-3, from a bonus room) }
 //   levelData: set for a test run, to play it again
 
-import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=8d8529f';
-import { state } from '../state.js?v=8d8529f';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=8d8529f';
-import { LETTERS, REWARDS, REWARD_EACH, MEDALS, award, awardMedal, medalPaid, paid, lettersFound, allLetters, currency } from '../currency.js?v=8d8529f';
-import { audio } from '../audio.js?v=8d8529f';
+import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=0366523';
+import { state } from '../state.js?v=0366523';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=0366523';
+import { LETTERS, REWARDS, REWARD_EACH, MEDALS, award, awardMedal, medalPaid, paid, lettersFound, allLetters, currency } from '../currency.js?v=0366523';
+import { audio } from '../audio.js?v=0366523';
 
 export class LevelEndScene extends Phaser.Scene {
   constructor() {
