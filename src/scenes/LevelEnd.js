@@ -1,19 +1,20 @@
-// The level ending screen (the user, 2026-10-29): after a level's normal
-// exit, after the bonus level, and after the secret level (when there is
-// one). It lists the level's rewards and pays the currency for each one
-// earned now (src/currency.js), then goes back to the map (a test run plays
-// its level again).
+// The level ending screen: the level's score card (the user, 2026-11-05).
+// Every Z paw print the level can award is drawn as a shadow first, then the
+// ones earned (this play or before) pop into them one at a time, new ones
+// with a ring, and the tally counts up (src/paws.js has the awards). Then
+// back to the map (a test run plays its level again).
 //
-// Data: { levelId, kind: 'normal' | 'bonus' | 'secret', run, levelData }
-//   run: what this play did: { nodamage, tamed, questions, hasWild, hasCrates,
-//        bonus, bonusMedal (1-3, from a bonus room) }
+// Data: { levelId, kind: 'normal' | 'bonus' (a placeholder bonus level), run, levelData }
+//   run: what this play did: { time, nodamage, fed, hasWild, hasLetters,
+//        questions, hasCrates, bonus, hasBonus }
 //   levelData: set for a test run, to play it again
 
-import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=0366523';
-import { state } from '../state.js?v=0366523';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=0366523';
-import { LETTERS, REWARDS, REWARD_EACH, MEDALS, award, awardMedal, medalPaid, paid, lettersFound, allLetters, currency } from '../currency.js?v=0366523';
-import { audio } from '../audio.js?v=0366523';
+import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=046d472';
+import { timesFor } from '../data/levelTimes.js?v=046d472';
+import { state } from '../state.js?v=046d472';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=046d472';
+import { LETTERS, AWARDS, earn, held, lettersFound, allLetters, timeTier, tierInfo, clock, pawCard } from '../paws.js?v=046d472';
+import { audio } from '../audio.js?v=046d472';
 
 export class LevelEndScene extends Phaser.Scene {
   constructor() {
@@ -32,35 +33,44 @@ export class LevelEndScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#2f6e50');
     const id = this.levelId;
     const run = this.run;
-    const before = currency();
+    const times = timesFor(id);
+    const tier = timeTier(run.time || 0, times);
+    // Out through a placeholder bonus level (scenes/Bonus.js), not the exit:
+    // no time for this play.
+    const viaBonus = this.kind === 'bonus';
 
-    // What this play earned, by reward; null where the level has none to earn.
+    // What this play earned, by award; null where the level has none.
     const earnedNow = {
-      letters: allLetters(id),
+      time: viaBonus ? 0 : tier,
+      letters: run.hasLetters === false ? null : allLetters(id),
       nodamage: !!run.nodamage,
-      tamed: run.hasWild === false ? null : !!run.tamed,
+      fed: run.hasWild === false ? null : !!run.fed,
       questions: run.hasCrates === false ? null : !!run.questions,
-      bonus: this.kind === 'bonus' || !!run.bonus,   // a bonus room plays mid-level (BonusRoom.js)
-      secret: this.kind === 'secret',
+      bonus: run.hasBonus === false ? null : !!run.bonus,
     };
-    const rows = REWARDS.filter((r) => r.key !== 'secret' || this.kind === 'secret' || paid(id, 'secret'))
-      .map((r) => {
-        const had = paid(id, r.key);
-        const now = earnedNow[r.key];
-        // A bonus room's medal pays 1 to 3, less what an earlier one paid.
-        if (r.key === 'bonus' && run.bonusMedal) {
-          const before = medalPaid(id);
-          const got = awardMedal(id, run.bonusMedal);
-          const best = MEDALS[Math.max(before, run.bonusMedal) - 1];
-          return { ...r, label: `${r.label}: ${best.name}`, pays: got, status: got ? 'new' : 'had' };
-        }
-        const fresh = now === true && award(id, r.key);
-        return { ...r, pays: REWARD_EACH, status: now === null ? 'none' : fresh ? 'new' : had ? 'had' : 'no' };
-      });
-    const gained = currency() - before;
+    const rows = AWARDS.map((a) => {
+      const now = earnedNow[a.key];
+      if (now === null) return { label: a.label, max: a.max, none: true };
+      const fresh = now ? earn(id, a.key, a.key === 'time' ? now : true) : 0;
+      const row = { label: a.label, max: a.max, got: held(id, a.key), fresh };
+      if (a.key === 'time' && viaBonus) {
+        row.label = 'Time';
+        row.detail = 'Reach the exit for a time';
+        row.detailAt = 150;
+      } else if (a.key === 'time') {
+        const best = tierInfo(held(id, 'time'));
+        row.label = `Time ${clock(run.time)}`;
+        row.detail = `${tierInfo(tier).name}   (gold ${clock(times.gold)}, silver ${clock(times.silver)})`;
+        row.detailAt = 150;
+        if (best && best.tier > tier) row.detail = `${tierInfo(tier).name}, best ${best.name}`;
+      }
+      if (a.key === 'letters') row.letters = true;
+      return row;
+    });
 
-    const w = 820;
-    const h = 120 + rows.length * 56 + 150;
+    const w = 860;
+    const rowH = 56;
+    const h = 130 + rows.length * rowH + 140;
     const x = (MAP_W - w) / 2;
     const y = (MAP_H - h) / 2;
     const g = this.add.graphics();
@@ -71,49 +81,33 @@ export class LevelEndScene extends Phaser.Scene {
     g.lineStyle(5, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, h, 28);
 
-    const title = { normal: 'Level complete!', bonus: 'Bonus level complete!', secret: 'Secret level complete!' }[this.kind];
-    this.add.text(MAP_W / 2, y + 52, title, heading(44, COLORS.yellowCss, {
+    this.add.text(MAP_W / 2, y + 52, viaBonus ? 'Bonus level complete!' : 'Level complete!', heading(44, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 10,
     })).setOrigin(0.5);
     const lvl = LEVELS[id];
     if (lvl) this.add.text(MAP_W / 2, y + 98, lvl.name, text(20, '#6b4a2e')).setOrigin(0.5);
 
-    rows.forEach((r, i) => {
-      const ry = y + 140 + i * 56;
-      const on = r.status === 'new' || r.status === 'had';
-      const box = this.add.graphics();
-      box.fillStyle(r.status === 'new' ? 0xd6f0dc : 0xf8ecd0, 1);
-      box.fillRoundedRect(x + 40, ry - 22, w - 80, 46, 12);
-      box.lineStyle(2, COLORS.ink, r.status === 'none' ? 0.3 : 1);
-      box.strokeRoundedRect(x + 40, ry - 22, w - 80, 46, 12);
-      // A tick, or an empty ring.
-      box.lineStyle(4, on ? COLORS.green : 0xb9a782, 1);
-      if (on) box.strokePoints([{ x: x + 62, y: ry }, { x: x + 72, y: ry + 10 }, { x: x + 90, y: ry - 10 }]);
-      else box.strokeCircle(x + 76, ry, 11);
-      this.add.text(x + 108, ry, r.label, text(20, r.status === 'none' ? '#a89670' : COLORS.inkCss)).setOrigin(0, 0.5);
-      // The letters found so far, on the letters row.
-      if (r.key === 'letters') {
-        const found = lettersFound(id);
-        LETTERS.split('').forEach((ch, k) => {
-          this.add.text(x + 420 + k * 26, ry, ch, heading(22, found.includes(ch) ? COLORS.yellowCss : '#d8c49a', {
-            stroke: COLORS.inkCss, strokeThickness: found.includes(ch) ? 5 : 0,
-          })).setOrigin(0.5);
-        });
-      }
-      const right = { new: `+${r.pays} currency`, had: 'Earned before', no: 'Not yet', none: 'None in this level' }[r.status];
-      this.add.text(x + w - 60, ry, right, heading(18, r.status === 'new' ? '#2f6e50' : '#8a7550')).setOrigin(1, 0.5);
+    const top = y + 150;
+    const tally = this.add.text(MAP_W / 2, top + rows.length * rowH + 6, '', heading(30, COLORS.inkCss)).setOrigin(0.5);
+    const card = pawCard(this, rows, {
+      x: x + 40, y: top, w: w - 80, rowH,
+      onDone: (n, of) => { tally.setText(`Z paw prints: ${n} / ${of}`); audio.sfx(this, 'level-end'); },
     });
+    tally.setText(`Z paw prints: 0 / ${card.possible}`);
+    // Count up as each paw lands.
+    let n = 0;
+    for (let i = 0; i < card.total; i++) {
+      this.time.delayedCall(450 + i * 260, () => { n += 1; tally.setText(`Z paw prints: ${n} / ${card.possible}`); });
+    }
 
-    // The total, counting up through what was just earned.
-    const ty = y + 140 + rows.length * 56 + 22;
-    const total = this.add.text(MAP_W / 2, ty, '', heading(30, COLORS.inkCss)).setOrigin(0.5);
-    const show = (n) => total.setText(`Currency: ${n}${gained ? `   (+${gained})` : ''}`);
-    show(before);
-    if (gained) {
-      this.tweens.addCounter({
-        from: before, to: before + gained, duration: 600 + gained * 250, delay: 500,
-        onUpdate: (tw) => show(Math.round(tw.getValue())),
-        onComplete: () => audio.sfx(this, 'food'),
+    // The letters found so far, on the letters row.
+    const li = rows.findIndex((r) => r.letters && !r.none);
+    if (li >= 0) {
+      const found = lettersFound(id);
+      LETTERS.split('').forEach((ch, k) => {
+        this.add.text(x + 380 + k * 26, top + li * rowH, ch, heading(22, found.includes(ch) ? COLORS.yellowCss : '#d8c49a', {
+          stroke: COLORS.inkCss, strokeThickness: found.includes(ch) ? 5 : 0,
+        })).setOrigin(0.5);
       });
     }
 

@@ -31,14 +31,18 @@
 //   power     the Z-Power's name, shown as it fires (Wrecking Ball, on
 //             smashing a rock, or Hyper Dash in a runner room, if not given)
 //   door      the door at the end: reach it and the room is done
+//   medalTimes { gold, silver } seconds: under gold is 3 Z paw prints, under
+//             silver 2, through the door at all 1 (paws.js; every room is
+//             timed, the user, 2026-11-05)
 //
 // Shaan's rooms are Dorsal Cove's (docs/bonus-level-ideas.md); Cannonball
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
-// waterfalls, no timer.
+// waterfalls.
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
     name: 'Cannonball Cove',
+    medalTimes: { gold: 45, silver: 75 },   // provisional, 2026-11-05 (bot 28.6 s)
     artset: 'dorsal_cove',
     // Its islands painted by MOSS (the user, 2026-11-03: "Send it to moss";
     // seed 1 for all): assets/artsets/<set>/bonus/<id>-island-<i>.png, made
@@ -139,6 +143,7 @@ export const BONUS_ROOMS = {
   // needs a jump (flat or downhill edge, far side a little higher).
   'dorsal-2': {
     name: 'Shell Bust',
+    medalTimes: { gold: 30, silver: 45 },   // provisional, 2026-11-05 (bot 17.5 s)
     artset: 'dorsal_cove',
     // Its islands painted by MOSS (seed 2 for all, the user 2026-11-03).
     painted: true,
@@ -207,6 +212,7 @@ export const BONUS_ROOMS = {
   // between the pools needs a jump.
   'dorsal-3': {
     name: 'Shark Dash Rings',
+    medalTimes: { gold: 40, silver: 65 },   // provisional, 2026-11-05 (bot 24.2 s)
     artset: 'dorsal_cove',
     // Its islands painted by MOSS (seed 2 for all, the user 2026-11-03).
     painted: true,
@@ -246,6 +252,7 @@ export const BONUS_ROOMS = {
   // roll through cracked rocks at a run, jump the gaps.
   'dorsal-4': {
     name: 'Tide Pool Tour',
+    medalTimes: { gold: 60, silver: 100 },   // provisional, 2026-11-05 (not timed: the bot cannot finish it)
     artset: 'dorsal_cove',
     // Its islands painted by MOSS (seed 2 for all, the user 2026-11-03).
     painted: true,
@@ -308,6 +315,7 @@ export const BONUS_ROOMS = {
   // back hard (jump them); two cracked rocks.
   'dorsal-5': {
     name: 'Roll Run',
+    medalTimes: { gold: 35, silver: 60 },   // provisional, 2026-11-05 (bot 22.9 s)
     artset: 'dorsal_cove',
     // Its islands painted by MOSS (seed 2 for all, the user 2026-11-03).
     painted: true,

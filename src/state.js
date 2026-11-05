@@ -2,11 +2,11 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=0366523';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=0366523';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=0366523';
-import { bankFor, questionKey } from './data/questions.js?v=0366523';
-import { BUILD } from './version.js?v=0366523';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=046d472';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=046d472';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=046d472';
+import { bankFor, questionKey } from './data/questions.js?v=046d472';
+import { BUILD } from './version.js?v=046d472';
 
 const KEY = 'zebonky-tms-save-v1';
 // The save before the last one, kept in case the last one is damaged.
@@ -44,9 +44,8 @@ function fresh() {
     answered: {},
     companionsBy: {},
     companionBy: {},
-    // Currency (a placeholder name) and the level rewards that pay it, once
-    // per level per difficulty: band -> levelId -> { letters, paid } (currency.js).
-    currency: 0,
+    // The Z paw prints earned, per level per difficulty:
+    // band -> levelId -> { letters, paid } (paws.js).
     rewardsBy: {},
   };
 }

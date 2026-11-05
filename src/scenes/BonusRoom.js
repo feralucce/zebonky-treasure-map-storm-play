@@ -2,9 +2,11 @@
 // level sleeps while it plays and wakes when it ends (Platformer.js
 // backFromBonus): falling off the bottom or going through the door both go
 // back to the level at the bonus door's spot, with the door gone. The door
-// opens with Up or the door button, as in the levels (the user, 2026-11-02),
-// and gives a medal by the coins gathered (currency.js MEDALS), paid on the
-// level ending screen.
+// opens with Up or the door button, as in the levels (the user, 2026-11-02).
+// Every room is timed (the user, 2026-11-05): through the door, its own
+// score card awards bronze, silver or gold, 1, 2 or 3 Z paw prints, by the
+// room's `medalTimes` (paws.js). The tokens to gather are a stand-in until
+// the team picks the collectible; they award nothing.
 //
 // The levels' box physics only knows flat ground and square blocks, so a
 // room runs on Phaser's Matter physics: the Zebonky is a ball that rolls on
@@ -20,13 +22,13 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=0366523';
-import { texKey } from '../data/artsets.js?v=0366523';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=0366523';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=0366523';
-import { currencyIcon, MEDALS, medalFor, medalNeeds } from '../currency.js?v=0366523';
-import { audio } from '../audio.js?v=0366523';
-import { COLORS, heading, text } from '../theme.js?v=0366523';
+import { MAP_W, MAP_H } from '../data/world.js?v=046d472';
+import { texKey } from '../data/artsets.js?v=046d472';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=046d472';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=046d472';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=046d472';
+import { audio } from '../audio.js?v=046d472';
+import { COLORS, heading, text } from '../theme.js?v=046d472';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -295,7 +297,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.bumpers = (room.bumpers || []).map((bd) => this.buildBumper(bd));
     this.pools = (room.pools || []).map((w) => this.buildPool(w, set));
     this.rings = (room.rings || []).map((r) => this.buildRing(r));
-    this.unit = this.coins.length ? 'coins' : 'rings';
+    this.unit = this.coins.length ? 'tokens' : 'rings';
     this.buildDoor(set);
     if (room.runner) this.buildRunner(set);
     // Painted islands carry their own plants.
@@ -939,7 +941,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
   }
 
   buildCoins() {
-    const key = currencyIcon(this);
+    const key = tokenIcon(this);
     this.coins = this.coinSpots().map(([x, y], i) => {
       const s = this.add.image(x, y, key).setDepth(4).setScale(1.1);
       this.tweens.add({ targets: s, scaleX: 0.25, duration: 520, yoyo: true, repeat: -1, delay: (i % 6) * 90, ease: 'Sine.InOut' });
@@ -1069,7 +1071,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     body.rock = rock;
     // Its coins: hidden inside until it breaks, then out along the ground
     // ahead of it, where he's rolling.
-    const ckey = currencyIcon(this);
+    const ckey = tokenIcon(this);
     const n = rd.coins || 4;
     for (let k = 0; k < n; k++) {
       // Well ahead, and live from the moment they fly: at full speed he
@@ -1177,17 +1179,17 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     box.lineStyle(3, COLORS.ink, 1);
     box.strokeRoundedRect(MAP_W / 2 - 170, 14, 340, 50, 16);
     this.add.text(MAP_W / 2, 39, this.room.name, heading(24, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(21);
+    // Every room's timer (the user, 2026-11-05), right of its name.
+    this.clockText = this.add.text(MAP_W / 2 + 190, 40, clock(0), heading(26, '#ffffff', {
+      stroke: COLORS.inkCss, strokeThickness: 6,
+    })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
     if (this.room.runner) {
-      // His time, instead of coins (the user, 2026-11-03: "the awards
-      // based on speed").
-      this.coinText = this.add.text(MAP_W - 180, 40, 'Time 0.0', heading(24, '#ffffff', {
-        stroke: COLORS.inkCss, strokeThickness: 6,
-      })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+      // No tokens in a runner room: its time is the thing.
     } else if (this.unit === 'rings') {
       const ic = this.add.graphics().setScrollFactor(0).setDepth(21).setPosition(MAP_W - 150, 40);
       ic.lineStyle(7, COLORS.ink, 1).strokeEllipse(0, 0, 22, 36);
       ic.lineStyle(4, 0xffc93c, 1).strokeEllipse(0, 0, 22, 36);
-    } else this.add.image(MAP_W - 150, 40, 'currency-coin').setScrollFactor(0).setDepth(21);
+    } else this.add.image(MAP_W - 150, 40, tokenIcon(this)).setScrollFactor(0).setDepth(21);
     if (!this.room.runner) {
       this.coinText = this.add.text(MAP_W - 126, 40, `0 / ${this.totalCoins()}`, heading(24, '#ffffff', {
         stroke: COLORS.inkCss, strokeThickness: 6,
@@ -1386,10 +1388,9 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.tweens.add({ targets: c, y: c.y - 50, alpha: 0, scale: 1.6, duration: 300, onComplete: () => c.destroy() });
     });
 
-    if (this.room.runner) {
-      this.runnerPickups(time);
-      this.coinText.setText(`Time ${this.runTime().toFixed(1)}`);
-    }
+    if (this.room.runner) this.runnerPickups(time);
+    const shown = Math.floor(this.runTime() * 10);
+    if (this.clockText && shown !== this.clockShown) { this.clockShown = shown; this.clockText.setText(clock(this.runTime())); }
 
     if (b.position.y > this.room.height + 80) this.fellOff();
   }
@@ -1422,7 +1423,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     g.lineStyle(9, 0xffc93c, 1).strokeEllipse(0, 0, r * 1.1, r * 2);
     g.lineStyle(3, 0xffffff, 0.8).strokeEllipse(0, 0, r * 0.9, r * 1.8);
     this.tweens.add({ targets: g, scaleX: 1.12, scaleY: 1.06, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    const icon = this.add.image(rd.x, rd.y, currencyIcon(this)).setDepth(5.3).setAlpha(0.85)
+    const icon = this.add.image(rd.x, rd.y, tokenIcon(this)).setDepth(5.3).setAlpha(0.85)
       .setVisible(!!(this.room.coins || []).length);
     return { x: rd.x, y: rd.y, r, coins: rd.coins || 1, g, icon, done: false };
   }
@@ -1522,6 +1523,9 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     // Hyper Dash uses it. Dropped here too, whoever asked (the test bot asks
     // directly).
     if (!this.room.runner) { this.dashAsked = 0; this.dashUntil = 0; }
+    // A runner room's clock starts at its countdown's GO; the others' at
+    // the first step.
+    if (!this.room.runner) this.runSteps = Math.max(0, this.runSteps) + 1;
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
@@ -1734,12 +1738,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     return Math.max(0, this.runSteps) / 60;
   }
 
-  // A runner room's medal: by his time (`medalTimes`: under `gold` s for
-  // gold, under `silver` for silver; through the door at all is bronze).
+  // The room's medal: by his time (`medalTimes`: under `gold` s for gold,
+  // under `silver` for silver; through the door at all is bronze).
   runMedal(t) {
-    const mt = this.room.medalTimes || {};
-    const tier = t <= mt.gold ? 3 : t <= mt.silver ? 2 : 1;
-    return MEDALS.find((m) => m.tier === tier);
+    return tierInfo(timeTier(t, this.room.medalTimes));
   }
 
   showBoosts() {
@@ -1900,7 +1902,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.doorHint.setVisible(false);
     this.btnDoor.setVisible(false);
     const t = this.runTime();
-    this.medal = this.room.runner ? this.runMedal(t) : medalFor(this.coinsGot, this.totalCoins());
+    if (this.clockText) this.clockText.setText(clock(t));
+    this.medal = this.runMedal(t);
+    // Its paws (kept at the best), on the level's record; a test run keeps none.
+    this.medalFresh = this.test ? 0 : earn(this.levelId, 'bonusTime', this.medal.tier);
     const b = this.ball;
     Matter().Body.setStatic(b, true);
     audio.sfx(this, 'door');
@@ -1914,7 +1919,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
       this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
         : this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
-          : `You gathered ${this.coinsGot} of ${this.totalCoins()} coins.`, true, this.medal));
+          : `You gathered ${this.coinsGot} of ${this.totalCoins()} tokens.`, true, this.medal));
   }
 
   fellOff() {
@@ -1965,29 +1970,36 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
   endCard(title, line, won, medal = null) {
     if (this.intro && this.intro.active) this.intro.destroy();
     const shade = this.add.rectangle(0, 0, MAP_W, MAP_H, COLORS.ink, 0.35).setOrigin(0).setScrollFactor(0).setDepth(30);
-    // The medal: a disc in its colour, its name, and what the others need.
+    // The room's score card (the user, 2026-11-05): its three Z paw prints
+    // as shadows, then the ones its time earned (the best so far) pop in.
+    const up = medal ? 130 : 0;
     if (medal) {
-      const my = MAP_H / 2 - 190;
-      const disc = this.add.graphics().setScrollFactor(0).setDepth(31);
-      disc.fillStyle(COLORS.ink, 1).fillCircle(MAP_W / 2 + 4, my + 5, 58);
-      disc.fillStyle(medal.color, 1).fillCircle(MAP_W / 2, my, 56);
-      disc.lineStyle(5, COLORS.ink, 1).strokeCircle(MAP_W / 2, my, 56);
-      disc.lineStyle(3, 0xffffff, 0.6).strokeCircle(MAP_W / 2, my, 42);
-      this.add.text(MAP_W / 2, my, String(medal.tier), heading(46, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(32);
-      this.add.text(MAP_W / 2, MAP_H / 2 + 86, `${medal.name} medal: +${medal.tier} currency`, heading(30, COLORS.yellowCss, {
-        stroke: COLORS.inkCss, strokeThickness: 8,
-      })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
+      const w = 720;
+      const px = (MAP_W - w) / 2;
+      const py = MAP_H / 2 - 10;
+      const panel = this.add.graphics().setScrollFactor(0).setDepth(31);
+      panel.fillStyle(COLORS.ink, 1).fillRoundedRect(px + 5, py + 6, w, 150, 22);
+      panel.fillStyle(COLORS.parchment, 1).fillRoundedRect(px, py, w, 150, 22);
+      panel.lineStyle(4, COLORS.ink, 1).strokeRoundedRect(px, py, w, 150, 22);
       const mt = this.room.medalTimes || {};
-      const goals = this.room.runner ? `Gold under ${mt.gold} s   Silver under ${mt.silver} s`
-        : MEDALS.filter((m) => m.from > 0).map((m) => `${m.name} ${medalNeeds(m, this.totalCoins())} ${this.unit}`).join('   ');
-      this.add.text(MAP_W / 2, MAP_H / 2 + 132, goals, text(20, COLORS.parchmentCss, {
-        stroke: COLORS.inkCss, strokeThickness: 5,
-      })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
+      const t = this.runTime();
+      const got = this.test ? medal.tier : held(this.levelId, 'bonusTime');
+      const best = tierInfo(got);
+      const detail = best && best.tier > medal.tier ? `${medal.name}, best ${best.name}`
+        : `${medal.name}   (gold ${clock(mt.gold)}, silver ${clock(mt.silver)})`;
+      const tally = this.add.text(MAP_W / 2, py + 112, 'Z paw prints: 0 / 3', heading(26, COLORS.inkCss))
+        .setOrigin(0.5).setScrollFactor(0).setDepth(32);
+      let n = 0;
+      pawCard(this, [{ label: `Time ${clock(t)}`, detail, detailAt: 150, max: 3, got, fresh: this.test ? medal.tier : this.medalFresh }], {
+        x: px + 24, y: py + 50, w: w - 48, rowH: 64, depth: 32, scroll: false, delay: 700,
+        onDone: (k) => tally.setText(`Z paw prints: ${k} / 3`),
+      });
+      for (let i = 0; i < got; i++) this.time.delayedCall(700 + i * 260, () => { n += 1; tally.setText(`Z paw prints: ${n} / 3`); });
     }
-    const t = this.add.text(MAP_W / 2, MAP_H / 2 - 40, title, heading(60, COLORS.yellowCss, {
+    const t = this.add.text(MAP_W / 2, MAP_H / 2 - 40 - up, title, heading(60, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 12,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(31).setScale(0.6);
-    this.add.text(MAP_W / 2, MAP_H / 2 + 40, line, text(28, COLORS.parchmentCss, {
+    this.add.text(MAP_W / 2, MAP_H / 2 + 40 - up, line, text(28, COLORS.parchmentCss, {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(31);
     this.tweens.add({ targets: t, scale: 1, duration: 320, ease: 'Back.Out' });

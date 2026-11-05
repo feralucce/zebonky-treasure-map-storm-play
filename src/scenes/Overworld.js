@@ -7,15 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=0366523';
-import { state, pathKey } from '../state.js?v=0366523';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=0366523';
-import { audio, fullscreenButton, musicButton } from '../audio.js?v=0366523';
-import { BUILD } from '../version.js?v=0366523';
-import { starsFor, rewardTotals } from '../rewards.js?v=0366523';
-import { currency, currencyIcon } from '../currency.js?v=0366523';
-import { showCompanionCard } from '../companionCard.js?v=0366523';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=0366523';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=046d472';
+import { state, pathKey } from '../state.js?v=046d472';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=046d472';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=046d472';
+import { BUILD } from '../version.js?v=046d472';
+import { starsFor, rewardTotals } from '../rewards.js?v=046d472';
+import { totalPaws } from '../paws.js?v=046d472';
+import { showCompanionCard } from '../companionCard.js?v=046d472';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=046d472';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -809,7 +809,7 @@ export class OverworldScene extends Phaser.Scene {
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(x, y, w, 52, 16);
     this.add.text(x + w / 2, y + 26, `★ ${t.stars}/${t.maxStars}`, heading(22, '#b8860b')).setOrigin(0.5);
-    // Currency (a placeholder name), beside the stars.
+    // Z paw prints on this difficulty (paws.js), beside the stars.
     const cw = 170;
     const cx0 = x - cw - 12;
     g.fillStyle(COLORS.ink, 0.9);
@@ -818,8 +818,8 @@ export class OverworldScene extends Phaser.Scene {
     g.fillRoundedRect(cx0, y, cw, 52, 16);
     g.lineStyle(3, COLORS.ink, 1);
     g.strokeRoundedRect(cx0, y, cw, 52, 16);
-    this.add.image(cx0 + 30, y + 26, currencyIcon(this));
-    this.add.text(cx0 + 52, y + 26, `${currency()}`, heading(22, COLORS.inkCss)).setOrigin(0, 0.5);
+    this.add.image(cx0 + 32, y + 26, 'zpaw').setDisplaySize(32, 38);
+    this.add.text(cx0 + 56, y + 26, `${totalPaws()}`, heading(22, COLORS.inkCss)).setOrigin(0, 0.5);
     // The map's own track (the explorer's room will share it); a level's
     // music crossfades into it on the way back.
     audio.music(this, 'map');

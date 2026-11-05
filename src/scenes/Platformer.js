@@ -2,22 +2,22 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=0366523';
-import { TILE, layoutFor } from '../data/levels.js?v=0366523';
-import { state } from '../state.js?v=0366523';
-import { COLORS, heading, text } from '../theme.js?v=0366523';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=0366523';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=0366523';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=0366523';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=0366523';
-import { makeNav } from '../pathing.js?v=0366523';
-import { startQuestionRun } from '../data/questions.js?v=0366523';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=0366523';
-import { Companion } from '../companion.js?v=0366523';
-import { startShowcase } from '../showcase.js?v=0366523';
-import { startExplorerTour } from '../explorerTour.js?v=0366523';
-import { addPortalWarp } from '../portalWarp.js?v=0366523';
-import { LETTERS, lettersFound, findLetter, allLetters, currency, currencyIcon } from '../currency.js?v=0366523';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=046d472';
+import { TILE, layoutFor } from '../data/levels.js?v=046d472';
+import { state } from '../state.js?v=046d472';
+import { COLORS, heading, text } from '../theme.js?v=046d472';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=046d472';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=046d472';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=046d472';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=046d472';
+import { makeNav } from '../pathing.js?v=046d472';
+import { startQuestionRun } from '../data/questions.js?v=046d472';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=046d472';
+import { Companion } from '../companion.js?v=046d472';
+import { startShowcase } from '../showcase.js?v=046d472';
+import { startExplorerTour } from '../explorerTour.js?v=046d472';
+import { addPortalWarp } from '../portalWarp.js?v=046d472';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=046d472';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -116,7 +116,8 @@ export class PlatformerScene extends Phaser.Scene {
     this.bonusNow = !!data.bonusNow;
     // A designer test run (or an inspection, showcase or tour) never touches saved progress.
     state.noSave = this.test || this.inspect || !!this.showcase || !!this.explorerTour;
-    this.damaged = false;      // the no-damage reward (currency.js)
+    this.damaged = false;      // the no-damage paw (paws.js)
+    this.playMs = 0;           // the level's timer: only while she plays (paws.js)
     this.inDoor = false;
     this.touchDoor = false;
     this.touchGrab = false;
@@ -784,7 +785,10 @@ export class PlatformerScene extends Phaser.Scene {
     return {
       nodamage: !this.damaged,
       hasWild: wild.length > 0,
-      tamed: wild.length > 0 && wild.every((z) => z.fed),
+      fed: wild.length > 0 && wild.every((z) => z.fed),
+      hasLetters: !!(this.letterSpots && this.letterSpots.length),
+      hasBonus: !!(LEVELS[this.levelId] && LEVELS[this.levelId].hasSecret),
+      time: this.playMs / 1000,
       hasCrates: this.crateCount > 0 && items.length > 0,
       questions: this.crateCount > 0 && items.every((it) => state.hasTreasure(this.levelId, it.id)),
       bonus: !!this.bonusDone,
@@ -2557,16 +2561,16 @@ export class PlatformerScene extends Phaser.Scene {
     this.add.text(px + 16, 44, lvl.name, heading(20)).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
     this.hudPips = this.add.graphics().setScrollFactor(0).setDepth(21);
 
-    // Wild Zebonkies tamed so far (the tamed star needs all of them).
+    // Wild Zebonkies fed so far (the tamed star and the fed paw need all of them).
     this.tamedText = this.add.text(MAP_W / 2, 92, '', heading(18, COLORS.parchmentCss, {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
 
-    // Currency (a placeholder name), left of the food.
-    this.add.image(MAP_W - 300, 44, currencyIcon(this)).setScrollFactor(0).setDepth(21);
-    this.currencyText = this.add.text(MAP_W - 278, 44, '', heading(26, COLORS.parchmentCss, {
+    // The level's timer, left of the food (the user, 2026-11-05: bronze,
+    // silver and gold times award 1, 2 and 3 paws).
+    this.clockText = this.add.text(MAP_W - 236, 44, clock(0), heading(26, COLORS.parchmentCss, {
       stroke: COLORS.inkCss, strokeThickness: 7,
-    })).setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
+    })).setOrigin(1, 0.5).setScrollFactor(0).setDepth(21);
     // The letters of ZEBONKY in this level, found ones lit (only in a level
     // that has them).
     this.letterHud = [];
@@ -2596,19 +2600,19 @@ export class PlatformerScene extends Phaser.Scene {
     audio.preloadSfx(this);
   }
 
-  // A wild Zebonky ate: count it, and the tamed star once all have.
+  // A wild Zebonky ate: count it, and the tamed star once all have (the
+  // paw for feeding them all is on the level ending screen).
   onZebonkyFed() {
     this.refreshHud();
     if (!this.wild.length || !this.wild.every((z) => z.fed)) return;
     if (this.test || state.hasTamedAll(this.levelId)) return;
     state.markTamed(this.levelId);
-    this.floatText(this.player.x, this.player.y - 110, 'Every Zebonky tamed! ★', 28);
+    this.floatText(this.player.x, this.player.y - 110, 'Every Zebonky fed! ★', 28);
   }
 
   refreshHud() {
     if (this.spentBolts) this.spentBolts.forEach((img, i) => img.setVisible(i >= this.energy));
     if (this.foodText) this.foodText.setText(`x${this.food}`);
-    if (this.currencyText) this.currencyText.setText(`x${currency()}`);
     if (this.letterHud && this.letterHud.length) {
       const found = lettersFound(this.levelId);
       this.letterHud.forEach((t, i) => t.setAlpha(found.includes(LETTERS[i]) ? 1 : 0.3));
@@ -2616,7 +2620,7 @@ export class PlatformerScene extends Phaser.Scene {
     if (this.tamedText && this.wild) {
       const fed = this.wild.filter((z) => z.fed).length;
       const done = this.wild.length && (fed === this.wild.length || state.hasTamedAll(this.levelId));
-      this.tamedText.setText(this.wild.length ? `Zebonkies tamed ${fed}/${this.wild.length}${done ? '  ★' : ''}` : '');
+      this.tamedText.setText(this.wild.length ? `Zebonkies fed ${fed}/${this.wild.length}${done ? '  ★' : ''}` : '');
     }
     const g = this.hudPips;
     g.clear();
@@ -2822,6 +2826,13 @@ Zoom ${Math.round(this.cameras.main.zoom * 100)}%: mouse wheel, + and -, or the 
       this.wild.forEach((z) => z.update(time, p));
       if (this.guide) this.guide.update(time, p);
       return;
+    }
+    // The timer runs whenever the level does (the quiz pauses it, the bonus
+    // room sleeps it), until she's through an exit.
+    if (!this.done) {
+      this.playMs += delta;
+      const shown = Math.floor(this.playMs / 100);
+      if (this.clockText && shown !== this.clockShown) { this.clockShown = shown; this.clockText.setText(clock(this.playMs / 1000)); }
     }
     if (this.done || this.inDoor || !this.player.body.enable) return;
     const p = this.player;
