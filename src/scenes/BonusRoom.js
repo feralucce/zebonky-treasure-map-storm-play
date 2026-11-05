@@ -22,13 +22,14 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=f7f47c2';
-import { texKey } from '../data/artsets.js?v=f7f47c2';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=f7f47c2';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=f7f47c2';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=f7f47c2';
-import { audio } from '../audio.js?v=f7f47c2';
-import { COLORS, heading, text } from '../theme.js?v=f7f47c2';
+import { MAP_W, MAP_H } from '../data/world.js?v=38545bb';
+import { texKey } from '../data/artsets.js?v=38545bb';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=38545bb';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=38545bb';
+import { addPortalWarp } from '../portalWarp.js?v=38545bb';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=38545bb';
+import { audio } from '../audio.js?v=38545bb';
+import { COLORS, heading, text } from '../theme.js?v=38545bb';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -1144,6 +1145,24 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const d = this.room.door;
     const isl = d.on !== undefined ? this.islands[d.on] : this.islandAt(d.x);
     const y = isl ? surfaceY(isl.curve, d.x) : 880;
+    // The exit is the biome's portal, as in the levels (the user,
+    // 2026-11-05: "it needs to be the biome's portal"), always turning, its
+    // middle see-through (portalWarp.js). The old wooden door is the
+    // fallback where a set has no portal.
+    const pt = set.portal;
+    const pk = pt && texKey(this.room.artset, pt.file);
+    if (pk && this.textures.exists(pk)) {
+      if (!this.anims.exists(pk)) {
+        this.anims.create({ key: pk, frames: this.anims.generateFrameNumbers(pk, {}), frameRate: pt.fps, repeat: -1 });
+      }
+      this.door = this.add.sprite(d.x, y - pt.frameHeight / 2 + (pt.sink || 0), pk).setDepth(3);
+      this.door.play(pk);
+      this.door.frames = 1;
+      this.door.portal = true;
+      this.portalWarp = pt.inside ? addPortalWarp(this, this.door, pt, texKey(this.room.artset, pt.inside)) : null;
+      this.doorAt = { x: d.x, y };
+      return;
+    }
     const db = set.door_bonus;
     const k = db && texKey(this.room.artset, db.file);
     this.door = k && this.textures.exists(k)
@@ -1301,7 +1320,8 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const b = this.ball;
     const k = this.keys;
     const s = this.shaan;
-    s.setPosition(b.position.x, b.position.y + (this.room.runner ? RADIUS + GRASS_SINK : 0));
+    // (Once finished the ball is held still and he's drawn into the portal.)
+    if (!this.finished) s.setPosition(b.position.x, b.position.y + (this.room.runner ? RADIUS + GRASS_SINK : 0));
     this.animateWater(delta);
     if (this.inspect) { this.inspectUpdate(delta); return; }
     if (this.finished) return;
@@ -1915,7 +1935,13 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.time.addEvent({ delay: 60, repeat: d.frames - 1, callback: () => { d.setFrame(f); f += 1; } });
     }
     play(this.shaan, this.art, 'idle');
-    this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
+    if (d.portal) {
+      // Drawn into the portal's middle, turning and shrinking, its swirl
+      // tightening round him (as she goes into a level's portal).
+      if (this.portalWarp) this.tweens.add({ targets: this.portalWarp, pull: 1, duration: 800, ease: 'Sine.In' });
+      this.shaan.setDepth(3.1);           // in front of the rim, as she is in the levels
+      this.tweens.add({ targets: this.shaan, x: d.x, y: d.y, angle: 360, scale: SCALE * 0.2, alpha: 0, delay: 100, duration: 800, ease: 'Sine.In' });
+    } else this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
       this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
         : this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
