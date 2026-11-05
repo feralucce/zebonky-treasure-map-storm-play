@@ -22,14 +22,14 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=38545bb';
-import { texKey } from '../data/artsets.js?v=38545bb';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=38545bb';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=38545bb';
-import { addPortalWarp } from '../portalWarp.js?v=38545bb';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=38545bb';
-import { audio } from '../audio.js?v=38545bb';
-import { COLORS, heading, text } from '../theme.js?v=38545bb';
+import { MAP_W, MAP_H } from '../data/world.js?v=236af4d';
+import { texKey } from '../data/artsets.js?v=236af4d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=236af4d';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=236af4d';
+import { addPortalWarp } from '../portalWarp.js?v=236af4d';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=236af4d';
+import { audio } from '../audio.js?v=236af4d';
+import { COLORS, heading, text } from '../theme.js?v=236af4d';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 

@@ -1,12 +1,12 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=38545bb';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=38545bb';
-import { testParams, DRAWN } from '../data/levels.js?v=38545bb';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=38545bb';
-import { CHARACTERS } from '../data/characters.js?v=38545bb';
-import { state } from '../state.js?v=38545bb';
-import { COLORS, heading, text } from '../theme.js?v=38545bb';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=38545bb';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=38545bb';
+import { ARTSETS, texKey } from '../data/artsets.js?v=236af4d';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=236af4d';
+import { testParams, DRAWN } from '../data/levels.js?v=236af4d';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=236af4d';
+import { CHARACTERS } from '../data/characters.js?v=236af4d';
+import { state } from '../state.js?v=236af4d';
+import { COLORS, heading, text } from '../theme.js?v=236af4d';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=236af4d';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=236af4d';
 
 export class BootScene extends Phaser.Scene {
   constructor() {

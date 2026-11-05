@@ -1,9 +1,9 @@
 // The bonus minigame behind a secret exit. A placeholder for now: a card
 // saying so, and a button back to the map (a test run plays its level again).
 
-import { MAP_W, MAP_H } from '../data/world.js?v=38545bb';
-import { state } from '../state.js?v=38545bb';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=38545bb';
+import { MAP_W, MAP_H } from '../data/world.js?v=236af4d';
+import { state } from '../state.js?v=236af4d';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=236af4d';
 
 export class BonusScene extends Phaser.Scene {
   constructor() {

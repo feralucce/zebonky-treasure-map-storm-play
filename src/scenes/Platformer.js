@@ -2,22 +2,22 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=38545bb';
-import { TILE, layoutFor } from '../data/levels.js?v=38545bb';
-import { state } from '../state.js?v=38545bb';
-import { COLORS, heading, text } from '../theme.js?v=38545bb';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=38545bb';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=38545bb';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=38545bb';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=38545bb';
-import { makeNav } from '../pathing.js?v=38545bb';
-import { startQuestionRun } from '../data/questions.js?v=38545bb';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=38545bb';
-import { Companion } from '../companion.js?v=38545bb';
-import { startShowcase } from '../showcase.js?v=38545bb';
-import { startExplorerTour } from '../explorerTour.js?v=38545bb';
-import { addPortalWarp } from '../portalWarp.js?v=38545bb';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=38545bb';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=236af4d';
+import { TILE, layoutFor } from '../data/levels.js?v=236af4d';
+import { state } from '../state.js?v=236af4d';
+import { COLORS, heading, text } from '../theme.js?v=236af4d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=236af4d';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=236af4d';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=236af4d';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=236af4d';
+import { makeNav } from '../pathing.js?v=236af4d';
+import { startQuestionRun } from '../data/questions.js?v=236af4d';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=236af4d';
+import { Companion } from '../companion.js?v=236af4d';
+import { startShowcase } from '../showcase.js?v=236af4d';
+import { startExplorerTour } from '../explorerTour.js?v=236af4d';
+import { addPortalWarp } from '../portalWarp.js?v=236af4d';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=236af4d';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -2483,7 +2483,9 @@ export class PlatformerScene extends Phaser.Scene {
     leaveLevel(this, this.levelId);
   }
 
-  // Water droplets where the player hits the surface. A big drop is a cannonball.
+  // Water droplets where the player hits the surface; a big drop splashes
+  // bigger with a small shake. No "Cannonball!" word (the user, 2026-11-05:
+  // removed).
   splash(x, surfaceY, speed) {
     if (speed < 150 || Number.isNaN(surfaceY)) return;
     const big = speed > 650;
@@ -2503,14 +2505,7 @@ export class PlatformerScene extends Phaser.Scene {
         onComplete: () => drop.destroy(),
       });
     }
-    if (big) {
-      const t = this.add.text(x, surfaceY - 70, 'Cannonball!', heading(34, COLORS.yellowCss, {
-        stroke: COLORS.inkCss, strokeThickness: 8,
-      })).setOrigin(0.5).setDepth(7).setScale(0.5);
-      this.tweens.add({ targets: t, scale: 1, y: t.y - 30, duration: 300, ease: 'Back.Out' });
-      this.tweens.add({ targets: t, alpha: 0, delay: 700, duration: 300, onComplete: () => t.destroy() });
-      this.cameras.main.shake(160, 0.006);
-    }
+    if (big) this.cameras.main.shake(160, 0.006);
   }
 
   // ---------- HUD ----------
