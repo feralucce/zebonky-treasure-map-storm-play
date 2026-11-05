@@ -2,28 +2,30 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=046d472';
-import { TILE, layoutFor } from '../data/levels.js?v=046d472';
-import { state } from '../state.js?v=046d472';
-import { COLORS, heading, text } from '../theme.js?v=046d472';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=046d472';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=046d472';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=046d472';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=046d472';
-import { makeNav } from '../pathing.js?v=046d472';
-import { startQuestionRun } from '../data/questions.js?v=046d472';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=046d472';
-import { Companion } from '../companion.js?v=046d472';
-import { startShowcase } from '../showcase.js?v=046d472';
-import { startExplorerTour } from '../explorerTour.js?v=046d472';
-import { addPortalWarp } from '../portalWarp.js?v=046d472';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=046d472';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=f7f47c2';
+import { TILE, layoutFor } from '../data/levels.js?v=f7f47c2';
+import { state } from '../state.js?v=f7f47c2';
+import { COLORS, heading, text } from '../theme.js?v=f7f47c2';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=f7f47c2';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=f7f47c2';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=f7f47c2';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=f7f47c2';
+import { makeNav } from '../pathing.js?v=f7f47c2';
+import { startQuestionRun } from '../data/questions.js?v=f7f47c2';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=f7f47c2';
+import { Companion } from '../companion.js?v=f7f47c2';
+import { startShowcase } from '../showcase.js?v=f7f47c2';
+import { startExplorerTour } from '../explorerTour.js?v=f7f47c2';
+import { addPortalWarp } from '../portalWarp.js?v=f7f47c2';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=f7f47c2';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
 // stopping. Her top speed is the one the levels' jumps are built for
 // (pathing.js).
 const SPIKE_TIPS = 16;        // pit spikes' tips stand this far over the danger blocks
+const LETTER_SHADOW = 0.45;  // a found letter's shadow, left at its spot
+const LETTER_SPIN_MS = 700;  // half a turn of a letter's coin spin
 const RUN_SPEED = 300;        // top speed
 const ACCEL = 1100;           // about a quarter second to walking speed
 const TURN_ACCEL = 2600;      // pushing against her own speed: a quick skid round
@@ -748,17 +750,46 @@ export class PlatformerScene extends Phaser.Scene {
   }
 
   // The letters of ZEBONKY (L markers, left to right, the first seven): the
-  // ones not found yet on this difficulty. Found letters stay found.
+  // ones not found yet on this difficulty. Found letters stay found, and
+  // leave a shadow of themselves at their spot (the user, 2026-11-05: so
+  // nobody wonders where a letter went), there from the start of a replay.
+  letterShadow(ch, x, y) {
+    // Dark, with a pale edge so it reads on a dark cave wall too.
+    const t = this.add.text(x, y, ch, heading(44, COLORS.inkCss, { stroke: '#f3e6c8', strokeThickness: 4 }))
+      .setOrigin(0.5).setDepth(2.9).setAlpha(LETTER_SHADOW);
+    this.spinLetter(t);
+    return t;
+  }
+
+  // A letter (or its shadow) turning like a spinning coin (the user,
+  // 2026-11-05), every one in step. Its width follows |cos|, so it turns
+  // edge-on and back but never shows mirrored (no backwards Z or K).
+  spinLetter(t) {
+    if (!this.spinning) {
+      this.spinning = new Set();
+      this.tweens.addCounter({
+        from: 0, to: Math.PI, duration: LETTER_SPIN_MS * 2, repeat: -1,
+        onUpdate: (tw) => {
+          const w = Math.max(0.06, Math.abs(Math.cos(tw.getValue())));
+          this.spinning.forEach((o) => (o.active ? o.setScale(w, 1) : this.spinning.delete(o)));
+        },
+      });
+    }
+    this.spinning.add(t);
+  }
+
   buildLetters() {
     this.letters = [];
+    this.spinning = null;     // the scene is reused: a fresh spin each play
     const spots = [...(this.letterSpots || [])].sort((a, b) => a.c - b.c || a.r - b.r).slice(0, LETTERS.length);
     const found = lettersFound(this.levelId);
     spots.forEach((s, i) => {
       const ch = LETTERS[i];
-      if (found.includes(ch)) return;
+      if (found.includes(ch)) { this.letterShadow(ch, s.x, s.y); return; }
       const t = this.add.text(s.x, s.y, ch, heading(44, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 9 }))
         .setOrigin(0.5).setDepth(3);
       this.tweens.add({ targets: t, y: s.y - 8, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.spinLetter(t);
       this.letters.push({ ch, t, x: s.x, y: s.y });
     });
   }
@@ -771,6 +802,10 @@ export class PlatformerScene extends Phaser.Scene {
       findLetter(this.levelId, L.ch);
       audio.sfx(this, 'food');
       this.tweens.killTweensOf(L.t);
+      this.spinning.delete(L.t);
+      L.t.setScale(1);
+      const sh = this.letterShadow(L.ch, L.x, L.y).setAlpha(0);
+      this.tweens.add({ targets: sh, alpha: LETTER_SHADOW, duration: 400, delay: 150 });
       this.tweens.add({ targets: L.t, y: L.y - 70, scale: 1.6, alpha: 0, duration: 450, onComplete: () => L.t.destroy() });
       if (allLetters(this.levelId)) this.floatText(p.x, p.y - 120, 'ZEBONKY!', 34, 1400);
       this.refreshHud();
