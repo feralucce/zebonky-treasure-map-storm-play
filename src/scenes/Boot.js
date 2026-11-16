@@ -1,12 +1,13 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=e46ba08';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=e46ba08';
-import { testParams, DRAWN } from '../data/levels.js?v=e46ba08';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=e46ba08';
-import { CHARACTERS } from '../data/characters.js?v=e46ba08';
-import { state } from '../state.js?v=e46ba08';
-import { COLORS, heading, text } from '../theme.js?v=e46ba08';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=e46ba08';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=e46ba08';
+import { ARTSETS, texKey } from '../data/artsets.js?v=fc348b5';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=fc348b5';
+import { testParams, DRAWN } from '../data/levels.js?v=fc348b5';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=fc348b5';
+import { CHARACTERS } from '../data/characters.js?v=fc348b5';
+import { state } from '../state.js?v=fc348b5';
+import { COLORS, heading, text } from '../theme.js?v=fc348b5';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=fc348b5';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=fc348b5';
+import { BUILD } from '../version.js?v=fc348b5';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -57,11 +58,15 @@ export class BootScene extends Phaser.Scene {
   preload() {
     this.buildSplash();
     // Chris's parchment map in layers: the line drawing, and each area's
-    // colour, shown once it's open (tools/make_map_layers.py).
-    this.load.json('maplayers', 'assets/map/layers.json');
+    // colour, shown once it's open (tools/make_map_layers.py). Tagged with
+    // the build, so a browser's saved copy can't outlive a publish (the
+    // play site lets browsers keep files 10 minutes; the user saw the old
+    // white edge online after the fix went up, 2026-11-16).
+    const mv = `?v=${BUILD}`;
+    this.load.json('maplayers', `assets/map/layers.json${mv}`);
     this.load.once('filecomplete-json-maplayers', (key, type, data) => {
-      this.load.image('map-base', `assets/map/${data.base}`);
-      data.layers.forEach((l) => this.load.image(`map-${l.area}`, `assets/map/${l.file}`));
+      this.load.image('map-base', `assets/map/${data.base}${mv}`);
+      data.layers.forEach((l) => this.load.image(`map-${l.area}`, `assets/map/${l.file}${mv}`));
     });
     // Each biome's box on the map, for the map's zoom (the box only: the
     // zoom shows the map itself now).
