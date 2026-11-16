@@ -7,15 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=236af4d';
-import { state, pathKey } from '../state.js?v=236af4d';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=236af4d';
-import { audio, fullscreenButton, musicButton } from '../audio.js?v=236af4d';
-import { BUILD } from '../version.js?v=236af4d';
-import { starsFor, rewardTotals } from '../rewards.js?v=236af4d';
-import { totalPaws } from '../paws.js?v=236af4d';
-import { showCompanionCard } from '../companionCard.js?v=236af4d';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=236af4d';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=1cec056';
+import { state, pathKey } from '../state.js?v=1cec056';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=1cec056';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=1cec056';
+import { BUILD } from '../version.js?v=1cec056';
+import { starsFor, rewardTotals } from '../rewards.js?v=1cec056';
+import { totalPaws } from '../paws.js?v=1cec056';
+import { showCompanionCard } from '../companionCard.js?v=1cec056';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=1cec056';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -152,14 +152,8 @@ export class OverworldScene extends Phaser.Scene {
     // Everything on the map lives in one container, so zooming into a
     // biome is one scale and move. The panels and buttons stay outside it.
     this.world = this.add.container(0, 0);
-    this.world.add(this.add.image(0, 0, 'map').setOrigin(0));
+    this.buildMapArt();
     this.closeupRects = this.cache.json.get('closeups') || {};
-    this.closeups = {};
-    Object.entries(this.closeupRects).forEach(([b, r]) => {
-      const im = this.add.image(r.x, r.y, `closeup-${b}`).setOrigin(0).setDisplaySize(r.w, r.h).setAlpha(0);
-      this.world.add(im);
-      this.closeups[b] = im;
-    });
 
     makePawTexture(this);
     this.pathLayer = this.add.container(0, 0);
@@ -221,6 +215,60 @@ export class OverworldScene extends Phaser.Scene {
     }
   }
 
+  // ---------- the map art ----------
+
+  // Chris's parchment map (the user, 2026-11-16): the line drawing, with each
+  // area's colour laid over it once the area is open
+  // (tools/make_map_layers.py). His pixels are 1536 x 1024, drawn at map
+  // size; a layer that opens while the map is up paints in.
+  buildMapArt() {
+    const info = this.cache.json.get('maplayers');
+    this.mapArt = this.add.container(0, 0).setScale(MAP_W / info.w, MAP_H / info.h);
+    this.mapArt.add(this.add.image(0, 0, 'map-base').setOrigin(0));
+    this.mapLayers = {};
+    info.layers.forEach((l) => {
+      const im = this.add.image(l.x, l.y, `map-${l.area}`).setOrigin(0).setVisible(false);
+      this.mapArt.add(im);
+      this.mapLayers[l.area] = im;
+    });
+    this.mapPainted = new Set();
+    this.mapReady = false;
+    this.world.add(this.mapArt);
+    this.setMapFilter(false);
+  }
+
+  // Each open area's colour shows; one opening while the map is up fades in.
+  // Inspection mode shows every area, the volcano and the desert too.
+  refreshMapArt() {
+    if (!this.mapLayers) return;
+    Object.entries(this.mapLayers).forEach(([area, im]) => {
+      const open = state.inspectAll || (PLAY_BIOMES.includes(area) && this.biomeOpen(area));
+      if (!open) {
+        im.setVisible(false);
+        return;
+      }
+      im.setVisible(true);
+      if (this.mapPainted.has(area)) return;
+      this.mapPainted.add(area);
+      if (this.mapReady) {
+        im.setAlpha(0);
+        this.tweens.add({ targets: im, alpha: 1, duration: 1400, ease: 'Sine.Out' });
+      } else {
+        im.setAlpha(1);
+      }
+    });
+    this.mapReady = true;
+  }
+
+  // Pixel art: smoothed while the whole map shows (it's drawn smaller than
+  // Chris's pixels), crisp squares when zoomed into an area.
+  setMapFilter(zoomed) {
+    const mode = zoomed ? Phaser.Textures.FilterMode.NEAREST : Phaser.Textures.FilterMode.LINEAR;
+    ['map-base', ...Object.keys(this.mapLayers || {}).map((a) => `map-${a}`)].forEach((key) => {
+      if (this.textures.exists(key)) this.textures.get(key).setFilter(mode);
+    });
+  }
+
   // ---------- whole map and biome close-ups ----------
 
   // A biome is open once any of its level dots is.
@@ -243,7 +291,7 @@ export class OverworldScene extends Phaser.Scene {
     this.view = null;
     state.setView(null);
     this.world.setScale(1).setPosition(0, 0);
-    Object.values(this.closeups).forEach((im) => im.setAlpha(0));
+    this.setMapFilter(false);
     this.pathLayer.setVisible(false);
     this.nodeLayer.setVisible(false);
     this.player.setVisible(false);
@@ -263,7 +311,8 @@ export class OverworldScene extends Phaser.Scene {
     this.view = b;
     state.setView(b);
     this.world.setScale(K).setPosition(-r.x * K, -r.y * K);
-    Object.entries(this.closeups).forEach(([k, im]) => im.setAlpha(k === b ? 1 : 0));
+    this.setMapFilter(true);
+    this.refreshMapArt();
     this.badgeLayer.setVisible(false);
     this.pathLayer.setVisible(true);
     this.nodeLayer.setVisible(true);
@@ -288,7 +337,7 @@ export class OverworldScene extends Phaser.Scene {
     if (this.badgePulse) this.badgePulse.stop();
     this.badgeLayer.setVisible(false);
     const k = MAP_W / r.w;
-    this.tweens.add({ targets: this.closeups[b], alpha: 1, duration: ZOOM_MS * 0.8, delay: ZOOM_MS * 0.2 });
+    this.time.delayedCall(ZOOM_MS * 0.5, () => this.setMapFilter(true));
     this.tweens.add({
       targets: this.world,
       scale: k,
@@ -312,7 +361,7 @@ export class OverworldScene extends Phaser.Scene {
     this.pathLayer.setVisible(false);
     this.nodeLayer.setVisible(false);
     this.player.setVisible(false);
-    if (b) this.tweens.add({ targets: this.closeups[b], alpha: 0, duration: ZOOM_MS * 0.8 });
+    this.time.delayedCall(ZOOM_MS * 0.5, () => this.setMapFilter(false));
     this.tweens.add({
       targets: this.world,
       scale: 1,
@@ -412,6 +461,7 @@ export class OverworldScene extends Phaser.Scene {
       });
     }
     this.currentBiome = current;
+    this.refreshMapArt();
     this.refreshNames(here);
   }
 

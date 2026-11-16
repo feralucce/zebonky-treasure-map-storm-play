@@ -1,0 +1,49 @@
+{
+ "w": 1536,
+ "h": 1024,
+ "base": "layers/base.png",
+ "layers": [
+  {
+   "area": "dorsal",
+   "file": "layers/dorsal.png",
+   "x": 89,
+   "y": 506
+  },
+  {
+   "area": "cumulus",
+   "file": "layers/cumulus.png",
+   "x": 225,
+   "y": 484
+  },
+  {
+   "area": "seafoam",
+   "file": "layers/seafoam.png",
+   "x": 757,
+   "y": 528
+  },
+  {
+   "area": "squvannahs",
+   "file": "layers/squvannahs.png",
+   "x": 354,
+   "y": 389
+  },
+  {
+   "area": "magenta",
+   "file": "layers/magenta.png",
+   "x": 96,
+   "y": 284
+  },
+  {
+   "area": "volcano",
+   "file": "layers/volcano.png",
+   "x": 83,
+   "y": 141
+  },
+  {
+   "area": "bamboo",
+   "file": "layers/bamboo.png",
+   "x": 925,
+   "y": 297
+  }
+ ]
+}

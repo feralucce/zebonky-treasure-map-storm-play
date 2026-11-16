@@ -2,22 +2,22 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=236af4d';
-import { TILE, layoutFor } from '../data/levels.js?v=236af4d';
-import { state } from '../state.js?v=236af4d';
-import { COLORS, heading, text } from '../theme.js?v=236af4d';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=236af4d';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=236af4d';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=236af4d';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=236af4d';
-import { makeNav } from '../pathing.js?v=236af4d';
-import { startQuestionRun } from '../data/questions.js?v=236af4d';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=236af4d';
-import { Companion } from '../companion.js?v=236af4d';
-import { startShowcase } from '../showcase.js?v=236af4d';
-import { startExplorerTour } from '../explorerTour.js?v=236af4d';
-import { addPortalWarp } from '../portalWarp.js?v=236af4d';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=236af4d';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=1cec056';
+import { TILE, layoutFor } from '../data/levels.js?v=1cec056';
+import { state } from '../state.js?v=1cec056';
+import { COLORS, heading, text } from '../theme.js?v=1cec056';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=1cec056';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=1cec056';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=1cec056';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=1cec056';
+import { makeNav } from '../pathing.js?v=1cec056';
+import { startQuestionRun } from '../data/questions.js?v=1cec056';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=1cec056';
+import { Companion } from '../companion.js?v=1cec056';
+import { startShowcase } from '../showcase.js?v=1cec056';
+import { startExplorerTour } from '../explorerTour.js?v=1cec056';
+import { addPortalWarp } from '../portalWarp.js?v=1cec056';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=1cec056';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before

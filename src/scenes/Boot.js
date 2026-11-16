@@ -1,12 +1,12 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=236af4d';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=236af4d';
-import { testParams, DRAWN } from '../data/levels.js?v=236af4d';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=236af4d';
-import { CHARACTERS } from '../data/characters.js?v=236af4d';
-import { state } from '../state.js?v=236af4d';
-import { COLORS, heading, text } from '../theme.js?v=236af4d';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=236af4d';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=236af4d';
+import { ARTSETS, texKey } from '../data/artsets.js?v=1cec056';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=1cec056';
+import { testParams, DRAWN } from '../data/levels.js?v=1cec056';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=1cec056';
+import { CHARACTERS } from '../data/characters.js?v=1cec056';
+import { state } from '../state.js?v=1cec056';
+import { COLORS, heading, text } from '../theme.js?v=1cec056';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=1cec056';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=1cec056';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -56,12 +56,16 @@ export class BootScene extends Phaser.Scene {
 
   preload() {
     this.buildSplash();
-    this.load.image('map', 'assets/z_map.png');
-    // Each biome's close-up, for the map's zoom (tools/make_biome_closeups.py).
-    this.load.json('closeups', 'assets/map/closeups.json');
-    this.load.once('filecomplete-json-closeups', (key, type, data) => {
-      Object.entries(data).forEach(([b, c]) => this.load.image(`closeup-${b}`, `assets/map/${c.file}`));
+    // Chris's parchment map in layers: the line drawing, and each area's
+    // colour, shown once it's open (tools/make_map_layers.py).
+    this.load.json('maplayers', 'assets/map/layers.json');
+    this.load.once('filecomplete-json-maplayers', (key, type, data) => {
+      this.load.image('map-base', `assets/map/${data.base}`);
+      data.layers.forEach((l) => this.load.image(`map-${l.area}`, `assets/map/${l.file}`));
     });
+    // Each biome's box on the map, for the map's zoom (the box only: the
+    // zoom shows the map itself now).
+    this.load.json('closeups', 'assets/map/closeups.json');
     // The biomes' Zebonkies, shown when one joins as a companion.
     Object.values(BIOMES).forEach((b) => b.zebonky && this.load.image(`zebonky-${b.zebonky.id}`, `assets/zebonkies/${b.zebonky.id}.png`));
 
