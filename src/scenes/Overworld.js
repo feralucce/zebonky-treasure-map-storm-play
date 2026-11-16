@@ -7,15 +7,15 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=1cec056';
-import { state, pathKey } from '../state.js?v=1cec056';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=1cec056';
-import { audio, fullscreenButton, musicButton } from '../audio.js?v=1cec056';
-import { BUILD } from '../version.js?v=1cec056';
-import { starsFor, rewardTotals } from '../rewards.js?v=1cec056';
-import { totalPaws } from '../paws.js?v=1cec056';
-import { showCompanionCard } from '../companionCard.js?v=1cec056';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=1cec056';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=e46ba08';
+import { state, pathKey } from '../state.js?v=e46ba08';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=e46ba08';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=e46ba08';
+import { BUILD } from '../version.js?v=e46ba08';
+import { starsFor, rewardTotals } from '../rewards.js?v=e46ba08';
+import { totalPaws } from '../paws.js?v=e46ba08';
+import { showCompanionCard } from '../companionCard.js?v=e46ba08';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=e46ba08';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path
@@ -141,6 +141,8 @@ export class OverworldScene extends Phaser.Scene {
 
   create() {
     K = 1;
+    // The reveal tour starts with nothing revealed (set before anything asks).
+    this.tourOpen = state.tour ? new Set() : null;
     this.walking = false;
     this.view = null;           // the biome zoomed into, or null for the whole map
     this.at = state.data.at;
@@ -180,6 +182,14 @@ export class OverworldScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.events.off('resume', redraw));
 
     this.cameras.main.fadeIn(300, 43, 29, 18);
+
+    // The reveal tour (?unlockdemo=all): the map plays itself.
+    if (state.tour) {
+      this.showWorld();
+      this.walking = true;
+      this.time.delayedCall(900, () => this.runTour(0));
+      return;
+    }
 
     // Back from a level in a biome: stay in it, unless it's just been
     // finished (or its last question answered): then zoom out and say so.
@@ -271,8 +281,32 @@ export class OverworldScene extends Phaser.Scene {
 
   // ---------- whole map and biome close-ups ----------
 
-  // A biome is open once any of its level dots is.
+  // The reveal tour (the user, 2026-11-16: "Reveal, then zoom in, then
+  // reveal the next"): each area in play order paints in on the whole map
+  // with its badge and name, the map zooms into it, holds, zooms back out,
+  // and the next is revealed. Ends on the whole map with all five.
+  runTour(i) {
+    const order = ['dorsal', 'cumulus', 'magenta', 'squvannahs', 'seafoam'];
+    if (i >= order.length) {
+      this.walking = false;
+      return;
+    }
+    const b = order[i];
+    this.tourOpen.add(b);
+    this.refreshBadges();
+    this.time.delayedCall(2400, () => {
+      this.walking = false;
+      this.zoomIn(b);
+      this.time.delayedCall(ZOOM_MS + 2200, () => this.zoomOut(() => {
+        this.time.delayedCall(600, () => this.runTour(i + 1));
+      }));
+    });
+  }
+
+  // A biome is open once any of its level dots is (in the reveal tour, once
+  // the tour has revealed it).
   biomeOpen(b) {
+    if (this.tourOpen) return this.tourOpen.has(b);
     return biomeLevels(b).some((id) => state.isNodeOpen(id) && this.isRevealed(id));
   }
 

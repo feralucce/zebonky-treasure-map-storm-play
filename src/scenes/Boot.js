@@ -1,12 +1,12 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=1cec056';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=1cec056';
-import { testParams, DRAWN } from '../data/levels.js?v=1cec056';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=1cec056';
-import { CHARACTERS } from '../data/characters.js?v=1cec056';
-import { state } from '../state.js?v=1cec056';
-import { COLORS, heading, text } from '../theme.js?v=1cec056';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=1cec056';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=1cec056';
+import { ARTSETS, texKey } from '../data/artsets.js?v=e46ba08';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=e46ba08';
+import { testParams, DRAWN } from '../data/levels.js?v=e46ba08';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=e46ba08';
+import { CHARACTERS } from '../data/characters.js?v=e46ba08';
+import { state } from '../state.js?v=e46ba08';
+import { COLORS, heading, text } from '../theme.js?v=e46ba08';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=e46ba08';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=e46ba08';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -232,6 +232,17 @@ export class BootScene extends Phaser.Scene {
     const bonusTest = new URLSearchParams(window.location.search).get('bonustest');
     if (bonusTest) {
       this.scene.start('BonusRoom', { levelId: playableLevelId(bonusTest), test: true });
+      return;
+    }
+    // index.html?unlockdemo=dorsal (or =cumulus): the map just after that
+    // area's last level, showing the next area unlock (state.startDemo).
+    // ?unlockdemo=all: every area revealed in turn, each zoomed into
+    // (state.startTour, Overworld runTour).
+    const unlockDemo = new URLSearchParams(window.location.search).get('unlockdemo');
+    if (unlockDemo) {
+      if (unlockDemo === 'all') state.startTour();
+      else state.startDemo(unlockDemo === 'cumulus' ? 'cumulus' : 'dorsal');
+      this.scene.start('Overworld');
       return;
     }
     const inspect = new URLSearchParams(window.location.search).get('inspect');

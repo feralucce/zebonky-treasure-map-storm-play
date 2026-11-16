@@ -2,11 +2,11 @@
 // Storage can be missing or blocked (private windows, previews), so every
 // read and write is guarded and the game still runs without it.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=1cec056';
-import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=1cec056';
-import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=1cec056';
-import { bankFor, questionKey } from './data/questions.js?v=1cec056';
-import { BUILD } from './version.js?v=1cec056';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES, biomeLevels } from './data/world.js?v=e46ba08';
+import { DEFAULT_DIFFICULTY, difficultyById } from './data/difficulty.js?v=e46ba08';
+import { DEFAULT_CHARACTER, characterById } from './data/characters.js?v=e46ba08';
+import { bankFor, questionKey } from './data/questions.js?v=e46ba08';
+import { BUILD } from './version.js?v=e46ba08';
 
 const KEY = 'zebonky-tms-save-v1';
 // The save before the last one, kept in case the last one is damaged.
@@ -103,6 +103,41 @@ export const state = {
     this.data = { ...fresh(), difficulty: this.data.difficulty, look: this.data.look, revealed: keys, walked: keys };
   },
 
+  // The unlock demo (index.html?unlockdemo=dorsal, the user, 2026-11-16: "a demo
+  // of what happens when we unlock the next area"): the map opens as if the
+  // biome's fifth level was just finished, so the real unlock plays out:
+  // zoom out, the "explored" card, the next area's dot, colour and name.
+  // `b` is the biome just finished: dorsal (opens the rainforest) or
+  // cumulus (opens the shores, the mountains and the plains at once).
+  // Nothing is saved; reload to see it again.
+  startDemo(b = 'dorsal') {
+    this.noSave = true;
+    const before = b === 'cumulus' ? ['dorsal'] : [];
+    const cleared = {};
+    [...before, b].forEach((bb) => biomeLevels(bb).forEach((id) => { cleared[id] = { normal: true, secret: false }; }));
+    const last = `${b}-5`;
+    const shown = PATHS.filter((p) => cleared[p.from] && p.from !== last).map(pathKey);
+    const biomeDone = {};
+    before.forEach((bb) => { biomeDone[bb] = true; });
+    this.data = {
+      ...fresh(), difficulty: this.data.difficulty, look: this.data.look,
+      cleared, revealed: shown, walked: shown, biomeDone, at: last, view: b,
+    };
+  },
+
+  // The reveal tour (index.html?unlockdemo=all, the user, 2026-11-16: "do
+  // it for all of them. Reveal, then zoom in, then reveal the next"): every
+  // level open, every path shown, nothing saved; the map paints the areas in
+  // one at a time itself (Overworld runTour).
+  tour: false,
+
+  startTour() {
+    this.tour = true;
+    this.noSave = true;
+    const keys = PATHS.map(pathKey);
+    this.data = { ...fresh(), difficulty: this.data.difficulty, look: this.data.look, revealed: keys, walked: keys };
+  },
+
   save() {
     if (this.noSave) return;
     try {
@@ -179,7 +214,7 @@ export const state = {
   // A normal path opens however the level was finished (a secret door
   // still counts as playing it); a secret path needs the secret.
   isPathOpen(p) {
-    if (this.inspectAll) return true;
+    if (this.inspectAll || this.tour) return true;
     const c = this.data.cleared[p.from];
     if (!c) return false;
     return p.exit === 'secret' ? !!c.secret : !!(c.normal || c.secret);
