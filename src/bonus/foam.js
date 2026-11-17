@@ -23,12 +23,12 @@
 //   scored. One field per bonus level. Clear it and he leaves the pool and
 //   walks along the shore to the portal, off screen till then.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=c92b92d';
-import { MAP_W, MAP_H } from '../data/world.js?v=c92b92d';
-import { tierInfo, clock } from '../paws.js?v=c92b92d';
-import { play } from '../actors.js?v=c92b92d';
-import { audio } from '../audio.js?v=c92b92d';
-import { COLORS, heading, text } from '../theme.js?v=c92b92d';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=3a5c6e7';
+import { MAP_W, MAP_H } from '../data/world.js?v=3a5c6e7';
+import { tierInfo, clock } from '../paws.js?v=3a5c6e7';
+import { play } from '../actors.js?v=3a5c6e7';
+import { audio } from '../audio.js?v=3a5c6e7';
+import { COLORS, heading, text } from '../theme.js?v=3a5c6e7';
 
 const MATCH = 6;                      // this many connected break (the user)
 const PER_PUFF = 1 / 10;              // meter charge for each puff broken or fallen (provisional)
@@ -48,6 +48,8 @@ export const KINDS = [
   { tint: '#ffd76a', ink: '#7a5512', pic: 'clam' },
 ];
 const Matter = () => Phaser.Physics.Matter.Matter;
+
+export const owns = true;   // its own step and update (BonusRoom skips its rolling)
 
 export function reset(scene) {
   scene.fm = {

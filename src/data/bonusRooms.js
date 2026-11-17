@@ -39,8 +39,10 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=c92b92d';
-import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=c92b92d';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=3a5c6e7';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=3a5c6e7';
+import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=3a5c6e7';
+import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=3a5c6e7';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
@@ -538,5 +540,13 @@ BONUS_ROOMS['dorsal-surf'] = SURF_AND_SLOPE;
 // tools/make_break_bubble.py: one field per bonus level, and just the one
 // for now (the user, 2026-11-17). Not in a Seafoam level's slot yet.
 BONUS_ROOMS['seafoam-bubble'] = BREAK_THE_BUBBLE[0];
+// Ricky's Cumulus Circuits (Chris's idea): a circuits room (`circuits`,
+// bonus/circuits.js), made by tools/make_cumulus_circuits.py. Not in a
+// level's slot yet.
+BONUS_ROOMS['cumulus-circuits'] = CUMULUS_CIRCUITS;
+// Charlie's Chase the Bananalope (Chris's idea): a chase room (`chase`,
+// bonus/chase.js), made by tools/make_bananalope_chase.py. Not in a level's
+// slot yet.
+BONUS_ROOMS['bananalope-chase'] = BANANALOPE_CHASE;
 
 export const bonusRoomFor = (levelId) => BONUS_ROOMS[levelId] || null;

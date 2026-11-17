@@ -48,6 +48,34 @@ export const METERS = {
       '#8ff0ff', '#1c9bc0', '#0a3f60', '#0d3a44', '#07202a', '#1a5560', '#ffffff', '#dffff4', '#e9fbff'].map(hex),
     ramp: ['#0b7d84', '#14a7a0', '#2fc9b4', '#5ee6c8', '#9ff3dc', '#d9fff2', '#f4fffd'].map(hex),
   },
+  // Ricky's (the user's pick, 2026-11-17: take A, Ringed Tail, with "remove
+  // the dressing on the top of the ring, remove the bolt shapes, have ricky
+  // face the other way, and use the meter color from c"): his grey tail with
+  // dark rings as the frame, a grey ring round a blue disc, him facing
+  // right, and take C's blue to violet charge.
+  ricky: {
+    pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_grass_clump_a', 'pt_flower_pink_a', 'pt_leaf_sprout_a', 'pt_grass_clump_b'],
+    frames: ['ball0', 'ball1', 'ball2', 'ball3'],
+    dressing: [['pt_grass_clump_a', 98], ['pt_flower_pink_a', 120], ['pt_leaf_sprout_a', 142], ['pt_grass_clump_b', 166]],
+    frame: rickyFrameSVG,
+    pal: ['#1b1a2e', '#c9ccd6', '#e4e6ee', '#9a9eae', '#3a3d4a', '#ffffff', '#d8ecff', '#5f9de0', '#22417a',
+      '#1d1838', '#0e0b1f', '#2c2650', '#eef0f6', '#6d7184'].map(hex),
+    ramp: ['#2a1fb0', '#4a3cff', '#6a6cff', '#7a8bff', '#a9b4ff', '#d4daff', '#f0f0ff'].map(hex),
+  },
+  // Charlie's (the user's pick, 2026-11-17: take C, Hyper Dash, "remove
+  // those shapes on the ring", with the shared Z edge, energy and flash): a
+  // dark racing frame with orange speed chevrons, a dark ring round an
+  // orange disc with speed lines behind him, his run frames dashing right,
+  // and a red-orange to yellow charge.
+  charlie: {
+    pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_grass_clump_a', 'pt_fern_small_a', 'pt_leaf_cluster_a', 'pt_grass_clump_b'],
+    frames: ['ball0', 'ball1', 'ball2', 'ball3'],
+    dressing: [['pt_grass_clump_a', 98], ['pt_fern_small_a', 122], ['pt_leaf_cluster_a', 146], ['pt_grass_clump_b', 176]],
+    frame: charlieFrameSVG,
+    pal: ['#1b1a2e', '#3a3346', '#4d4560', '#2a2433', '#ff8a1e', '#ffc23c', '#ffe9c8', '#f08a3c', '#b8502a', '#7a2a14',
+      '#2a1d22', '#140d10', '#ffffff', '#fff2a8'].map(hex),
+    ramp: ['#c41e14', '#e0301e', '#f2541c', '#ff8a1e', '#ffb43a', '#ffd96a', '#fff2a8'].map(hex),
+  },
 };
 const HOT = [hex('#ffffff'), hex('#fffbe0'), hex('#bff8ff'), hex('#fff27a')];
 const SPARK_COLS = ['#ffe600', '#5ee6a0', '#ffffff', '#fff27a', '#8ff6ff'].map(hex);
@@ -131,6 +159,51 @@ function axelFrameSVG() {
   [0, 1, 2].forEach((k) => {
     const r = 17 + k * 4;
     s += `<path d="M${RC.x + r * 0.55},${RC.y - r * 0.83} A${r},${r} 0 0 1 ${RC.x + r * 0.55},${RC.y + r * 0.83}" fill="none" stroke="#e9fbff" stroke-width="${1.6 - k * 0.3}" stroke-linecap="round"/>`;
+  });
+  return svg(s);
+}
+
+// Ricky's frame and emblem: his ringed tail (take A, without the feathers
+// and the bolts).
+function rickyFrameSVG() {
+  let s = `<defs>
+    <radialGradient id="disc" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#d8ecff"/><stop offset="0.6" stop-color="#5f9de0"/><stop offset="1" stop-color="#22417a"/></radialGradient>
+    <linearGradient id="empty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1838"/><stop offset="1" stop-color="#0e0b1f"/></linearGradient>
+  </defs>`;
+  s += `<rect x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="${pillR + O}" fill="#c9ccd6" stroke="#1b1a2e" stroke-width="2"/>`;
+  // the tail's dark rings across the frame
+  for (let x = FR.x + 24; x < FR.x + FR.w - 14; x += 30) {
+    s += `<rect x="${x}" y="${FR.y + 1}" width="13" height="${FR.h - 2}" rx="3" fill="#3a3d4a"/>`;
+  }
+  s += `<rect x="${FR.x + 24}" y="${FR.y + 2}" width="${FR.w - 50}" height="1" fill="#ffffff"/>`;
+  s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#c9ccd6" stroke="#1b1a2e" stroke-width="2.5"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${(RC.r + RC.disc) / 2}" fill="none" stroke="#9a9eae" stroke-width="1"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
+  return svg(s);
+}
+
+// Charlie's frame and emblem: take C, Hyper Dash, without the dust cloud.
+function charlieFrameSVG() {
+  let s = `<defs>
+    <radialGradient id="disc" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#ffe9c8"/><stop offset="0.6" stop-color="#f08a3c"/><stop offset="1" stop-color="#7a2a14"/></radialGradient>
+    <linearGradient id="empty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1d22"/><stop offset="1" stop-color="#140d10"/></linearGradient>
+  </defs>`;
+  s += `<rect x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="${pillR + O}" fill="#3a3346" stroke="#1b1a2e" stroke-width="2"/>`;
+  s += `<rect x="${FR.x + 22}" y="${FR.y + 2}" width="${FR.w - 46}" height="1" fill="#4d4560"/>`;
+  // speed chevrons pointing right, along the top and bottom of the frame
+  const chev = (x, y, c) => `<polygon points="${P([[x, y - 2], [x + 2, y], [x, y + 2], [x - 1, y + 2], [x + 1, y], [x - 1, y - 2]])}" fill="${c}"/>`;
+  for (let x = FR.x + 30; x < FR.x + FR.w - 18; x += 16) {
+    s += chev(x, FR.y + 4, '#ff8a1e');
+    s += chev(x + 8, FR.y + FR.h - 4, '#ffc23c');
+  }
+  s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#3a3346" stroke="#1b1a2e" stroke-width="2.5"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${(RC.r + RC.disc) / 2}" fill="none" stroke="#4d4560" stroke-width="1"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
+  // speed lines behind him (he dashes right)
+  [[-9, 12], [-3, 9], [3, 7]].forEach(([dy, len], k) => {
+    s += `<rect x="${RC.x - 27 + k * 2}" y="${RC.y + dy}" width="${len}" height="1" fill="${k ? '#fff2a8' : '#ffffff'}"/>`;
   });
   return svg(s);
 }

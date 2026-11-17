@@ -22,16 +22,18 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=c92b92d';
-import { texKey } from '../data/artsets.js?v=c92b92d';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=c92b92d';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=c92b92d';
-import { addPortalWarp } from '../portalWarp.js?v=c92b92d';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=c92b92d';
-import { audio } from '../audio.js?v=c92b92d';
-import { COLORS, heading, text } from '../theme.js?v=c92b92d';
-import * as zpower from '../bonus/zpower.js?v=c92b92d';
-import * as foam from '../bonus/foam.js?v=c92b92d';
+import { MAP_W, MAP_H } from '../data/world.js?v=3a5c6e7';
+import { texKey } from '../data/artsets.js?v=3a5c6e7';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=3a5c6e7';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=3a5c6e7';
+import { addPortalWarp } from '../portalWarp.js?v=3a5c6e7';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=3a5c6e7';
+import { audio } from '../audio.js?v=3a5c6e7';
+import { COLORS, heading, text } from '../theme.js?v=3a5c6e7';
+import * as zpower from '../bonus/zpower.js?v=3a5c6e7';
+import * as foam from '../bonus/foam.js?v=3a5c6e7';
+import * as circuits from '../bonus/circuits.js?v=3a5c6e7';
+import * as chase from '../bonus/chase.js?v=3a5c6e7';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -271,9 +273,11 @@ export class BonusRoomScene extends Phaser.Scene {
     this.waiting = !!this.room && !!this.room.runner && !data.quick;
     // A Z meter room's rules: Shaan's (bonus/zpower.js) or a foam room's
     // (bonus/foam.js, Axel's). Both answer the same hooks.
-    this.power = !this.room ? null : this.room.foam ? foam : this.room.zmeter ? zpower : null;
+    this.power = !this.room ? null : this.room.chase ? chase : this.room.circuits ? circuits : this.room.foam ? foam : this.room.zmeter ? zpower : null;
     zpower.reset(this);
     foam.reset(this);
+    circuits.reset(this);
+    chase.reset(this);
   }
 
   create() {
@@ -1391,7 +1395,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.jumpPressAt = time;
     }
     this.touchJump = false;
-    if (this.power === foam) { foam.update(this, time, delta); return; }
+    if (this.power && this.power.owns) { this.power.update(this, time, delta); return; }
 
     // His picture: rolling while he moves or flies, uncurled once stopped.
     const speed = Math.hypot(b.velocity.x, b.velocity.y);
@@ -1586,7 +1590,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     // A runner room's clock starts at its countdown's GO; the others' at
     // the first step.
     if (!this.room.runner) this.runSteps = Math.max(0, this.runSteps) + 1;
-    if (this.power === foam) { foam.step(this, time, dir); return; }
+    if (this.power && this.power.owns) { this.power.step(this, time, dir); return; }
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
