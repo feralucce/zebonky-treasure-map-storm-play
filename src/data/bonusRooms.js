@@ -39,6 +39,8 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=24f866e';
+
 export const BONUS_ROOMS = {
   'dorsal-1': {
     name: 'Cannonball Cove',
@@ -525,5 +527,11 @@ export const BONUS_ROOMS = {
     door: { x: 37000, on: 18 },
   },
 };
+
+// Shaan's new rooms, Sonic + Ecco (the user, 2026-11-17: new rooms, designed
+// fresh). Not in a level's slot yet: try them with ?bonustest=<key>.
+// Surf and Slope: a Z meter room (`zmeter`, bonus/zpower.js), its layout made
+// by tools/make_surf_slope.py.
+BONUS_ROOMS['dorsal-surf'] = SURF_AND_SLOPE;
 
 export const bonusRoomFor = (levelId) => BONUS_ROOMS[levelId] || null;

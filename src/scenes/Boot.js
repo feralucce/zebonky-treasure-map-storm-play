@@ -1,13 +1,14 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=7ada507';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=7ada507';
-import { testParams, DRAWN } from '../data/levels.js?v=7ada507';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=7ada507';
-import { CHARACTERS } from '../data/characters.js?v=7ada507';
-import { state } from '../state.js?v=7ada507';
-import { COLORS, heading, text } from '../theme.js?v=7ada507';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=7ada507';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=7ada507';
-import { BUILD } from '../version.js?v=7ada507';
+import { ARTSETS, texKey } from '../data/artsets.js?v=24f866e';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=24f866e';
+import { testParams, DRAWN } from '../data/levels.js?v=24f866e';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=24f866e';
+import { CHARACTERS } from '../data/characters.js?v=24f866e';
+import { state } from '../state.js?v=24f866e';
+import { COLORS, heading, text } from '../theme.js?v=24f866e';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=24f866e';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=24f866e';
+import { BUILD } from '../version.js?v=24f866e';
+import { METERS } from '../zmeter.js?v=24f866e';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -92,6 +93,11 @@ export class BootScene extends Phaser.Scene {
     this.load.image('zbar-full', 'assets/hud/zbar_full.png');
     this.load.image('zbar-spent', 'assets/hud/zbar_spent.png');
     this.load.json('zbar', 'assets/hud/zbar.json');
+    // A Z-bolt on its own, cut from Chris's bar (the Z meter rooms' prize and pickup).
+    this.load.image('zbolt', 'assets/hud/zbolt.png');
+    // The bonus rooms' Z meters (zmeter.js): each Zebonky's pieces, cut
+    // from Chris's art by tools/zmeter/make_pieces.py.
+    Object.entries(METERS).forEach(([name, m]) => m.pieces.forEach((p) => this.load.image(`zmeter-${name}-${p}`, `assets/hud/zmeter/${name}/${p}.png`)));
 
     // The explorers (players): one strip of frames per animation, for every
     // character in the selector.
@@ -230,13 +236,16 @@ export class BootScene extends Phaser.Scene {
     // test mode (falling off starts it over).
     // index.html?bonusinspect=dorsal-1: that room still, in inspection mode.
     const bonusInspect = new URLSearchParams(window.location.search).get('bonusinspect');
+    // (A room not in a level's slot yet, like Surf and Slope's
+    // `dorsal-surf`, is found by its own key.)
+    const roomId = (id) => (BONUS_ROOMS[id] ? id : playableLevelId(id));
     if (bonusInspect) {
-      this.scene.start('BonusRoom', { levelId: playableLevelId(bonusInspect), test: true, inspect: true });
+      this.scene.start('BonusRoom', { levelId: roomId(bonusInspect), test: true, inspect: true });
       return;
     }
     const bonusTest = new URLSearchParams(window.location.search).get('bonustest');
     if (bonusTest) {
-      this.scene.start('BonusRoom', { levelId: playableLevelId(bonusTest), test: true });
+      this.scene.start('BonusRoom', { levelId: roomId(bonusTest), test: true });
       return;
     }
     // index.html?unlockdemo=dorsal (or =cumulus): the map just after that

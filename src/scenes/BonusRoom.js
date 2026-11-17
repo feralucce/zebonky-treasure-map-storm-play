@@ -22,14 +22,15 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=7ada507';
-import { texKey } from '../data/artsets.js?v=7ada507';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=7ada507';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=7ada507';
-import { addPortalWarp } from '../portalWarp.js?v=7ada507';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=7ada507';
-import { audio } from '../audio.js?v=7ada507';
-import { COLORS, heading, text } from '../theme.js?v=7ada507';
+import { MAP_W, MAP_H } from '../data/world.js?v=24f866e';
+import { texKey } from '../data/artsets.js?v=24f866e';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=24f866e';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=24f866e';
+import { addPortalWarp } from '../portalWarp.js?v=24f866e';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=24f866e';
+import { audio } from '../audio.js?v=24f866e';
+import { COLORS, heading, text } from '../theme.js?v=24f866e';
+import * as zpower from '../bonus/zpower.js?v=24f866e';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -237,7 +238,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.room = bonusRoomFor(this.levelId);
     this.leaving = false;
     this.finished = false;
-    this.touch = { left: false, right: false, jump: false, down: false };
+    this.touch = { left: false, right: false, jump: false, down: false, blast: false };
     this.wet = false;
     this.groundAt = 0;
     this.movedAt = 0;
@@ -267,6 +268,8 @@ export class BonusRoomScene extends Phaser.Scene {
     // A runner room counts down first (the user, 2026-11-03: "start with
     // 'Go Fast!' and then a count down"); `quick` skips it (the test bot).
     this.waiting = !!this.room && !!this.room.runner && !data.quick;
+    // A Z meter room's state (bonus/zpower.js).
+    zpower.reset(this);
   }
 
   create() {
@@ -298,6 +301,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.bumpers = (room.bumpers || []).map((bd) => this.buildBumper(bd));
     this.pools = (room.pools || []).map((w) => this.buildPool(w, set));
     this.rings = (room.rings || []).map((r) => this.buildRing(r));
+    if (room.zmeter) zpower.build(this, set);
     this.unit = this.coins.length ? 'tokens' : 'rings';
     this.buildDoor(set);
     if (room.runner) this.buildRunner(set);
@@ -319,6 +323,7 @@ export class BonusRoomScene extends Phaser.Scene {
     // "That is wrecking ball", "make it so it works at a run"). Too slow, he
     // bounces off.
     this.matter.world.on('collisionstart', (ev) => ev.pairs.forEach((pair) => {
+      if (room.zmeter && zpower.collide(this, pair)) return;
       const bump = pair.bodyA.bumper || pair.bodyB.bumper;
       if (bump && (pair.bodyA === this.ball || pair.bodyB === this.ball)) { this.bounce(bump); return; }
       const rock = pair.bodyA.rock || pair.bodyB.rock;
@@ -452,8 +457,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       const sf = bg.scroll || 0.3;
       const s = (MAP_H + (this.room.height - MAP_H) * sf) / bg.h;
       const need = MAP_W + (this.room.width - MAP_W) * sf;
-      for (let i = 0, x = 0; x < need && i < bg.pieces.length; i++, x += bg.piece_w * s) {
-        const key = texKey(this.room.artset, bg.pieces[i]);
+      // (The pieces start over when a long room needs more of them:
+      // Surf and Slope ran out partway.)
+      for (let i = 0, x = 0; x < need && i < bg.pieces.length * 8; i++, x += bg.piece_w * s) {
+        const key = texKey(this.room.artset, bg.pieces[i % bg.pieces.length]);
         if (this.textures.exists(key)) this.add.image(x, 0, key).setOrigin(0).setScale(s).setScrollFactor(sf).setDepth(-10);
       }
     }
@@ -920,7 +927,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
 
   coinSpots() {
     const spots = [];
-    this.room.coins.forEach((c) => {
+    (this.room.coins || []).forEach((c) => {
       if (c.points) { c.points.forEach((p) => spots.push(p.slice())); return; }
       const n = c.n;
       for (let i = 0; i < n; i++) {
@@ -1198,6 +1205,23 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     box.lineStyle(3, COLORS.ink, 1);
     box.strokeRoundedRect(MAP_W / 2 - 170, 14, 340, 50, 16);
     this.add.text(MAP_W / 2, 39, this.room.name, heading(24, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(21);
+    // A Z meter room: the meter, its counters and the blast button instead
+    // of the timer and tokens (time isn't scored there, the user, 2026-11-17).
+    if (this.room.zmeter) {
+      zpower.buildHud(this);
+      if (this.test) {
+        this.add.text(20, 128, this.inspect ? 'INSPECTION' : 'TEST MODE', heading(20, '#ffffff', {
+          backgroundColor: '#b3261e', padding: { x: 10, y: 4 },
+        })).setScrollFactor(0).setDepth(21);
+      }
+      if (this.retry || this.inspect) return;
+      const say0 = this.add.text(MAP_W / 2, MAP_H / 2 - 120, this.room.intro, heading(40, COLORS.yellowCss, {
+        stroke: COLORS.inkCss, strokeThickness: 10, align: 'center',
+      })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
+      this.tweens.add({ targets: say0, alpha: 0, delay: 2600, duration: 500, onComplete: () => say0.destroy() });
+      this.intro = say0;
+      return;
+    }
     // Every room's timer (the user, 2026-11-05), right of its name.
     this.clockText = this.add.text(MAP_W / 2 + 190, 40, clock(0), heading(26, '#ffffff', {
       stroke: COLORS.inkCss, strokeThickness: 6,
@@ -1259,7 +1283,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
 
   // The level's buttons, with their keys under them.
   buildControls() {
-    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,J');
+    this.keys = this.input.keyboard.addKeys('LEFT,RIGHT,UP,DOWN,A,D,W,S,SPACE,Z,J,X,K,F');
     const y = MAP_H - 80;
     const hold = (img, key) => {
       img.setScrollFactor(0).setAlpha(0.75).setDepth(20).setInteractive();
@@ -1358,7 +1382,10 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.touchDoor = false;
 
     // A jump press waits for the next physics step.
-    if ([k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => Phaser.Input.Keyboard.JustDown(key)) || this.touchJump) this.jumpAsked = true;
+    if ([k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => Phaser.Input.Keyboard.JustDown(key)) || this.touchJump) {
+      this.jumpAsked = true;
+      this.jumpPressAt = time;
+    }
     this.touchJump = false;
 
     // His picture: rolling while he moves or flies, uncurled once stopped.
@@ -1386,6 +1413,8 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       play(s, this.art, rolling ? 'run' : 'idle');
       s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
     }
+
+    if (this.room.zmeter) zpower.update(this, time, delta);
 
     // Rings: swim through for their coins. Touching any of it counts (the
     // user, 2026-11-02), the hoop included; with no dash any more (the user,
@@ -1487,10 +1516,16 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       vx = this.dashVec.x * WATER_DASH;
       vy = this.dashVec.y * WATER_DASH;
     } else {
-      vx *= SWIM_DRAG;
-      vy *= SWIM_DRAG;
+      // A Z meter room's dips keep his speed (Sonic into Ecco, the user,
+      // 2026-11-17): less drag, a higher top speed, and currents carry him.
+      const surf = !!this.room.zmeter;
+      vx *= surf ? 0.985 : SWIM_DRAG;
+      vy *= surf ? 0.985 : SWIM_DRAG;
+      const here = this.pools.find((w) => b.position.x > w.x && b.position.x < w.x + w.w);
+      if (surf && here && here.current && dir >= 0) vx += (here.current - vx) * 0.05;
+      const cap = surf ? 13 : SWIM_SPEED;
       const sp = Math.hypot(vx, vy);
-      if (sp > SWIM_SPEED) { vx *= SWIM_SPEED / sp; vy *= SWIM_SPEED / sp; }
+      if (sp > cap) { vx *= cap / sp; vy *= cap / sp; }
     }
     // Near the surface swimming up: out he leaps.
     const pool = this.pools.find((w) => b.position.x > w.x && b.position.x < w.x + w.w);
@@ -1559,6 +1594,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     b.ignoreGravity = this.wet;
     if (this.wet) { this.swim(time, dir); return; }
     if (this.room.runner) { this.runStep(time, dir, grounded); return; }
+    if (this.room.zmeter && zpower.step(this, time, dir, grounded)) return;
 
     // A geyser carries him straight up until he slows near the top; a
     // bumper's knock carries him back for a moment.
@@ -1585,12 +1621,20 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     // the hole, up to a couple of tiles above it, so rolling over it fast
     // still catches.
     this.geysers.forEach((gy) => {
-      const near = Math.abs(b.position.x - gy.x) < 50 && b.position.y > gy.y - 200 && b.position.y < gy.y + 20;
-      if (near && time >= gy.readyAt) {
+      const near = Math.abs(b.position.x - gy.x) < (gy.optional ? 80 : 50) && b.position.y > gy.y - (gy.optional ? 220 : 200) && b.position.y < gy.y + 20;
+      // An optional geyser (a Z meter room's split) only takes him if he
+      // jumps on it.
+      // (A jump pressed a moment before he reaches it counts too.)
+      if (near && time >= gy.readyAt && (!gy.optional || this.jumpHeld || time - (this.jumpPressAt || -1e9) < 350)) {
         gy.readyAt = time + 500;
         M.Body.setPosition(b, { x: gy.x, y: b.position.y });
-        M.Body.setVelocity(b, { x: 0, y: -gy.speed });
+        // (`toss`: px a step sideways, so a split's geyser lands him on the
+        // ledge beside it rather than straight back down.)
+        M.Body.setVelocity(b, { x: gy.toss || 0, y: -gy.speed });
         this.geyserRide = true;
+        // (Not a jump: letting go of jump mid-ride cut the launch in half,
+        // as it cuts a jump short for a hop.)
+        this.jumping = false;
         this.spout(gy, gy.height * 0.85);
         audio.sfx(this, 'splash');
       }
@@ -1923,7 +1967,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.btnDoor.setVisible(false);
     const t = this.runTime();
     if (this.clockText) this.clockText.setText(clock(t));
-    this.medal = this.runMedal(t);
+    this.medal = this.room.zmeter ? zpower.medal(this) : this.runMedal(t);
     // Its paws (kept at the best), on the level's record; a test run keeps none.
     this.medalFresh = this.test ? 0 : earn(this.levelId, 'bonusTime', this.medal.tier);
     const b = this.ball;
@@ -1943,13 +1987,15 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.tweens.add({ targets: this.shaan, x: d.x, y: d.y, angle: 360, scale: SCALE * 0.2, alpha: 0, delay: 100, duration: 800, ease: 'Sine.In' });
     } else this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
-      this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
+      this.room.zmeter ? zpower.scoreLine(this)
+        : this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
         : this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
           : `You gathered ${this.coinsGot} of ${this.totalCoins()} tokens.`, true, this.medal));
   }
 
   fellOff() {
     if (this.room.runner) { this.backBeforeGap(); return; }
+    if (this.room.zmeter) { zpower.respawn(this); return; }
     this.finished = true;
     Matter().Body.setStatic(this.ball, true);
     if (this.test) { this.startOver(); return; }
@@ -2013,14 +2059,19 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       const best = tierInfo(got);
       const detail = best && best.tier > medal.tier ? `${medal.name}, best ${best.name}`
         : `${medal.name}   (gold ${clock(mt.gold)}, silver ${clock(mt.silver)})`;
-      const tally = this.add.text(MAP_W / 2, py + 112, 'Z paw prints: 0 / 3', heading(26, COLORS.inkCss))
+      // A Z meter room's prize is Z-bolts, not paw prints (the user,
+      // 2026-11-17: "they are collecting z bolts, not paw prints any more").
+      const prize = this.room.zmeter ? 'Z-bolts' : 'Z paw prints';
+      const tally = this.add.text(MAP_W / 2, py + 112, `${prize}: 0 / 3`, heading(26, COLORS.inkCss))
         .setOrigin(0.5).setScrollFactor(0).setDepth(32);
       let n = 0;
-      pawCard(this, [{ label: `Time ${clock(t)}`, detail, detailAt: 150, max: 3, got, fresh: this.test ? medal.tier : this.medalFresh }], {
+      const row = this.room.zmeter ? zpower.scoreRow(this, medal) : { label: `Time ${clock(t)}`, detail };
+      pawCard(this, [{ label: row.label, detail: row.detail, detailAt: 150, max: 3, got, fresh: this.test ? medal.tier : this.medalFresh }], {
         x: px + 24, y: py + 50, w: w - 48, rowH: 64, depth: 32, scroll: false, delay: 700,
-        onDone: (k) => tally.setText(`Z paw prints: ${k} / 3`),
+        icon: this.room.zmeter ? 'zbolt' : 'zpaw', tall: this.room.zmeter ? 1 : 1.2,
+        onDone: (k) => tally.setText(`${prize}: ${k} / 3`),
       });
-      for (let i = 0; i < got; i++) this.time.delayedCall(700 + i * 260, () => { n += 1; tally.setText(`Z paw prints: ${n} / 3`); });
+      for (let i = 0; i < got; i++) this.time.delayedCall(700 + i * 260, () => { n += 1; tally.setText(`${prize}: ${n} / 3`); });
     }
     const t = this.add.text(MAP_W / 2, MAP_H / 2 - 40 - up, title, heading(60, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 12,

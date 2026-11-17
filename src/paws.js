@@ -20,9 +20,9 @@
 // replay can't farm them. The score cards are scenes/LevelEnd.js and
 // BonusRoom.js endCard (pawCard below draws both).
 
-import { state } from './state.js?v=7ada507';
-import { COLORS, heading, text } from './theme.js?v=7ada507';
-import { audio } from './audio.js?v=7ada507';
+import { state } from './state.js?v=24f866e';
+import { COLORS, heading, text } from './theme.js?v=24f866e';
+import { audio } from './audio.js?v=24f866e';
 
 export const LETTERS = 'ZEBONKY';
 
@@ -160,7 +160,9 @@ export function tokenIcon(scene) {
 //   x, y, w: where the rows go; rowH: row height
 //   onDone(total, possible) once the last paw has landed
 // Returns { possible, total, height }.
-export function pawCard(scene, rows, { x, y, w, rowH = 54, delay = 450, depth = 0, scroll = true, onDone } = {}) {
+// `icon`: what each slot shows ('zpaw', or 'zbolt' for a Z meter room's
+// Z-bolts, the user, 2026-11-17); `tall`: its height over its width.
+export function pawCard(scene, rows, { x, y, w, rowH = 54, delay = 450, depth = 0, scroll = true, onDone, icon = 'zpaw', tall = 1.2 } = {}) {
   const PAW = 38;
   const set = (o) => { if (depth) o.setDepth(depth); if (!scroll && o.setScrollFactor) o.setScrollFactor(0); return o; };
   const pops = [];
@@ -180,14 +182,14 @@ export function pawCard(scene, rows, { x, y, w, rowH = 54, delay = 450, depth = 
     // Slots right to left from the edge, filled left to right.
     for (let k = 0; k < r.max; k++) {
       const px = x + w - 20 - PAW / 2 - (r.max - 1 - k) * (PAW + 6);
-      set(scene.add.image(px, ry, 'zpaw').setDisplaySize(PAW, PAW * 1.2).setTint(0x2b1d12).setAlpha(0.22));
+      set(scene.add.image(px, ry, icon).setDisplaySize(PAW, PAW * tall).setTint(0x2b1d12).setAlpha(0.22));
       if (k < r.got) pops.push({ px, ry, fresh: k >= r.got - (r.fresh || 0) });
     }
   });
   const possible = rows.reduce((n, r) => n + (r.none ? 0 : r.max), 0);
   pops.forEach((p, i) => {
     scene.time.delayedCall(delay + i * 260, () => {
-      const paw = set(scene.add.image(p.px, p.ry, 'zpaw').setDisplaySize(PAW, PAW * 1.2));
+      const paw = set(scene.add.image(p.px, p.ry, icon).setDisplaySize(PAW, PAW * tall));
       const sx = paw.scaleX;
       const sy = paw.scaleY;
       paw.setScale(0);
