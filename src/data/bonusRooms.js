@@ -39,7 +39,8 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=24f866e';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=c92b92d';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=c92b92d';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
@@ -533,5 +534,9 @@ export const BONUS_ROOMS = {
 // Surf and Slope: a Z meter room (`zmeter`, bonus/zpower.js), its layout made
 // by tools/make_surf_slope.py.
 BONUS_ROOMS['dorsal-surf'] = SURF_AND_SLOPE;
+// Axel's Break the Bubble: a foam room (`foam`, bonus/foam.js), made by
+// tools/make_break_bubble.py: one field per bonus level, and just the one
+// for now (the user, 2026-11-17). Not in a Seafoam level's slot yet.
+BONUS_ROOMS['seafoam-bubble'] = BREAK_THE_BUBBLE[0];
 
 export const bonusRoomFor = (levelId) => BONUS_ROOMS[levelId] || null;

@@ -7,16 +7,16 @@
 // was answered (or a note says that's what earns it). A biome finished
 // before has an extra dot that leads back out to the whole map.
 
-import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=24f866e';
-import { state, pathKey } from '../state.js?v=24f866e';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=24f866e';
-import { audio, fullscreenButton, musicButton } from '../audio.js?v=24f866e';
-import { BUILD } from '../version.js?v=24f866e';
-import { starsFor, rewardTotals } from '../rewards.js?v=24f866e';
-import { totalPaws } from '../paws.js?v=24f866e';
-import { showCompanionCard } from '../companionCard.js?v=24f866e';
-import { showDifficultyMenu } from '../difficultyMenu.js?v=24f866e';
-import { paintIn } from '../mapReveal.js?v=24f866e';
+import { LEVELS, PATHS, MAP_W, MAP_H, BIOMES, PLAY_BIOMES, biomeLevels } from '../data/world.js?v=c92b92d';
+import { state, pathKey } from '../state.js?v=c92b92d';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=c92b92d';
+import { audio, fullscreenButton, musicButton } from '../audio.js?v=c92b92d';
+import { BUILD } from '../version.js?v=c92b92d';
+import { starsFor, rewardTotals } from '../rewards.js?v=c92b92d';
+import { totalPaws } from '../paws.js?v=c92b92d';
+import { showCompanionCard } from '../companionCard.js?v=c92b92d';
+import { showDifficultyMenu } from '../difficultyMenu.js?v=c92b92d';
+import { paintIn } from '../mapReveal.js?v=c92b92d';
 
 const WALK_SPEED = 280;     // map px per second
 const DOT_SPACING = 18;     // px between paw prints on a path

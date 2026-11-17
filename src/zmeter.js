@@ -22,8 +22,10 @@ const N = SEGMENTS;
 const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 const INK = [27, 26, 46];
 
-// Each Zebonky's meter: its frame and emblem SVG, palette, charge ramp and
-// dressing. Only Shaan's exists so far.
+// Each Zebonky's meter: its frame and emblem SVG (`frame`), palette, charge
+// ramp and dressing. Every meter shares the same energy and pulse (the
+// sweep, the crackle, the Z-shaped front edge, the full pulse and the
+// sparkles; the user, 2026-11-17: "the same energy and pulse on all of them").
 export const METERS = {
   shaan: {
     pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_grass_clump_b', 'pt_grass_clump_c', 'pt_leaf_cluster_a', 'pt_rock_small_b'],
@@ -32,6 +34,19 @@ export const METERS = {
     pal: ['#1b1a2e', '#ffe2ad', '#f2c27e', '#c98a44', '#a8682e', '#fff3d6', '#8ff6ff', '#1aa6c9', '#0a4a6a',
       '#e9fbff', '#173a4a', '#0b1f2b', '#24566a', '#ffffff', '#fffbe0', '#3fb8e0', '#53d3f2', '#0e6d93'].map(hex),
     ramp: ['#0fa5a8', '#16d6c8', '#5ee6a0', '#a6ec46', '#d8f02a', '#ffe600', '#fff27a'].map(hex),
+  },
+  // Axel's (the user's pick, 2026-11-17: take A, Gill Fronds, "lose the
+  // fronds"): his brown body band with a belly stripe, his mint tail tip off
+  // the right end, a brown ring round a water disc with sonic rings, and a
+  // sea-teal to seafoam-white charge. His swim frames in the emblem.
+  axel: {
+    pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_fern_a', 'pt_tropical_plant_a', 'pt_leaf_cluster_a', 'pt_fern_b'],
+    frames: ['ball0', 'ball1', 'ball2', 'ball3'],
+    dressing: [['pt_fern_a', 96], ['pt_tropical_plant_a', 116], ['pt_leaf_cluster_a', 140], ['pt_fern_b', 166]],
+    frame: axelFrameSVG,
+    pal: ['#1b1a2e', '#a8673a', '#c98a55', '#e3b583', '#7a4524', '#f2d2a8', '#7fe8c4', '#5fd4ad', '#2f9c7c',
+      '#8ff0ff', '#1c9bc0', '#0a3f60', '#0d3a44', '#07202a', '#1a5560', '#ffffff', '#dffff4', '#e9fbff'].map(hex),
+    ramp: ['#0b7d84', '#14a7a0', '#2fc9b4', '#5ee6c8', '#9ff3dc', '#d9fff2', '#f4fffd'].map(hex),
   },
 };
 const HOT = [hex('#ffffff'), hex('#fffbe0'), hex('#bff8ff'), hex('#fff27a')];
@@ -97,6 +112,29 @@ function frameSVG() {
   });
   return svg(s);
 }
+// Axel's frame and emblem (take A without the fronds).
+function axelFrameSVG() {
+  let s = `<defs>
+    <radialGradient id="disc" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#8ff0ff"/><stop offset="0.6" stop-color="#1c9bc0"/><stop offset="1" stop-color="#0a3f60"/></radialGradient>
+    <linearGradient id="empty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d3a44"/><stop offset="1" stop-color="#07202a"/></linearGradient>
+  </defs>`;
+  // his mint tail tip, curling off the right end (behind the frame)
+  s += `<path d="M${FR.x + FR.w - 10},${FR.y + FR.h / 2} q20,-14 24,-4 q3,10 -14,13 z" fill="#7fe8c4" stroke="#1b1a2e" stroke-width="2"/>`;
+  s += `<rect x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="${pillR + O}" fill="#a8673a" stroke="#1b1a2e" stroke-width="2"/>`;
+  s += `<rect x="${FR.x + 20}" y="${FR.y + 3}" width="${FR.w - 40}" height="2" fill="#c98a55"/>`;
+  s += `<rect x="${FR.x + 20}" y="${FR.y + FR.h - 5}" width="${FR.w - 40}" height="3" fill="#e3b583"/>`;
+  s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#a8673a" stroke="#1b1a2e" stroke-width="2.5"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${(RC.r + RC.disc) / 2}" fill="none" stroke="#c98a55" stroke-width="1"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
+  // sonic rings ahead of his nose
+  [0, 1, 2].forEach((k) => {
+    const r = 17 + k * 4;
+    s += `<path d="M${RC.x + r * 0.55},${RC.y - r * 0.83} A${r},${r} 0 0 1 ${RC.x + r * 0.55},${RC.y + r * 0.83}" fill="none" stroke="#e9fbff" stroke-width="${1.6 - k * 0.3}" stroke-linecap="round"/>`;
+  });
+  return svg(s);
+}
+
 const tubeMaskSVG = () => svg(`<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="#fff"/>`);
 const segSVG = () => svg([0, 1, 2, 3, 4].map((i) => `<polygon points="${P(segPoly(i))}" fill="rgb(${(i + 1) * 40},0,0)"/>`).join(''));
 function inkSVG() {
@@ -168,7 +206,7 @@ export class ZMeter {
 
   async setup() {
     const L = {};
-    L.frame = snap(await raster(frameSVG()), this.cfg.pal);
+    L.frame = snap(await raster((this.cfg.frame || frameSVG)()), this.cfg.pal);
     L.mask = snap(await raster(tubeMaskSVG()), null);
     const seg = await raster(segSVG());
     L.ink = snap(await raster(inkSVG()), [INK], 110);

@@ -22,15 +22,16 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=24f866e';
-import { texKey } from '../data/artsets.js?v=24f866e';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=24f866e';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=24f866e';
-import { addPortalWarp } from '../portalWarp.js?v=24f866e';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=24f866e';
-import { audio } from '../audio.js?v=24f866e';
-import { COLORS, heading, text } from '../theme.js?v=24f866e';
-import * as zpower from '../bonus/zpower.js?v=24f866e';
+import { MAP_W, MAP_H } from '../data/world.js?v=c92b92d';
+import { texKey } from '../data/artsets.js?v=c92b92d';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=c92b92d';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=c92b92d';
+import { addPortalWarp } from '../portalWarp.js?v=c92b92d';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=c92b92d';
+import { audio } from '../audio.js?v=c92b92d';
+import { COLORS, heading, text } from '../theme.js?v=c92b92d';
+import * as zpower from '../bonus/zpower.js?v=c92b92d';
+import * as foam from '../bonus/foam.js?v=c92b92d';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -268,8 +269,11 @@ export class BonusRoomScene extends Phaser.Scene {
     // A runner room counts down first (the user, 2026-11-03: "start with
     // 'Go Fast!' and then a count down"); `quick` skips it (the test bot).
     this.waiting = !!this.room && !!this.room.runner && !data.quick;
-    // A Z meter room's state (bonus/zpower.js).
+    // A Z meter room's rules: Shaan's (bonus/zpower.js) or a foam room's
+    // (bonus/foam.js, Axel's). Both answer the same hooks.
+    this.power = !this.room ? null : this.room.foam ? foam : this.room.zmeter ? zpower : null;
     zpower.reset(this);
+    foam.reset(this);
   }
 
   create() {
@@ -301,7 +305,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.bumpers = (room.bumpers || []).map((bd) => this.buildBumper(bd));
     this.pools = (room.pools || []).map((w) => this.buildPool(w, set));
     this.rings = (room.rings || []).map((r) => this.buildRing(r));
-    if (room.zmeter) zpower.build(this, set);
+    if (this.power) this.power.build(this, set);
     this.unit = this.coins.length ? 'tokens' : 'rings';
     this.buildDoor(set);
     if (room.runner) this.buildRunner(set);
@@ -323,7 +327,7 @@ export class BonusRoomScene extends Phaser.Scene {
     // "That is wrecking ball", "make it so it works at a run"). Too slow, he
     // bounces off.
     this.matter.world.on('collisionstart', (ev) => ev.pairs.forEach((pair) => {
-      if (room.zmeter && zpower.collide(this, pair)) return;
+      if (this.power && this.power.collide(this, pair)) return;
       const bump = pair.bodyA.bumper || pair.bodyB.bumper;
       if (bump && (pair.bodyA === this.ball || pair.bodyB === this.ball)) { this.bounce(bump); return; }
       const rock = pair.bodyA.rock || pair.bodyB.rock;
@@ -1207,8 +1211,8 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.add.text(MAP_W / 2, 39, this.room.name, heading(24, COLORS.inkCss)).setOrigin(0.5).setScrollFactor(0).setDepth(21);
     // A Z meter room: the meter, its counters and the blast button instead
     // of the timer and tokens (time isn't scored there, the user, 2026-11-17).
-    if (this.room.zmeter) {
-      zpower.buildHud(this);
+    if (this.power) {
+      this.power.buildHud(this);
       if (this.test) {
         this.add.text(20, 128, this.inspect ? 'INSPECTION' : 'TEST MODE', heading(20, '#ffffff', {
           backgroundColor: '#b3261e', padding: { x: 10, y: 4 },
@@ -1387,6 +1391,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.jumpPressAt = time;
     }
     this.touchJump = false;
+    if (this.power === foam) { foam.update(this, time, delta); return; }
 
     // His picture: rolling while he moves or flies, uncurled once stopped.
     const speed = Math.hypot(b.velocity.x, b.velocity.y);
@@ -1414,7 +1419,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       s.anims.timeScale = rolling ? Phaser.Math.Clamp(speed / 7, 0.6, 2.4) : 1;
     }
 
-    if (this.room.zmeter) zpower.update(this, time, delta);
+    if (this.power === zpower) zpower.update(this, time, delta);
 
     // Rings: swim through for their coins. Touching any of it counts (the
     // user, 2026-11-02), the hoop included; with no dash any more (the user,
@@ -1581,6 +1586,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     // A runner room's clock starts at its countdown's GO; the others' at
     // the first step.
     if (!this.room.runner) this.runSteps = Math.max(0, this.runSteps) + 1;
+    if (this.power === foam) { foam.step(this, time, dir); return; }
     const grounded = this.onGround();
     this.grounded = grounded;
     if (grounded) this.groundAt = time;
@@ -1594,7 +1600,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     b.ignoreGravity = this.wet;
     if (this.wet) { this.swim(time, dir); return; }
     if (this.room.runner) { this.runStep(time, dir, grounded); return; }
-    if (this.room.zmeter && zpower.step(this, time, dir, grounded)) return;
+    if (this.power === zpower && zpower.step(this, time, dir, grounded)) return;
 
     // A geyser carries him straight up until he slows near the top; a
     // bumper's knock carries him back for a moment.
@@ -1967,7 +1973,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     this.btnDoor.setVisible(false);
     const t = this.runTime();
     if (this.clockText) this.clockText.setText(clock(t));
-    this.medal = this.room.zmeter ? zpower.medal(this) : this.runMedal(t);
+    this.medal = this.power ? this.power.medal(this) : this.runMedal(t);
     // Its paws (kept at the best), on the level's record; a test run keeps none.
     this.medalFresh = this.test ? 0 : earn(this.levelId, 'bonusTime', this.medal.tier);
     const b = this.ball;
@@ -1987,7 +1993,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.tweens.add({ targets: this.shaan, x: d.x, y: d.y, angle: 360, scale: SCALE * 0.2, alpha: 0, delay: 100, duration: 800, ease: 'Sine.In' });
     } else this.tweens.add({ targets: this.shaan, x: this.doorAt.x, alpha: 0, scale: SCALE * 0.7, delay: 500, duration: 420, ease: 'Sine.In' });
     this.time.delayedCall(950, () => this.endCard('Bonus level complete!',
-      this.room.zmeter ? zpower.scoreLine(this)
+      this.power ? this.power.scoreLine(this)
         : this.room.runner ? `You made it in ${t.toFixed(1)} seconds.`
         : this.unit === 'rings' ? `You claimed ${this.coinsGot} of ${this.totalCoins()} rings.`
           : `You gathered ${this.coinsGot} of ${this.totalCoins()} tokens.`, true, this.medal));
@@ -1995,7 +2001,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
 
   fellOff() {
     if (this.room.runner) { this.backBeforeGap(); return; }
-    if (this.room.zmeter) { zpower.respawn(this); return; }
+    if (this.power) { this.power.respawn(this); return; }
     this.finished = true;
     Matter().Body.setStatic(this.ball, true);
     if (this.test) { this.startOver(); return; }
@@ -2065,7 +2071,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       const tally = this.add.text(MAP_W / 2, py + 112, `${prize}: 0 / 3`, heading(26, COLORS.inkCss))
         .setOrigin(0.5).setScrollFactor(0).setDepth(32);
       let n = 0;
-      const row = this.room.zmeter ? zpower.scoreRow(this, medal) : { label: `Time ${clock(t)}`, detail };
+      const row = this.power ? this.power.scoreRow(this, medal) : { label: `Time ${clock(t)}`, detail };
       pawCard(this, [{ label: row.label, detail: row.detail, detailAt: 150, max: 3, got, fresh: this.test ? medal.tier : this.medalFresh }], {
         x: px + 24, y: py + 50, w: w - 48, rowH: 64, depth: 32, scroll: false, delay: 700,
         icon: this.room.zmeter ? 'zbolt' : 'zpaw', tall: this.room.zmeter ? 1 : 1.2,
