@@ -22,20 +22,20 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=95178c7';
-import { texKey } from '../data/artsets.js?v=95178c7';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=95178c7';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=95178c7';
-import { addPortalWarp } from '../portalWarp.js?v=95178c7';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=95178c7';
-import { audio } from '../audio.js?v=95178c7';
-import { COLORS, heading, text } from '../theme.js?v=95178c7';
-import * as zpower from '../bonus/zpower.js?v=95178c7';
-import * as foam from '../bonus/foam.js?v=95178c7';
-import * as circuits from '../bonus/circuits.js?v=95178c7';
-import * as chase from '../bonus/chase.js?v=95178c7';
-import * as rings from '../bonus/rings.js?v=95178c7';
-import * as terraces from '../bonus/terraces.js?v=95178c7';
+import { MAP_W, MAP_H } from '../data/world.js?v=fe9db25';
+import { texKey } from '../data/artsets.js?v=fe9db25';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=fe9db25';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=fe9db25';
+import { addPortalWarp } from '../portalWarp.js?v=fe9db25';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=fe9db25';
+import { audio } from '../audio.js?v=fe9db25';
+import { COLORS, heading, text } from '../theme.js?v=fe9db25';
+import * as zpower from '../bonus/zpower.js?v=fe9db25';
+import * as foam from '../bonus/foam.js?v=fe9db25';
+import * as circuits from '../bonus/circuits.js?v=fe9db25';
+import * as chase from '../bonus/chase.js?v=fe9db25';
+import * as rings from '../bonus/rings.js?v=fe9db25';
+import * as terraces from '../bonus/terraces.js?v=fe9db25';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 

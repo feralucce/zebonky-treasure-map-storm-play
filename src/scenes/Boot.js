@@ -1,14 +1,14 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=95178c7';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=95178c7';
-import { testParams, DRAWN } from '../data/levels.js?v=95178c7';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=95178c7';
-import { CHARACTERS } from '../data/characters.js?v=95178c7';
-import { state } from '../state.js?v=95178c7';
-import { COLORS, heading, text } from '../theme.js?v=95178c7';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=95178c7';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=95178c7';
-import { BUILD } from '../version.js?v=95178c7';
-import { METERS } from '../zmeter.js?v=95178c7';
+import { ARTSETS, texKey } from '../data/artsets.js?v=fe9db25';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=fe9db25';
+import { testParams, DRAWN } from '../data/levels.js?v=fe9db25';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=fe9db25';
+import { CHARACTERS } from '../data/characters.js?v=fe9db25';
+import { state } from '../state.js?v=fe9db25';
+import { COLORS, heading, text } from '../theme.js?v=fe9db25';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=fe9db25';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=fe9db25';
+import { BUILD } from '../version.js?v=fe9db25';
+import { METERS } from '../zmeter.js?v=fe9db25';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -102,6 +102,10 @@ export class BootScene extends Phaser.Scene {
     // The bonus rooms' Z meters (zmeter.js): each Zebonky's pieces, cut
     // from Chris's art by tools/zmeter/make_pieces.py.
     Object.entries(METERS).forEach(([name, m]) => m.pieces.forEach((p) => this.load.image(`zmeter-${name}-${p}`, `assets/hud/zmeter/${name}/${p}.png`)));
+
+    // Charlie's gallop from behind (Chase the Bananalope): six drawn frames,
+    // a stand-in until Chris draws his (zebonky-reference/charlie_back/draw_gallop.py).
+    for (let i = 1; i <= 6; i++) this.load.image(`chase-charlie-back-${i}`, `assets/bonus/chase/charlie-back-${i}.png`);
 
     // The explorers (players): one strip of frames per animation, for every
     // character in the selector.

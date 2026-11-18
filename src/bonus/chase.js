@@ -23,12 +23,12 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=95178c7';
-import { MAP_W, MAP_H } from '../data/world.js?v=95178c7';
-import { texKey } from '../data/artsets.js?v=95178c7';
-import { tierInfo, clock } from '../paws.js?v=95178c7';
-import { audio } from '../audio.js?v=95178c7';
-import { COLORS, heading, text } from '../theme.js?v=95178c7';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=fe9db25';
+import { MAP_W, MAP_H } from '../data/world.js?v=fe9db25';
+import { texKey } from '../data/artsets.js?v=fe9db25';
+import { tierInfo, clock } from '../paws.js?v=fe9db25';
+import { audio } from '../audio.js?v=fe9db25';
+import { COLORS, heading, text } from '../theme.js?v=fe9db25';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)
@@ -49,8 +49,12 @@ const JUMP_T = 0.62;          // seconds in the air
 const JUMP_PX = 150;          // how high he goes on screen
 const jumpH = (t) => (t < 0 ? 0 : 4 * (t / JUMP_T) * (1 - t / JUMP_T));
 const SKY = [0x14, 0x7e, 0x6f];
-// Charlie's size on screen (the user, 2026-11-17: "i want him bigger in frame")
-const CHARLIE_K = 1.7;
+// His gallop from behind (the user, 2026-11-18: "put the gallop we just made
+// in"): six frames, 12 a second at top speed, slower when he is slower.
+const GALLOP = 6;
+const GALLOP_K = 4 / 3;
+const GALLOP_FPS = 12;
+const AIR_FRAME = 4;          // gathered, paws tucked: his frame over a log
 
 export const owns = true;
 
@@ -131,7 +135,16 @@ export function build(scene, set) {
   // the drawing: the trail, the things on it, Charlie
   ch.road = scene.add.graphics().setScrollFactor(0).setDepth(4);
   ch.fx = scene.add.graphics().setScrollFactor(0).setDepth(9.7);
-  ch.charlie = scene.add.image(MAP_W / 2, MAP_H - 12, 'chase-charlie-0').setOrigin(0.5, 1).setScrollFactor(0).setDepth(9.6);
+  // Charlie: the six-frame gallop from behind, drawn at 3 px a pixel and shown
+  // at 4 (the game's pixel size). His feet are on the frame's ground line,
+  // 108 of its 112 pixels down.
+  for (let i = 1; i <= GALLOP; i++) {
+    const t = scene.textures.get(`chase-charlie-back-${i}`);
+    if (t) t.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  }
+  ch.charlie = scene.add.image(MAP_W / 2, MAP_H - 12, 'chase-charlie-back-1').setOrigin(0.5, 108 / 112).setScale(GALLOP_K).setScrollFactor(0).setDepth(9.6);
+  ch.stride = 0;
+  ch.lastT = -1;
 }
 
 // ---------- the stand-in pictures (until Chris draws them) ----------
@@ -151,34 +164,6 @@ function blob(c, fill, fn, lw = 4) {
 }
 
 function makeTextures(scene, set) {
-  // Charlie from behind: his shoulders and the back of his head (a stand-in)
-  [0, 1].forEach((f) => canvasTex(scene, `chase-charlie-${f}`, 150, 170, (c) => {
-    const up = f ? -1 : 1;
-    // tail, curling up to the right
-    c.strokeStyle = INK; c.lineWidth = 12; c.beginPath(); c.moveTo(92, 132); c.quadraticCurveTo(140, 120, 132, 70); c.stroke();
-    c.strokeStyle = '#e9b25a'; c.lineWidth = 6; c.beginPath(); c.moveTo(92, 132); c.quadraticCurveTo(140, 120, 132, 70); c.stroke();
-    blob(c, INK, () => c.arc(132, 72, 6, 0, Math.PI * 2), 2);
-    // hind legs, one up, one down
-    [[52, up], [98, -up]].forEach(([x, u]) => {
-      blob(c, '#e9b25a', () => c.ellipse(x, 146 + u * 6, 14, 18, 0, 0, Math.PI * 2));
-      blob(c, '#5a3a22', () => c.ellipse(x, 160 + u * 6, 12, 6, 0, 0, Math.PI * 2), 3);
-    });
-    // body
-    blob(c, '#e9b25a', () => c.ellipse(75, 112, 44, 38, 0, 0, Math.PI * 2));
-    c.fillStyle = '#7a4a22';
-    [[56, 98], [88, 96], [72, 120], [50, 126], [100, 124], [76, 92]].forEach(([x, y]) => { c.beginPath(); c.ellipse(x, y, 5, 4, 0.4, 0, Math.PI * 2); c.fill(); });
-    // chimp arms swinging
-    [[28, up], [122, -up]].forEach(([x, u]) => blob(c, '#6b4428', () => c.ellipse(x, 104 - u * 8, 13, 26, x < 75 ? 0.35 : -0.35, 0, Math.PI * 2)));
-    // big pink ears, then the back of his head
-    [[34, 40], [116, 40]].forEach(([x, y]) => {
-      blob(c, '#e9b25a', () => c.arc(x, y, 19, 0, Math.PI * 2));
-      blob(c, '#f2a7a0', () => c.arc(x + (x < 75 ? -3 : 3), y, 11, 0, Math.PI * 2), 2);
-    });
-    blob(c, '#e9b25a', () => c.arc(75, 58, 38, 0, Math.PI * 2));
-    c.fillStyle = '#7a4a22';
-    [[60, 40], [88, 44], [74, 66], [52, 64], [98, 68], [74, 30]].forEach(([x, y]) => { c.beginPath(); c.ellipse(x, y, 5, 4, -0.3, 0, Math.PI * 2); c.fill(); });
-    c.fillStyle = '#fff1c8'; c.beginPath(); c.ellipse(64, 34, 10, 5, -0.5, 0, Math.PI * 2); c.fill();
-  }, CHARLIE_K));
   // the bananalope from behind: a banana-yellow antelope with bananler antlers
   [0, 1].forEach((f) => canvasTex(scene, `chase-lope-${f}`, 170, 190, (c) => {
     const up = f ? -1 : 1;
@@ -267,7 +252,7 @@ export function buildHud(scene) {
   // the gap: Charlie's marker creeps up the bar to the bananalope's
   ch.gapBar = scene.add.graphics().setScrollFactor(0).setDepth(20);
   ch.gapLope = scene.add.image(MAP_W / 2 + 160, 96, 'chase-lope-0').setScale(0.24).setScrollFactor(0).setDepth(21);
-  ch.gapMe = scene.add.image(MAP_W / 2 - 160, 98, 'chase-charlie-0').setScale(0.22 / CHARLIE_K).setScrollFactor(0).setDepth(21);
+  ch.gapMe = scene.add.image(MAP_W / 2 - 160, 98, 'chase-charlie-back-1').setScale(0.2).setScrollFactor(0).setDepth(21);
   // touch: the power button (held to Hyper Dash); the jump button is go
   const y = MAP_H - 80;
   ch.btn = scene.add.image(MAP_W - 210, y, 'btn-jump').setScale(0.8).setTint(0xff8a1e).setScrollFactor(0).setDepth(20).setAlpha(0.4).setInteractive();
@@ -584,12 +569,16 @@ export function update(scene, time) {
   for (let i = ch.used; i < ch.pool.length; i++) ch.pool[i].setVisible(false);
   // Charlie: running, leaning into his steering
   const sp = ch.speed / MAX;
-  const fr = sp > 0.05 ? Math.floor(time / (140 - 70 * Math.min(1, sp))) % 2 : 0;
-  ch.charlie.setTexture(`chase-charlie-${fr}`);
-  ch.charlie.setAngle((scene.dir || (ch.auto ? ch.auto.steer : 0)) * 7);
+  // the stride runs at 12 frames a second at top speed, half that slow; the
+  // drawing carries his own rise and fall, so no extra bob
+  const dtMs = ch.lastT < 0 ? 0 : Math.min(100, time - ch.lastT);
+  ch.lastT = time;
+  if (sp > 0.05) ch.stride = (ch.stride + dtMs / 1000 * GALLOP_FPS * (0.5 + 0.5 * Math.min(1, sp))) % GALLOP;
   const air = jumpH(ch.jt);
-  ch.charlie.y = MAP_H - 12 - (fr ? 4 : 0) * Math.min(1, sp * 2) * (air ? 0 : 1) - air * JUMP_PX;
-  if (air) ch.charlie.setTexture('chase-charlie-1');
+  const fr = air ? AIR_FRAME : sp > 0.05 ? Math.floor(ch.stride) + 1 : 1;
+  ch.charlie.setTexture(`chase-charlie-back-${fr}`);
+  ch.charlie.setAngle((scene.dir || (ch.auto ? ch.auto.steer : 0)) * 7);
+  ch.charlie.y = MAP_H - 12 - air * JUMP_PX;
   // Hyper Dash: speed lines, and a flame trail on a super boost
   const fx = ch.fx;
   fx.clear();

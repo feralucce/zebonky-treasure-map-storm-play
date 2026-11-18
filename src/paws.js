@@ -20,9 +20,9 @@
 // replay can't farm them. The score cards are scenes/LevelEnd.js and
 // BonusRoom.js endCard (pawCard below draws both).
 
-import { state } from './state.js?v=95178c7';
-import { COLORS, heading, text } from './theme.js?v=95178c7';
-import { audio } from './audio.js?v=95178c7';
+import { state } from './state.js?v=fe9db25';
+import { COLORS, heading, text } from './theme.js?v=fe9db25';
+import { audio } from './audio.js?v=fe9db25';
 
 export const LETTERS = 'ZEBONKY';
 
