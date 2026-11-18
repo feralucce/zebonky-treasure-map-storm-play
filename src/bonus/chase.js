@@ -23,12 +23,12 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=3a5c6e7';
-import { MAP_W, MAP_H } from '../data/world.js?v=3a5c6e7';
-import { texKey } from '../data/artsets.js?v=3a5c6e7';
-import { tierInfo, clock } from '../paws.js?v=3a5c6e7';
-import { audio } from '../audio.js?v=3a5c6e7';
-import { COLORS, heading, text } from '../theme.js?v=3a5c6e7';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=a33f228';
+import { MAP_W, MAP_H } from '../data/world.js?v=a33f228';
+import { texKey } from '../data/artsets.js?v=a33f228';
+import { tierInfo, clock } from '../paws.js?v=a33f228';
+import { audio } from '../audio.js?v=a33f228';
+import { COLORS, heading, text } from '../theme.js?v=a33f228';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)

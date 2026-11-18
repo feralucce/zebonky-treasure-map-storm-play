@@ -1,14 +1,14 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=3a5c6e7';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=3a5c6e7';
-import { testParams, DRAWN } from '../data/levels.js?v=3a5c6e7';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=3a5c6e7';
-import { CHARACTERS } from '../data/characters.js?v=3a5c6e7';
-import { state } from '../state.js?v=3a5c6e7';
-import { COLORS, heading, text } from '../theme.js?v=3a5c6e7';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=3a5c6e7';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=3a5c6e7';
-import { BUILD } from '../version.js?v=3a5c6e7';
-import { METERS } from '../zmeter.js?v=3a5c6e7';
+import { ARTSETS, texKey } from '../data/artsets.js?v=a33f228';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=a33f228';
+import { testParams, DRAWN } from '../data/levels.js?v=a33f228';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=a33f228';
+import { CHARACTERS } from '../data/characters.js?v=a33f228';
+import { state } from '../state.js?v=a33f228';
+import { COLORS, heading, text } from '../theme.js?v=a33f228';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=a33f228';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=a33f228';
+import { BUILD } from '../version.js?v=a33f228';
+import { METERS } from '../zmeter.js?v=a33f228';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -95,6 +95,10 @@ export class BootScene extends Phaser.Scene {
     this.load.json('zbar', 'assets/hud/zbar.json');
     // A Z-bolt on its own, cut from Chris's bar (the Z meter rooms' prize and pickup).
     this.load.image('zbolt', 'assets/hud/zbolt.png');
+    // Chris's sparkle (the Unicorpions' food; Unity's rings room collects them).
+    this.load.image('good-vibe', 'assets/food/good_vibe.png');
+    // A rings room's picture (tools/make_crystal_heart.py).
+    Object.values(BONUS_ROOMS).forEach((r) => r.ringMaze && this.load.image(r.ringMaze.picture, r.ringMaze.pictureFile));
     // The bonus rooms' Z meters (zmeter.js): each Zebonky's pieces, cut
     // from Chris's art by tools/zmeter/make_pieces.py.
     Object.entries(METERS).forEach(([name, m]) => m.pieces.forEach((p) => this.load.image(`zmeter-${name}-${p}`, `assets/hud/zmeter/${name}/${p}.png`)));

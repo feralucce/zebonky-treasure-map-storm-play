@@ -76,6 +76,20 @@ export const METERS = {
       '#2a1d22', '#140d10', '#ffffff', '#fff2a8'].map(hex),
     ramp: ['#c41e14', '#e0301e', '#f2541c', '#ff8a1e', '#ffb43a', '#ffd96a', '#fff2a8'].map(hex),
   },
+  // Unity's (the user's pick, 2026-11-17: take A, Starry Mane): her white
+  // coat as the frame with her mane's blue, violet and pink swept along the
+  // top, a violet ring round a starlit disc, and a violet to starlight
+  // charge. Her idle frames in the emblem, Chris's sparkle (her food) at the
+  // edge, Crystal Caverns crystals on the line.
+  unity: {
+    pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_crystal_small_a', 'pt_crystal_group_c', 'pt_crystal_small_b', 'pt_crystal_medium_b'],
+    frames: ['ball0', 'ball1', 'ball2', 'ball3'],
+    dressing: [['pt_crystal_small_a', 98], ['pt_crystal_group_c', 122], ['pt_crystal_small_b', 152], ['pt_crystal_medium_b', 176]],
+    frame: unityFrameSVG,
+    pal: ['#1b1a2e', '#f4f1fb', '#d9d1ee', '#b9b0d6', '#3c5bd8', '#7d5be6', '#c46ad8', '#fff6dc', '#9a86e8', '#3a2a86',
+      '#1d1838', '#0e0b1f', '#ffffff', '#fff4dc', '#5e4bb8'].map(hex),
+    ramp: ['#3a1fb0', '#4b2bd6', '#7a55f0', '#a77bff', '#d0b4ff', '#f3e6ff', '#fff4dc'].map(hex),
+  },
 };
 const HOT = [hex('#ffffff'), hex('#fffbe0'), hex('#bff8ff'), hex('#fff27a')];
 const SPARK_COLS = ['#ffe600', '#5ee6a0', '#ffffff', '#fff27a', '#8ff6ff'].map(hex);
@@ -205,6 +219,27 @@ function charlieFrameSVG() {
   [[-9, 12], [-3, 9], [3, 7]].forEach(([dy, len], k) => {
     s += `<rect x="${RC.x - 27 + k * 2}" y="${RC.y + dy}" width="${len}" height="1" fill="${k ? '#fff2a8' : '#ffffff'}"/>`;
   });
+  return svg(s);
+}
+
+// Unity's frame and emblem: take A, Starry Mane.
+function unityFrameSVG() {
+  let s = `<defs>
+    <radialGradient id="disc" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#fff6dc"/><stop offset="0.6" stop-color="#9a86e8"/><stop offset="1" stop-color="#3a2a86"/></radialGradient>
+    <linearGradient id="empty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d1838"/><stop offset="1" stop-color="#0e0b1f"/></linearGradient>
+  </defs>`;
+  s += `<rect x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="${pillR + O}" fill="#f4f1fb" stroke="#1b1a2e" stroke-width="2"/>`;
+  // her mane's colours swept along the top, like hair
+  [['#3c5bd8', 1.5], ['#7d5be6', 3], ['#c46ad8', 4.5]].forEach(([c, dy]) => {
+    let d = `M${FR.x + 22},${FR.y + dy}`;
+    for (let x = FR.x + 22; x < FR.x + FR.w - 26; x += 16) d += ` q4,-1.6 8,0 q4,1.6 8,0`;
+    s += `<path d="${d}" fill="none" stroke="${c}" stroke-width="1.2"/>`;
+  });
+  s += `<rect x="${FR.x + 22}" y="${FR.y + FR.h - 3}" width="${FR.w - 48}" height="1" fill="#d9d1ee"/>`;
+  s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#f4f1fb" stroke="#1b1a2e" stroke-width="2.5"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${(RC.r + RC.disc) / 2}" fill="none" stroke="#7d5be6" stroke-width="2"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
   return svg(s);
 }
 

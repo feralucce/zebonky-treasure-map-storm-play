@@ -39,10 +39,11 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=3a5c6e7';
-import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=3a5c6e7';
-import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=3a5c6e7';
-import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=3a5c6e7';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=a33f228';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=a33f228';
+import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=a33f228';
+import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=a33f228';
+import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=a33f228';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
@@ -548,5 +549,8 @@ BONUS_ROOMS['cumulus-circuits'] = CUMULUS_CIRCUITS;
 // bonus/chase.js), made by tools/make_bananalope_chase.py. Not in a level's
 // slot yet.
 BONUS_ROOMS['bananalope-chase'] = BANANALOPE_CHASE;
+// Unity's Crystal Heart (Chris's idea): a ring-maze room (`ringMaze`, bonus/rings.js),
+// made by tools/make_crystal_heart.py. Not in a level's slot yet.
+BONUS_ROOMS['crystal-heart'] = CRYSTAL_HEART;
 
 export const bonusRoomFor = (levelId) => BONUS_ROOMS[levelId] || null;
