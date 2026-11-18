@@ -11,9 +11,9 @@
 // the pool, swim, tread water, swim, hop out, run, idle; then it starts
 // over. Her frames are the new rig strips (assets/player/explorer_walk_v2/).
 
-import { TILE, DRAWN } from './data/levels.js?v=fe9db25';
-import { text } from './theme.js?v=fe9db25';
-import { GRASS_SINK } from './actors.js?v=fe9db25';
+import { TILE, DRAWN } from './data/levels.js?v=fba9837';
+import { text } from './theme.js?v=fba9837';
+import { GRASS_SINK } from './actors.js?v=fba9837';
 
 export const TOUR_WHO = [
   { key: 'girl', who: 'Girl' },

@@ -10,7 +10,7 @@
 //   After each throw he dives, fetches the next puff from the floor by
 //   himself (its kind chosen for him) and comes back to the spot.
 // - Four kinds, each a tint with its own picture. A thrown puff sticks
-//   where it meets the field; six or more of a kind connected break. Puffs
+//   where it meets the field; five or more of a kind connected break. Puffs
 //   left with nothing holding them up fall into the water (a match on a
 //   dangling bit drops the whole bit).
 // - Every puff broken or fallen charges the Z meter. A press of the power
@@ -23,18 +23,19 @@
 //   scored. One field per bonus level. Clear it and he leaves the pool and
 //   walks along the shore to the portal, off screen till then.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fe9db25';
-import { MAP_W, MAP_H } from '../data/world.js?v=fe9db25';
-import { tierInfo, clock } from '../paws.js?v=fe9db25';
-import { play } from '../actors.js?v=fe9db25';
-import { audio } from '../audio.js?v=fe9db25';
-import { COLORS, heading, text } from '../theme.js?v=fe9db25';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
+import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
+import { tierInfo, clock } from '../paws.js?v=fba9837';
+import { play } from '../actors.js?v=fba9837';
+import { audio } from '../audio.js?v=fba9837';
+import { COLORS, heading, text } from '../theme.js?v=fba9837';
 
-const MATCH = 6;                      // this many connected break (the user)
+const MATCH = 5;                      // this many connected break (the user; 6 until 2026-11-18)
 const PER_PUFF = 1 / 10;              // meter charge for each puff broken or fallen (provisional)
 const THROW_SPEED = 20;               // px a step
 const AIM_TURN = 0.03;                // radians a step the arrows swing the aim
-const AIM_MAX = 1.25;                 // about 72 degrees either side of straight up
+const AIM_MAX = 1.45;                 // about 83 degrees either side of straight up (72 until the
+                                      // user, 2026-11-18: "need to be able to aim farther down")
 const FETCH_MS = 420;                 // down to the floor, and the same back up
 // He throws from his tail (the user, 2026-11-17): the held puff rides its
 // tip, behind him and a little up. Offsets from his middle, facing right.
@@ -243,7 +244,8 @@ export function predict(scene, aim, from = origin(scene)) {
   let [x, y] = from;
   let vx = Math.sin(aim) * 6, vy = -Math.cos(aim) * 6;
   const pts = [];
-  for (let i = 0; i < 400; i++) {
+  // a near-flat aim climbs slowly, so the path gets room to reach the field
+  for (let i = 0; i < 1600; i++) {
     x += vx; y += vy;
     if (x < w0) { x = 2 * w0 - x; vx = -vx; }
     if (x > w1) { x = 2 * w1 - x; vx = -vx; }

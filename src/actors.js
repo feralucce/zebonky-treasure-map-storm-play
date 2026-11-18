@@ -12,8 +12,8 @@
 // take too (walking, jumping, dropping, swimming, doors), leading the way. At the last waiting point it waits for the player once more and
 // reveals the exit door.
 
-import { TILE } from './data/levels.js?v=fe9db25';
-import { texKey } from './data/artsets.js?v=fe9db25';
+import { TILE } from './data/levels.js?v=fba9837';
+import { texKey } from './data/artsets.js?v=fba9837';
 
 // Zebonky art comes from the level's art set, or this one when the level
 // has none (the rainforest set is the only one with a Zebonky so far).
