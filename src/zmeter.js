@@ -90,6 +90,19 @@ export const METERS = {
       '#1d1838', '#0e0b1f', '#ffffff', '#fff4dc', '#5e4bb8'].map(hex),
     ramp: ['#3a1fb0', '#4b2bd6', '#7a55f0', '#a77bff', '#d0b4ff', '#f3e6ff', '#fff4dc'].map(hex),
   },
+  // Sofia's (the user's pick, 2026-11-17: "c, but with b's energy bar"):
+  // take C's cracked stone frame with ground waves under it and cracks
+  // round the ring, and take B's leaf-green to gold charge. Her idle frames,
+  // her haycorn at the edge, Squvannahs grass and plants on the line.
+  sofia: {
+    pieces: ['ball0', 'ball1', 'ball2', 'ball3', 'berry', 'pt_grass_tuft_a', 'pt_spiky_plant_b', 'pt_grass_tuft_b', 'pt_bush_small'],
+    frames: ['ball0', 'ball1', 'ball2', 'ball3'],
+    dressing: [['pt_grass_tuft_a', 98], ['pt_spiky_plant_b', 124], ['pt_grass_tuft_b', 152], ['pt_bush_small', 176]],
+    frame: sofiaFrameSVG,
+    pal: ['#1b1a2e', '#8c8278', '#a89e94', '#6e655d', '#4a4038', '#f0c060', '#fff0d0', '#c89a6a', '#5a3e28',
+      '#1f2414', '#0f130a', '#ffffff', '#fff6c0'].map(hex),
+    ramp: ['#3a7a20', '#4f9a2c', '#8cc036', '#c8d840', '#e8e070', '#fff6c0', '#fffbe0'].map(hex),
+  },
 };
 const HOT = [hex('#ffffff'), hex('#fffbe0'), hex('#bff8ff'), hex('#fff27a')];
 const SPARK_COLS = ['#ffe600', '#5ee6a0', '#ffffff', '#fff27a', '#8ff6ff'].map(hex);
@@ -239,6 +252,37 @@ function unityFrameSVG() {
   s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
   s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#f4f1fb" stroke="#1b1a2e" stroke-width="2.5"/>`;
   s += `<circle cx="${RC.x}" cy="${RC.y}" r="${(RC.r + RC.disc) / 2}" fill="none" stroke="#7d5be6" stroke-width="2"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
+  return svg(s);
+}
+
+// Sofia's frame and emblem: take C, Quake Stone (cracked stone, ground
+// waves under it, cracks round the ring).
+function sofiaFrameSVG() {
+  let s = `<defs>
+    <radialGradient id="disc" cx="0.5" cy="0.42" r="0.6"><stop offset="0" stop-color="#fff0d0"/><stop offset="0.6" stop-color="#c89a6a"/><stop offset="1" stop-color="#5a3e28"/></radialGradient>
+    <linearGradient id="empty" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1f2414"/><stop offset="1" stop-color="#0f130a"/></linearGradient>
+  </defs>`;
+  // ground waves under the frame
+  [0, 1].forEach((k) => {
+    let d = `M${FR.x + 24},${FR.y + FR.h + 4 + k * 4}`;
+    for (let x = FR.x + 24; x < FR.x + FR.w - 24; x += 12) d += ` q3,-2 6,0 q3,2 6,0`;
+    s += `<path d="${d}" fill="none" stroke="#f0c060" stroke-width="${k ? 0.8 : 1.3}"/>`;
+  });
+  s += `<rect x="${FR.x}" y="${FR.y}" width="${FR.w}" height="${FR.h}" rx="${pillR + O}" fill="#8c8278" stroke="#1b1a2e" stroke-width="2"/>`;
+  s += `<rect x="${FR.x + 22}" y="${FR.y + FR.h - 3}" width="${FR.w - 48}" height="1" fill="#6e655d"/>`;
+  // a crack running along the stone's top
+  let c = `M${FR.x + 22},${FR.y + 3}`;
+  for (let x = FR.x + 22; x < FR.x + FR.w - 30; x += 15) c += ` l5,2 l4,-2 l6,1`;
+  s += `<path d="${c}" fill="none" stroke="#4a4038" stroke-width="1"/>`;
+  s += `<rect x="${BAR.x0}" y="${BAR.y0}" width="${BAR.x1 - BAR.x0}" height="${BAR.y1 - BAR.y0}" rx="${pillR}" fill="url(#empty)"/>`;
+  s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.r}" fill="#8c8278" stroke="#1b1a2e" stroke-width="2.5"/>`;
+  // cracks round the ring
+  for (let k = 0; k < 6; k++) {
+    const a = k * Math.PI / 3 + 0.3;
+    const p = (r, da) => `${RC.x + Math.cos(a + da) * r},${RC.y + Math.sin(a + da) * r}`;
+    s += `<polyline points="${p(RC.disc + 1, 0)} ${p(RC.disc + 5, 0.08)} ${p(RC.r - 1, -0.04)}" fill="none" stroke="#4a4038" stroke-width="1"/>`;
+  }
   s += `<circle cx="${RC.x}" cy="${RC.y}" r="${RC.disc}" fill="url(#disc)" stroke="#1b1a2e" stroke-width="2"/>`;
   return svg(s);
 }

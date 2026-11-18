@@ -20,12 +20,12 @@
 //   silver at 60%, bronze for finishing. Time isn't scored.
 // - Fall through a gap and he's put back on the last ground he stood on.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=a33f228';
-import { texKey } from '../data/artsets.js?v=a33f228';
-import { MAP_W, MAP_H } from '../data/world.js?v=a33f228';
-import { tierInfo } from '../paws.js?v=a33f228';
-import { audio } from '../audio.js?v=a33f228';
-import { COLORS, heading, text } from '../theme.js?v=a33f228';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=95178c7';
+import { texKey } from '../data/artsets.js?v=95178c7';
+import { MAP_W, MAP_H } from '../data/world.js?v=95178c7';
+import { tierInfo } from '../paws.js?v=95178c7';
+import { audio } from '../audio.js?v=95178c7';
+import { COLORS, heading, text } from '../theme.js?v=95178c7';
 
 export const BERRIES_PER_SEGMENT = 8;     // provisional (the user didn't change it)
 const CHARGE_MS = 1200;                   // hold this long for a full charge

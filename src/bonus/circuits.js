@@ -16,12 +16,12 @@
 // - Then he hops off the board and along the ground to the portal, off
 //   screen till then (as in Axel's room).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=a33f228';
-import { MAP_W, MAP_H } from '../data/world.js?v=a33f228';
-import { tierInfo, clock } from '../paws.js?v=a33f228';
-import { play } from '../actors.js?v=a33f228';
-import { audio } from '../audio.js?v=a33f228';
-import { COLORS, heading, text } from '../theme.js?v=a33f228';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=95178c7';
+import { MAP_W, MAP_H } from '../data/world.js?v=95178c7';
+import { tierInfo, clock } from '../paws.js?v=95178c7';
+import { play } from '../actors.js?v=95178c7';
+import { audio } from '../audio.js?v=95178c7';
+import { COLORS, heading, text } from '../theme.js?v=95178c7';
 
 const N = 1, E = 2, S = 4, W = 8;
 const DIRS = [[N, 0, -1], [E, 1, 0], [S, 0, 1], [W, -1, 0]];

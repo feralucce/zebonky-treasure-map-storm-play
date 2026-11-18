@@ -22,19 +22,20 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=a33f228';
-import { texKey } from '../data/artsets.js?v=a33f228';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=a33f228';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=a33f228';
-import { addPortalWarp } from '../portalWarp.js?v=a33f228';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=a33f228';
-import { audio } from '../audio.js?v=a33f228';
-import { COLORS, heading, text } from '../theme.js?v=a33f228';
-import * as zpower from '../bonus/zpower.js?v=a33f228';
-import * as foam from '../bonus/foam.js?v=a33f228';
-import * as circuits from '../bonus/circuits.js?v=a33f228';
-import * as chase from '../bonus/chase.js?v=a33f228';
-import * as rings from '../bonus/rings.js?v=a33f228';
+import { MAP_W, MAP_H } from '../data/world.js?v=95178c7';
+import { texKey } from '../data/artsets.js?v=95178c7';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=95178c7';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=95178c7';
+import { addPortalWarp } from '../portalWarp.js?v=95178c7';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=95178c7';
+import { audio } from '../audio.js?v=95178c7';
+import { COLORS, heading, text } from '../theme.js?v=95178c7';
+import * as zpower from '../bonus/zpower.js?v=95178c7';
+import * as foam from '../bonus/foam.js?v=95178c7';
+import * as circuits from '../bonus/circuits.js?v=95178c7';
+import * as chase from '../bonus/chase.js?v=95178c7';
+import * as rings from '../bonus/rings.js?v=95178c7';
+import * as terraces from '../bonus/terraces.js?v=95178c7';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -274,12 +275,13 @@ export class BonusRoomScene extends Phaser.Scene {
     this.waiting = !!this.room && !!this.room.runner && !data.quick;
     // A Z meter room's rules: Shaan's (bonus/zpower.js) or a foam room's
     // (bonus/foam.js, Axel's). Both answer the same hooks.
-    this.power = !this.room ? null : this.room.ringMaze ? rings : this.room.chase ? chase : this.room.circuits ? circuits : this.room.foam ? foam : this.room.zmeter ? zpower : null;
+    this.power = !this.room ? null : this.room.terraces ? terraces : this.room.ringMaze ? rings : this.room.chase ? chase : this.room.circuits ? circuits : this.room.foam ? foam : this.room.zmeter ? zpower : null;
     zpower.reset(this);
     foam.reset(this);
     circuits.reset(this);
     chase.reset(this);
     rings.reset(this);
+    terraces.reset(this);
   }
 
   create() {

@@ -11,7 +11,7 @@
 // Everything comes out at game size (the guides are 2x) in pieces narrow
 // enough for any graphics card.
 
-import { backgroundGuide, svgToImage, ART_SCALE } from './guides.js?v=a33f228';
+import { backgroundGuide, svgToImage, ART_SCALE } from './guides.js?v=95178c7';
 
 const PIECE = 1024;        // game px per dressing piece
 const canvas = (w, h) => Object.assign(document.createElement('canvas'), { width: w, height: h });
