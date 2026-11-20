@@ -1,14 +1,14 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=7b2df1b';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=7b2df1b';
-import { testParams, DRAWN } from '../data/levels.js?v=7b2df1b';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { CHARACTERS } from '../data/characters.js?v=7b2df1b';
-import { state } from '../state.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=7b2df1b';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=7b2df1b';
-import { BUILD } from '../version.js?v=7b2df1b';
-import { METERS } from '../zmeter.js?v=7b2df1b';
+import { ARTSETS, texKey } from '../data/artsets.js?v=4607924';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=4607924';
+import { testParams, DRAWN } from '../data/levels.js?v=4607924';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { CHARACTERS } from '../data/characters.js?v=4607924';
+import { state } from '../state.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=4607924';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=4607924';
+import { BUILD } from '../version.js?v=4607924';
+import { METERS } from '../zmeter.js?v=4607924';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -87,7 +87,7 @@ export class BootScene extends Phaser.Scene {
     // On-screen touch buttons: Kenney's Mobile Controls, Style H (CC0),
     // made by tools/make_touch_buttons.py (2026-11-20; the old cream/green
     // SVGs are still in assets/svg). White icons, so a tint colours them.
-    ['btn-left', 'btn-right', 'btn-jump', 'btn-power', 'btn-round']
+    ['btn-jump', 'btn-power', 'btn-round', 'dpad-up', 'dpad-down', 'dpad-left', 'dpad-right']
       .forEach((key) => this.load.image(key, `assets/ui/touch/${key}.png`));
 
     // Shared game sprites cut from the Zebonky reference kit.

@@ -18,14 +18,14 @@
 //   everything drops, making room.
 // - It ends when a clump can't be tossed. The medal is for terraces planted.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { texKey } from '../data/artsets.js?v=7b2df1b';
-import { tierInfo, clock } from '../paws.js?v=7b2df1b';
-import { play, FEET_ROW } from '../actors.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { texKey } from '../data/artsets.js?v=4607924';
+import { tierInfo, clock } from '../paws.js?v=4607924';
+import { play, FEET_ROW } from '../actors.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
 
 export const owns = true;
 
@@ -196,10 +196,7 @@ export function buildHud(scene) {
   tr.timeText = box(MAP_W - 176, 'TIME');
   // touch: a drop button over left and right (held), and a Z Quake button
   const y = MAP_H - 80;
-  const down = scene.add.image(135, y - 110, 'btn-jump').setScale(0.7).setFlipY(true).setScrollFactor(0).setAlpha(0.75).setDepth(20).setInteractive();
-  down.on('pointerdown', () => { tr.touchDown = true; down.setAlpha(1); });
-  const up = () => { tr.touchDown = false; down.setAlpha(0.75); };
-  down.on('pointerup', up); down.on('pointerout', up);
+  // (dropping is the scene's D-pad down: scene.touch.down)
   tr.btn = scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xf0c060).setScrollFactor(0).setDepth(20).setInteractive();
   tr.btn.on('pointerdown', () => tr.queue.push('quake'));
   tr.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
@@ -256,7 +253,7 @@ export function step(scene) {
   const h = a ? 0 : (k.RIGHT.isDown || k.D.isDown || scene.touch.right ? 1 : 0) - (k.LEFT.isDown || k.A.isDown || scene.touch.left ? 1 : 0);
   tr.moveRep -= dt;
   if (h && tr.moveRep <= 0) { move(tr, h, 0); tr.moveRep = 0.08; }
-  const soft = a ? a.soft : (k.DOWN.isDown || k.S.isDown || tr.touchDown);
+  const soft = a ? a.soft : (k.DOWN.isDown || k.S.isDown || scene.touch.down);
   tr.dropT += dt;
   if (tr.dropT >= (soft ? d.soft : d.drop)) { tr.dropT = 0; if (!move(tr, 0, 1)) land(scene); }
   tr.tossT -= dt; tr.quakeT -= dt;

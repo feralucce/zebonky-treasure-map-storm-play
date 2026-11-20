@@ -23,13 +23,13 @@
 //   scored. One field per bonus level. Clear it and he leaves the pool and
 //   walks along the shore to the portal, off screen till then.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { tierInfo, clock } from '../paws.js?v=7b2df1b';
-import { play } from '../actors.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { tierInfo, clock } from '../paws.js?v=4607924';
+import { play } from '../actors.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
 
 const MATCH = 5;                      // this many connected break (the user; 6 until 2026-11-18)
 const PER_PUFF = 1 / 10;              // meter charge for each puff broken or fallen (provisional)

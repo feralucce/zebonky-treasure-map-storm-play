@@ -22,21 +22,23 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { texKey } from '../data/artsets.js?v=7b2df1b';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=7b2df1b';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=7b2df1b';
-import { addPortalWarp } from '../portalWarp.js?v=7b2df1b';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
-import * as zpower from '../bonus/zpower.js?v=7b2df1b';
-import * as foam from '../bonus/foam.js?v=7b2df1b';
-import * as circuits from '../bonus/circuits.js?v=7b2df1b';
-import * as chase from '../bonus/chase.js?v=7b2df1b';
-import * as rings from '../bonus/rings.js?v=7b2df1b';
-import * as terraces from '../bonus/terraces.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { texKey } from '../data/artsets.js?v=4607924';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=4607924';
+import { introFor } from '../data/phoneIntros.js?v=4607924';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=4607924';
+import { addPortalWarp } from '../portalWarp.js?v=4607924';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { buildDpad } from '../dpad.js?v=4607924';
+import * as zpower from '../bonus/zpower.js?v=4607924';
+import * as foam from '../bonus/foam.js?v=4607924';
+import * as circuits from '../bonus/circuits.js?v=4607924';
+import * as chase from '../bonus/chase.js?v=4607924';
+import * as rings from '../bonus/rings.js?v=4607924';
+import * as terraces from '../bonus/terraces.js?v=4607924';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -244,7 +246,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.room = bonusRoomFor(this.levelId);
     this.leaving = false;
     this.finished = false;
-    this.touch = { left: false, right: false, jump: false, down: false, blast: false };
+    this.touch = { left: false, right: false, up: false, down: false, jump: false, blast: false };
     this.wet = false;
     this.groundAt = 0;
     this.movedAt = 0;
@@ -259,6 +261,7 @@ export class BonusRoomScene extends Phaser.Scene {
     this.dashAsked = 0;
     this.tapAt = { 1: -1e9, '-1': -1e9 };
     this.tapped = 0;
+    this.tappedV = 0;   // the D-pad's up (-1) or down (1), for rooms that hop
     this.geyserRide = false;
     this.jumping = false;
     this.touchDoor = false;
@@ -1228,7 +1231,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
         })).setScrollFactor(0).setDepth(21);
       }
       if (this.retry || this.inspect) return;
-      const say0 = this.add.text(MAP_W / 2, MAP_H / 2 - 120, this.room.intro, heading(40, COLORS.yellowCss, {
+      const say0 = this.add.text(MAP_W / 2, MAP_H / 2 - 120, introFor(this.levelId, this.room), heading(40, COLORS.yellowCss, {
         stroke: COLORS.inkCss, strokeThickness: 10, align: 'center',
       })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
       this.tweens.add({ targets: say0, alpha: 0, delay: 2600, duration: 500, onComplete: () => say0.destroy() });
@@ -1260,7 +1263,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     if (this.room.runner && !this.inspect) { this.countdown(); return; }
     if (this.retry) return;
     // What to do, for a moment.
-    const say = this.add.text(MAP_W / 2, MAP_H / 2 - 120, this.room.intro || 'Roll Shaan to the door!\nMind the gaps.', heading(40, COLORS.yellowCss, {
+    const say = this.add.text(MAP_W / 2, MAP_H / 2 - 120, introFor(this.levelId, this.room) || 'Roll Shaan to the door!\nMind the gaps.', heading(40, COLORS.yellowCss, {
       stroke: COLORS.inkCss, strokeThickness: 10, align: 'center',
     })).setOrigin(0.5).setScrollFactor(0).setDepth(21);
     this.tweens.add({ targets: say, alpha: 0, delay: 2600, duration: 500, onComplete: () => say.destroy() });
@@ -1274,7 +1277,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const big = (msg, color = COLORS.yellowCss) => this.add.text(MAP_W / 2, MAP_H / 2 - 90, msg, heading(96, color, {
       stroke: COLORS.inkCss, strokeThickness: 14,
     })).setOrigin(0.5).setScrollFactor(0).setDepth(22);
-    const how = this.add.text(MAP_W / 2, MAP_H / 2 + 30, this.room.intro || '', heading(30, '#ffffff', {
+    const how = this.add.text(MAP_W / 2, MAP_H / 2 + 30, introFor(this.levelId, this.room), heading(30, '#ffffff', {
       stroke: COLORS.inkCss, strokeThickness: 8, align: 'center',
     })).setOrigin(0.5).setScrollFactor(0).setDepth(22);
     this.intro = how;
@@ -1310,17 +1313,21 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       img.on('pointerup', up);
       img.on('pointerout', up);
     };
-    hold(this.add.image(80, y, 'btn-left'), 'left');
-    hold(this.add.image(190, y, 'btn-right'), 'right');
+    // The + D-pad (2026-11-20): left and right as the old buttons were;
+    // up jumps (as the Up key does) and goes in at the door, down swims
+    // down. Rooms with their own controls read up and down themselves.
+    buildDpad(this, (d) => {
+      if (d === 'left' || d === 'right') this.tapped = d === 'right' ? 1 : -1;
+      if (d === 'up' || d === 'down') this.tappedV = d === 'down' ? 1 : -1;
+      if (d === 'up') {
+        this.touchDoor = true;
+        if (!(this.power && this.power.owns)) this.touchJump = true;
+      }
+    });
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
-    // In water only: swim down (the jump button swims up).
-    this.btnDown = this.add.image(MAP_W - 210, y, 'btn-jump').setFlipY(true).setVisible(false);
-    hold(this.btnDown, 'down');
     const keyLabel = (x, label) => TOUCH_ONLY ? null : this.add.text(x, y + 50, label, text(16, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
     })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
-    keyLabel(80, '← or A');
-    keyLabel(190, '→ or D');
     keyLabel(MAP_W - 90, 'Z · J · Space');
     // Shown only at the door, as in the levels: Up (or this) goes in.
     this.btnDoor = this.add.image(MAP_W - 90, y - 120, 'btn-jump').setScale(0.8).setTint(0xffc93c)
@@ -1378,7 +1385,8 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
       this.tapAt[tap] = time;
     }
     this.dashTrail(time);
-    this.jumpHeld = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump;
+    this.jumpHeld = [k.SPACE, k.Z, k.J, k.UP, k.W].some((key) => key.isDown) || this.touch.jump
+      || (this.touch.up && !(this.power && this.power.owns));
     // Up and down, for swimming: up is the jump keys too.
     this.vert = (k.DOWN.isDown || k.S.isDown || this.touch.down ? 1 : 0) - (this.jumpHeld ? 1 : 0);
     const grounded = this.grounded;
@@ -1406,7 +1414,6 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     const speed = Math.hypot(b.velocity.x, b.velocity.y);
     if (speed > 0.8 || !grounded) this.movedAt = time;
     if (Math.abs(b.velocity.x) > 0.4) s.setFlipX(b.velocity.x > 0);
-    this.btnDown.setVisible(this.wet);
     if (this.wet && this.art.z.anims.dive) {
       // In water he's a shark: his dive strip, tilted the way he swims.
       play(s, this.art, 'dive');

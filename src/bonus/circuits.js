@@ -16,13 +16,13 @@
 // - Then he hops off the board and along the ground to the portal, off
 //   screen till then (as in Axel's room).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { tierInfo, clock } from '../paws.js?v=7b2df1b';
-import { play } from '../actors.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { tierInfo, clock } from '../paws.js?v=4607924';
+import { play } from '../actors.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
 
 const N = 1, E = 2, S = 4, W = 8;
 const DIRS = [[N, 0, -1], [E, 1, 0], [S, 0, 1], [W, -1, 0]];
@@ -208,9 +208,7 @@ export function buildHud(scene) {
     img.on('pointerout', () => img.setAlpha(0.75));
     return img;
   };
-  // (stacked over the left and right buttons: beside them they sat on the board)
-  tap(scene.add.image(135, y - 190, 'btn-jump').setScale(0.7), 'up');
-  tap(scene.add.image(135, y - 110, 'btn-jump').setScale(0.7).setFlipY(true), 'down');
+  // (up and down are the scene's D-pad, read in step as scene.tappedV)
   cm.btn = tap(scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xffc93c), 'power');
   cm.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
@@ -258,6 +256,7 @@ export function step(scene, time) {
   // the touch buttons the scene already has: left, right, jump (spin)
   if (scene.touchJump) { cm.queue.push('spin'); scene.touchJump = false; }
   if (scene.tapped) { cm.queue.push(scene.tapped > 0 ? 'right' : 'left'); scene.tapped = 0; }
+  if (scene.tappedV) { cm.queue.push(scene.tappedV > 0 ? 'down' : 'up'); scene.tappedV = 0; }
   scene.jumpAsked = false;
   if (cm.ended) return;
   cm.timeLeft = Math.max(0, cm.timeLeft - 1 / 60);

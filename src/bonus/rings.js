@@ -21,14 +21,14 @@
 //   open, and reaching the pad at the heart's foot ends the run. The medal
 //   is for time (provisional numbers).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { texKey } from '../data/artsets.js?v=7b2df1b';
-import { tierInfo, clock } from '../paws.js?v=7b2df1b';
-import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { texKey } from '../data/artsets.js?v=4607924';
+import { tierInfo, clock } from '../paws.js?v=4607924';
+import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
 
 export const owns = true;
 
@@ -337,8 +337,7 @@ export function buildHud(scene) {
     img.on('pointerup', off); img.on('pointerout', off);
     return img;
   };
-  hold(scene.add.image(135, y - 190, 'btn-jump').setScale(0.7), 'up');
-  hold(scene.add.image(135, y - 110, 'btn-jump').setScale(0.7).setFlipY(true), 'down');
+  // (up and down are the scene's D-pad: scene.touch.up / down)
   rg.btn = hold(scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xb48cff), 'light');
   rg.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
@@ -367,7 +366,7 @@ export function step(scene) {
   const a = rg.auto;
   const input = a ? a.dir : [
     (k.RIGHT.isDown || k.D.isDown || scene.touch.right ? 1 : 0) - (k.LEFT.isDown || k.A.isDown || scene.touch.left ? 1 : 0),
-    (k.DOWN.isDown || k.S.isDown || rg.touch.down ? 1 : 0) - (k.UP.isDown || k.W.isDown || rg.touch.up ? 1 : 0),
+    (k.DOWN.isDown || k.S.isDown || scene.touch.down ? 1 : 0) - (k.UP.isDown || k.W.isDown || scene.touch.up ? 1 : 0),
   ];
   const lightHeld = a ? a.light : (k.X.isDown || k.K.isDown || k.F.isDown || k.SPACE.isDown || k.Z.isDown || k.J.isDown
     || rg.touch.light || scene.touch.jump);

@@ -23,13 +23,13 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { texKey } from '../data/artsets.js?v=7b2df1b';
-import { tierInfo, clock } from '../paws.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { texKey } from '../data/artsets.js?v=4607924';
+import { tierInfo, clock } from '../paws.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)
@@ -313,7 +313,7 @@ export function step(scene, time, dir) {
   const k = scene.keys;
   const a = ch.auto;
   const steer = a ? a.steer : dir;
-  const go = a ? a.go : (k.UP.isDown || k.W.isDown || ch.touchGo);
+  const go = a ? a.go : (k.UP.isDown || k.W.isDown || ch.touchGo || !!scene.touch.up);
   const touchJ = !!scene.touch.jump;
   const jumpPress = a ? a.jump : (ch.jumpQ || (touchJ && !ch.touchWas));
   ch.touchWas = touchJ;

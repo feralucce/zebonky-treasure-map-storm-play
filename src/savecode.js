@@ -20,10 +20,10 @@
 // reordered), or when more is packed in (the shop): old links then say so
 // instead of loading the wrong levels.
 
-import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=7b2df1b';
-import { state, pathKey } from './state.js?v=7b2df1b';
-import { bankFor, questionKey } from './data/questions.js?v=7b2df1b';
-import { LETTERS, FLAG_KEYS } from './paws.js?v=7b2df1b';
+import { LEVELS, PATHS, START_NODE, PLAY_BIOMES } from './data/world.js?v=4607924';
+import { state, pathKey } from './state.js?v=4607924';
+import { bankFor, questionKey } from './data/questions.js?v=4607924';
+import { LETTERS, FLAG_KEYS } from './paws.js?v=4607924';
 
 // 3 added the answered questions; 4 the currency and its level rewards
 // (the user, 2026-10-30); 5 Z paw prints in their place (2026-11-05: no

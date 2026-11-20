@@ -39,12 +39,12 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=7b2df1b';
-import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=7b2df1b';
-import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=7b2df1b';
-import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=7b2df1b';
-import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=7b2df1b';
-import { TERRACE_GARDEN } from './rooms/terraceGarden.js?v=7b2df1b';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=4607924';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=4607924';
+import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=4607924';
+import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=4607924';
+import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=4607924';
+import { TERRACE_GARDEN } from './rooms/terraceGarden.js?v=4607924';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {

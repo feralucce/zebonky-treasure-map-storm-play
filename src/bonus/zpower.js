@@ -20,13 +20,16 @@
 //   silver at 60%, bronze for finishing. Time isn't scored.
 // - Fall through a gap and he's put back on the last ground he stood on.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
-import { texKey } from '../data/artsets.js?v=7b2df1b';
-import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { tierInfo } from '../paws.js?v=7b2df1b';
-import { audio } from '../audio.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
+import { texKey } from '../data/artsets.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { tierInfo } from '../paws.js?v=4607924';
+import { audio } from '../audio.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
+
+// On a phone the blast is the star button (2026-11-20).
+const BLAST_HINT = TOUCH_ONLY ? 'Hold the star to blast!' : 'Hold X to blast!';
 
 export const BERRIES_PER_SEGMENT = 8;     // provisional (the user didn't change it)
 const CHARGE_MS = 1200;                   // hold this long for a full charge
@@ -198,7 +201,7 @@ function blocker(scene, set, bd, i, groundY) {
   }
   // A label over the reinforced ones: what they need.
   if (bd.kind !== 'cracked') {
-    b.tag = scene.add.text(x, y - h / 2 - 34, bd.kind === 'wall' ? 'Hold X to blast!' : 'Big blast!', heading(22, '#ffffff', {
+    b.tag = scene.add.text(x, y - h / 2 - 34, bd.kind === 'wall' ? BLAST_HINT : 'Big blast!', heading(22, '#ffffff', {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setDepth(8);
   }
@@ -272,7 +275,7 @@ export function collide(scene, pair) {
   const now = scene.time.now;
   if (now > zp.toldAt + 900) {
     zp.toldAt = now;
-    scene.floatText(bl.x, bl.y - bl.h / 2 - 30, bl.kind === 'cracked' ? 'Fill a segment!' : m.full ? 'Hold X to blast!' : 'Fill the Z meter!');
+    scene.floatText(bl.x, bl.y - bl.h / 2 - 30, bl.kind === 'cracked' ? 'Fill a segment!' : m.full ? BLAST_HINT : 'Fill the Z meter!');
   }
   const live = bl.popped.filter((s) => !s.got).length;
   const short = Math.ceil((need - m.fill) * BERRIES_PER_SEGMENT - 1e-6);

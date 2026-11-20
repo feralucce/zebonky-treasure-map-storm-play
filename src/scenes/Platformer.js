@@ -2,23 +2,24 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
-import { TILE, layoutFor } from '../data/levels.js?v=7b2df1b';
-import { state } from '../state.js?v=7b2df1b';
-import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
-import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=7b2df1b';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=7b2df1b';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=7b2df1b';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=7b2df1b';
-import { makeNav } from '../pathing.js?v=7b2df1b';
-import { startQuestionRun } from '../data/questions.js?v=7b2df1b';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=7b2df1b';
-import { Companion } from '../companion.js?v=7b2df1b';
-import { startShowcase } from '../showcase.js?v=7b2df1b';
-import { startExplorerTour } from '../explorerTour.js?v=7b2df1b';
-import { addPortalWarp } from '../portalWarp.js?v=7b2df1b';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=7b2df1b';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4607924';
+import { TILE, layoutFor } from '../data/levels.js?v=4607924';
+import { state } from '../state.js?v=4607924';
+import { COLORS, heading, text } from '../theme.js?v=4607924';
+import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { buildDpad } from '../dpad.js?v=4607924';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=4607924';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4607924';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4607924';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=4607924';
+import { makeNav } from '../pathing.js?v=4607924';
+import { startQuestionRun } from '../data/questions.js?v=4607924';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=4607924';
+import { Companion } from '../companion.js?v=4607924';
+import { startShowcase } from '../showcase.js?v=4607924';
+import { startExplorerTour } from '../explorerTour.js?v=4607924';
+import { addPortalWarp } from '../portalWarp.js?v=4607924';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=4607924';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -2677,8 +2678,12 @@ export class PlatformerScene extends Phaser.Scene {
       img.on('pointerup', up);
       img.on('pointerout', up);
     };
-    hold(this.add.image(80, y, 'btn-left'), 'left');
-    hold(this.add.image(190, y, 'btn-right'), 'right');
+    // The + D-pad (2026-11-20): Up goes in a hidden door, Down opens a
+    // crate or picks up, and both climb vines, as the keys do.
+    buildDpad(this, (d) => {
+      if (d === 'up') this.touchDoor = true;
+      if (d === 'down') this.touchGrab = true;
+    });
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
     // Toss food.
     const toss = this.add.image(MAP_W - 210, y, 'btn-round')
@@ -2692,8 +2697,6 @@ export class PlatformerScene extends Phaser.Scene {
     const keyLabel = (x, label) => TOUCH_ONLY ? null : this.add.text(x, y + 50, label, text(16, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
     })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
-    keyLabel(80, '← or A');
-    keyLabel(190, '→ or D');
     keyLabel(MAP_W - 210, 'X · K · F');
     keyLabel(MAP_W - 90, 'Z · J · Space');
     // Shown only while standing in a hidden door.
@@ -2938,8 +2941,8 @@ Zoom ${Math.round(this.cameras.main.zoom * 100)}%: mouse wheel, + and -, or the 
 
     const left = k.LEFT.isDown || k.A.isDown || this.touch.left;
     const right = k.RIGHT.isDown || k.D.isDown || this.touch.right;
-    const down = k.DOWN.isDown || k.S.isDown;
-    const up = k.UP.isDown || k.W.isDown;
+    const down = k.DOWN.isDown || k.S.isDown || !!this.touch.down;
+    const up = k.UP.isDown || k.W.isDown || !!this.touch.up;
     // Jump is Z, J or Space (or the touch button). Up is for hidden doors.
     const jumpHeld = k.SPACE.isDown || k.Z.isDown || k.J.isDown || this.touch.jump;
     const jumpPressed = [k.SPACE, k.Z, k.J].some((key) => Phaser.Input.Keyboard.JustDown(key));
