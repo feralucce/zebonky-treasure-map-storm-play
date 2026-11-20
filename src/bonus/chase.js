@@ -23,12 +23,13 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { texKey } from '../data/artsets.js?v=fba9837';
-import { tierInfo, clock } from '../paws.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { texKey } from '../data/artsets.js?v=7b2df1b';
+import { tierInfo, clock } from '../paws.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)
@@ -255,13 +256,13 @@ export function buildHud(scene) {
   ch.gapMe = scene.add.image(MAP_W / 2 - 160, 98, 'chase-charlie-back-1').setScale(0.2).setScrollFactor(0).setDepth(21);
   // touch: the power button (held to Hyper Dash); the jump button is go
   const y = MAP_H - 80;
-  ch.btn = scene.add.image(MAP_W - 210, y, 'btn-jump').setScale(0.8).setTint(0xff8a1e).setScrollFactor(0).setDepth(20).setAlpha(0.4).setInteractive();
+  ch.btn = scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xff8a1e).setScrollFactor(0).setDepth(20).setAlpha(0.65).setInteractive();
   ch.btn.on('pointerdown', () => { ch.touchBoost = true; });
   ch.btn.on('pointerup', () => { ch.touchBoost = false; });
   ch.btn.on('pointerout', () => { ch.touchBoost = false; });
   ch.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4).setVisible(!TOUCH_ONLY);
   // touch: a go button (held to run); the scene's jump button jumps
   const goBtn = scene.add.image(MAP_W - 330, y, 'btn-jump').setScale(0.8).setTint(0x7dff7a).setScrollFactor(0).setDepth(20).setAlpha(0.75).setInteractive();
   goBtn.on('pointerdown', () => { ch.touchGo = true; goBtn.setAlpha(1); });
@@ -270,7 +271,7 @@ export function buildHud(scene) {
   goBtn.on('pointerout', goUp);
   scene.add.text(MAP_W - 330, MAP_H - 30, '↑ · W', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setVisible(!TOUCH_ONLY);
   // 3, 2, 1, GO! after the intro
   const big = (msg, color) => scene.add.text(MAP_W / 2, MAP_H / 2 - 110, msg, heading(96, color, {
     stroke: COLORS.inkCss, strokeThickness: 14,
@@ -604,7 +605,7 @@ export function update(scene, time) {
   // HUD
   ch.meter.update(time);
   const can = ch.meter.fill >= 1 || ch.boosting;
-  ch.btn.setAlpha(can ? 1 : 0.4);
+  ch.btn.setAlpha(can ? 1 : 0.65);
   ch.btnLabel.setAlpha(can ? 1 : 0.4);
   ch.timeText.setText(clock(Math.floor(ch.t)));
   const gap = Math.max(0, ch.lopeZ - (ch.pos + PLAYER_Z));

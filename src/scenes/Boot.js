@@ -1,14 +1,14 @@
-import { ARTSETS, texKey } from '../data/artsets.js?v=fba9837';
-import { BONUS_ROOMS } from '../data/bonusRooms.js?v=fba9837';
-import { testParams, DRAWN } from '../data/levels.js?v=fba9837';
-import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { CHARACTERS } from '../data/characters.js?v=fba9837';
-import { state } from '../state.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
-import { showcaseData, showcaseArtset } from '../showcase.js?v=fba9837';
-import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=fba9837';
-import { BUILD } from '../version.js?v=fba9837';
-import { METERS } from '../zmeter.js?v=fba9837';
+import { ARTSETS, texKey } from '../data/artsets.js?v=7b2df1b';
+import { BONUS_ROOMS } from '../data/bonusRooms.js?v=7b2df1b';
+import { testParams, DRAWN } from '../data/levels.js?v=7b2df1b';
+import { playableLevelId, BIOMES, MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { CHARACTERS } from '../data/characters.js?v=7b2df1b';
+import { state } from '../state.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { showcaseData, showcaseArtset } from '../showcase.js?v=7b2df1b';
+import { explorerTourData, tourArtset, loadTourStrips } from '../explorerTour.js?v=7b2df1b';
+import { BUILD } from '../version.js?v=7b2df1b';
+import { METERS } from '../zmeter.js?v=7b2df1b';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -83,8 +83,12 @@ export class BootScene extends Phaser.Scene {
       'bg-hill', 'bg-cloud',
       'sand', 'sand-top', 'rock', 'rock-top',
       'water', 'water-top', 'waterfall', 'fin', 'sign',
-      'btn-left', 'btn-right', 'btn-jump',
     ].forEach((key) => this.load.svg(key, `assets/svg/${key}.svg`));
+    // On-screen touch buttons: Kenney's Mobile Controls, Style H (CC0),
+    // made by tools/make_touch_buttons.py (2026-11-20; the old cream/green
+    // SVGs are still in assets/svg). White icons, so a tint colours them.
+    ['btn-left', 'btn-right', 'btn-jump', 'btn-power', 'btn-round']
+      .forEach((key) => this.load.image(key, `assets/ui/touch/${key}.png`));
 
     // Shared game sprites cut from the Zebonky reference kit.
     this.load.image('crate', 'assets/sprites/crate.png');

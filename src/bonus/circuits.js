@@ -16,12 +16,13 @@
 // - Then he hops off the board and along the ground to the portal, off
 //   screen till then (as in Axel's room).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { tierInfo, clock } from '../paws.js?v=fba9837';
-import { play } from '../actors.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { tierInfo, clock } from '../paws.js?v=7b2df1b';
+import { play } from '../actors.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 const N = 1, E = 2, S = 4, W = 8;
 const DIRS = [[N, 0, -1], [E, 1, 0], [S, 0, 1], [W, -1, 0]];
@@ -210,10 +211,10 @@ export function buildHud(scene) {
   // (stacked over the left and right buttons: beside them they sat on the board)
   tap(scene.add.image(135, y - 190, 'btn-jump').setScale(0.7), 'up');
   tap(scene.add.image(135, y - 110, 'btn-jump').setScale(0.7).setFlipY(true), 'down');
-  cm.btn = tap(scene.add.image(MAP_W - 210, y, 'btn-jump').setScale(0.8).setTint(0xffc93c), 'power');
+  cm.btn = tap(scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xffc93c), 'power');
   cm.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4).setVisible(!TOUCH_ONLY);
   refresh(scene);
 }
 
@@ -375,7 +376,7 @@ export function update(scene, time) {
   s.setFlipX((cm.face || 1) > 0);
   if (!s.anims.isPlaying) play(s, scene.art, 'idle');
   cm.meter.update(time);
-  cm.btn.setAlpha(cm.meter.full ? 1 : 0.4);
+  cm.btn.setAlpha(cm.meter.full ? 1 : 0.65);
   cm.btnLabel.setAlpha(cm.meter.full ? 1 : 0.4);
   cm.timeText.setText(clock(Math.ceil(cm.timeLeft)));
   cm.timeText.setColor(cm.timeLeft <= 10 && !cm.ended ? '#b3261e' : COLORS.inkCss);

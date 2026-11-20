@@ -21,13 +21,14 @@
 //   open, and reaching the pad at the heart's foot ends the run. The medal
 //   is for time (provisional numbers).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { texKey } from '../data/artsets.js?v=fba9837';
-import { tierInfo, clock } from '../paws.js?v=fba9837';
-import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { texKey } from '../data/artsets.js?v=7b2df1b';
+import { tierInfo, clock } from '../paws.js?v=7b2df1b';
+import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 export const owns = true;
 
@@ -338,10 +339,10 @@ export function buildHud(scene) {
   };
   hold(scene.add.image(135, y - 190, 'btn-jump').setScale(0.7), 'up');
   hold(scene.add.image(135, y - 110, 'btn-jump').setScale(0.7).setFlipY(true), 'down');
-  rg.btn = hold(scene.add.image(MAP_W - 210, y, 'btn-jump').setScale(0.8).setTint(0xb48cff), 'light');
+  rg.btn = hold(scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xb48cff), 'light');
   rg.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setVisible(!TOUCH_ONLY);
 }
 
 export const collide = () => false;
@@ -503,7 +504,7 @@ export function update(scene, time) {
   // HUD
   rg.meter.update(time);
   const can = rg.meter.fill >= 1 || rg.shining;
-  rg.btn.setAlpha(can ? 1 : 0.4);
+  rg.btn.setAlpha(can ? 1 : 0.65);
   rg.btnLabel.setAlpha(can ? 1 : 0.4);
   rg.sparkText.setText(`${rg.got} / ${rg.total}`);
   rg.timeText.setText(clock(Math.floor(rg.t)));

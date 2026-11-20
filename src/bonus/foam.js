@@ -23,12 +23,13 @@
 //   scored. One field per bonus level. Clear it and he leaves the pool and
 //   walks along the shore to the portal, off screen till then.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { tierInfo, clock } from '../paws.js?v=fba9837';
-import { play } from '../actors.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { tierInfo, clock } from '../paws.js?v=7b2df1b';
+import { play } from '../actors.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 const MATCH = 5;                      // this many connected break (the user; 6 until 2026-11-18)
 const PER_PUFF = 1 / 10;              // meter charge for each puff broken or fallen (provisional)
@@ -199,16 +200,17 @@ export function buildHud(scene) {
   scene.add.image(MAP_W - 420, 46, 'zbolt').setScrollFactor(0).setDepth(21).setScale(1.1);
   fm.boltText = scene.add.text(MAP_W - 396, 46, '0', heading(24, '#ffffff', { stroke: COLORS.inkCss, strokeThickness: 6 }))
     .setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
-  const btn = scene.add.image(MAP_W - 210, MAP_H - 80, 'btn-jump').setScale(0.8).setTint(0xffc93c)
-    .setScrollFactor(0).setDepth(21).setAlpha(0.4).setInteractive();
+  // Above the jump button (2026-11-20): beside it, it sat on the bubble tray.
+  const btn = scene.add.image(MAP_W - 90, MAP_H - 230, 'btn-power').setScale(0.8).setTint(0xffc93c)
+    .setScrollFactor(0).setDepth(21).setAlpha(0.65).setInteractive();
   btn.on('pointerdown', () => { scene.touch.blast = true; });
   const up = () => { scene.touch.blast = false; };
   btn.on('pointerup', up);
   btn.on('pointerout', up);
   fm.btn = btn;
-  fm.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
+  fm.btnLabel = scene.add.text(MAP_W - 90, MAP_H - 182, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4).setVisible(!TOUCH_ONLY);
   refresh(fm);
 }
 
@@ -666,7 +668,7 @@ export function update(scene, time) {
     }
   }
   fm.meter.update(time);
-  fm.btn.setAlpha(fm.meter.fill >= 1 ? 1 : 0.4);
+  fm.btn.setAlpha(fm.meter.fill >= 1 ? 1 : 0.65);
   fm.btnLabel.setAlpha(fm.meter.fill >= 1 ? 1 : 0.4);
   fm.timeText.setText(clock(Math.floor(scene.runTime())));
 }

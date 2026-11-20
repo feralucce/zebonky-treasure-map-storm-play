@@ -2,22 +2,23 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { TILE, layoutFor } from '../data/levels.js?v=fba9837';
-import { state } from '../state.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=fba9837';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=fba9837';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=fba9837';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=fba9837';
-import { makeNav } from '../pathing.js?v=fba9837';
-import { startQuestionRun } from '../data/questions.js?v=fba9837';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=fba9837';
-import { Companion } from '../companion.js?v=fba9837';
-import { startShowcase } from '../showcase.js?v=fba9837';
-import { startExplorerTour } from '../explorerTour.js?v=fba9837';
-import { addPortalWarp } from '../portalWarp.js?v=fba9837';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=fba9837';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { TILE, layoutFor } from '../data/levels.js?v=7b2df1b';
+import { state } from '../state.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=7b2df1b';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=7b2df1b';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=7b2df1b';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=7b2df1b';
+import { makeNav } from '../pathing.js?v=7b2df1b';
+import { startQuestionRun } from '../data/questions.js?v=7b2df1b';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=7b2df1b';
+import { Companion } from '../companion.js?v=7b2df1b';
+import { startShowcase } from '../showcase.js?v=7b2df1b';
+import { startExplorerTour } from '../explorerTour.js?v=7b2df1b';
+import { addPortalWarp } from '../portalWarp.js?v=7b2df1b';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=7b2df1b';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before
@@ -2680,7 +2681,7 @@ export class PlatformerScene extends Phaser.Scene {
     hold(this.add.image(190, y, 'btn-right'), 'right');
     hold(this.add.image(MAP_W - 90, y - 8, 'btn-jump'), 'jump');
     // Toss food.
-    const toss = this.add.circle(MAP_W - 210, y, 44, COLORS.parchment).setStrokeStyle(4, COLORS.ink)
+    const toss = this.add.image(MAP_W - 210, y, 'btn-round')
       .setScrollFactor(0).setAlpha(0.8).setInteractive();
     this.add.image(MAP_W - 210, y, this.foodTex).setScale(1.2).setScrollFactor(0);
     toss.on('pointerdown', () => { this.touchToss = true; toss.setAlpha(1); });
@@ -2688,7 +2689,7 @@ export class PlatformerScene extends Phaser.Scene {
     toss.on('pointerout', () => toss.setAlpha(0.8));
     // Each button's keys under it, so the keyboard is learnt from the
     // screen (the user, 2026-10-25).
-    const keyLabel = (x, label) => this.add.text(x, y + 50, label, text(16, '#ffffff', {
+    const keyLabel = (x, label) => TOUCH_ONLY ? null : this.add.text(x, y + 50, label, text(16, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
     })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
     keyLabel(80, '← or A');

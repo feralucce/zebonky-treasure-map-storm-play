@@ -20,12 +20,13 @@
 //   silver at 60%, bronze for finishing. Time isn't scored.
 // - Fall through a gap and he's put back on the last ground he stood on.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { texKey } from '../data/artsets.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { tierInfo } from '../paws.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { texKey } from '../data/artsets.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { tierInfo } from '../paws.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 export const BERRIES_PER_SEGMENT = 8;     // provisional (the user didn't change it)
 const CHARGE_MS = 1200;                   // hold this long for a full charge
@@ -217,18 +218,19 @@ export function buildHud(scene) {
     .setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
   zp.scoreText = scene.add.text(MAP_W - 130, 58, 'Score 0', heading(24, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 6 }))
     .setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
-  // The big blast's touch button, beside the meter (hold it).
-  // (Under the meter's right end: beside it, it covered the room's name.)
-  const btn = scene.add.image(352, 164, 'btn-jump').setScale(0.8).setTint(0xffc93c)
-    .setScrollFactor(0).setDepth(21).setAlpha(0.4).setInteractive();
+  // The big blast's touch button (hold it), beside the jump button with the
+  // other rooms' power buttons (2026-11-20; it was under the meter's right
+  // end, too far from a thumb on a phone).
+  const btn = scene.add.image(MAP_W - 210, MAP_H - 80, 'btn-power').setScale(0.8).setTint(0xffc93c)
+    .setScrollFactor(0).setDepth(21).setAlpha(0.65).setInteractive();
   btn.on('pointerdown', () => { scene.touch.blast = true; });
   const up = () => { scene.touch.blast = false; };
   btn.on('pointerup', up);
   btn.on('pointerout', up);
   zp.btn = btn;
-  zp.btnLabel = scene.add.text(352, 214, 'Hold X · K · F', text(15, '#ffffff', {
+  zp.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'Hold X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4).setVisible(!TOUCH_ONLY);
 }
 
 function score(zp) {
@@ -412,7 +414,7 @@ export function update(scene, time, delta) {
     refresh(zp);
   });
   m.update(time);
-  zp.btn.setAlpha(m.full ? 1 : 0.4);
+  zp.btn.setAlpha(m.full ? 1 : 0.65);
   zp.btnLabel.setAlpha(m.full ? 1 : 0.4);
   // Charging: he spins fast in place, sparks round him. Blasting: a trail.
   const s = scene.shaan;

@@ -19,12 +19,47 @@
       user-select: none;
     }
     #game { width: 100%; height: 100%; }
+    /* Phones held upright (2026-11-20): the game is wide, so upright it was a
+       thin strip with tiny buttons. This covers it and asks for sideways;
+       src/main.js pauses the game while it shows. A Surface or a laptop
+       (it has a mouse or pen to hover) never sees it. */
+    #turn {
+      display: none;
+      position: fixed; inset: 0; z-index: 10;
+      background: #2b1d12; color: #f3dfb3;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 28px; padding: 24px; text-align: center;
+      font-family: Poppins, sans-serif; font-weight: 800; font-size: 26px;
+    }
+    #turn small { font-family: Nunito, sans-serif; font-weight: 600; font-size: 17px; opacity: 0.8; }
+    #turn .phone {
+      width: 64px; height: 112px; border: 6px solid #f3dfb3; border-radius: 14px;
+      box-sizing: border-box; position: relative;
+      animation: turn-phone 2.4s ease-in-out infinite;
+    }
+    #turn .phone::after {
+      content: ''; position: absolute; left: 50%; bottom: 6px; width: 14px; height: 4px;
+      margin-left: -7px; border-radius: 2px; background: #f3dfb3;
+    }
+    @keyframes turn-phone {
+      0%, 25% { transform: rotate(0deg); }
+      55%, 85% { transform: rotate(-90deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @media (orientation: portrait) and (hover: none) and (pointer: coarse) {
+      #turn { display: flex; }
+    }
   </style>
 </head>
 <body>
+  <div id="turn">
+    <div class="phone"></div>
+    <div>Turn your phone sideways</div>
+    <small>Then the game fills the screen.</small>
+  </div>
   <div id="game"></div>
-  <script src="vendor/phaser.min.js?v=fba9837"></script>
-  <script src="vendor/qrcode.min.js?v=fba9837"></script>
-  <script type="module" src="src/main.js?v=fba9837"></script>
+  <script src="vendor/phaser.min.js?v=7b2df1b"></script>
+  <script src="vendor/qrcode.min.js?v=7b2df1b"></script>
+  <script type="module" src="src/main.js?v=7b2df1b"></script>
 </body>
 </html>

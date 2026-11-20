@@ -18,13 +18,14 @@
 //   everything drops, making room.
 // - It ends when a clump can't be tossed. The medal is for terraces planted.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=fba9837';
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { texKey } from '../data/artsets.js?v=fba9837';
-import { tierInfo, clock } from '../paws.js?v=fba9837';
-import { play, FEET_ROW } from '../actors.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=7b2df1b';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { texKey } from '../data/artsets.js?v=7b2df1b';
+import { tierInfo, clock } from '../paws.js?v=7b2df1b';
+import { play, FEET_ROW } from '../actors.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
 
 export const owns = true;
 
@@ -199,11 +200,11 @@ export function buildHud(scene) {
   down.on('pointerdown', () => { tr.touchDown = true; down.setAlpha(1); });
   const up = () => { tr.touchDown = false; down.setAlpha(0.75); };
   down.on('pointerup', up); down.on('pointerout', up);
-  tr.btn = scene.add.image(MAP_W - 210, y, 'btn-jump').setScale(0.8).setTint(0xf0c060).setScrollFactor(0).setDepth(20).setInteractive();
+  tr.btn = scene.add.image(MAP_W - 210, y, 'btn-power').setScale(0.8).setTint(0xf0c060).setScrollFactor(0).setDepth(20).setInteractive();
   tr.btn.on('pointerdown', () => tr.queue.push('quake'));
   tr.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
-  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21);
+  })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setVisible(!TOUCH_ONLY);
 }
 
 export const collide = () => false;
@@ -359,7 +360,7 @@ export function update(scene, time) {
   }
   // HUD
   tr.meter.update(time);
-  tr.btn.setAlpha(tr.meter.fill >= SEGMENTS ? 1 : 0.4);
+  tr.btn.setAlpha(tr.meter.fill >= SEGMENTS ? 1 : 0.65);
   tr.btnLabel.setAlpha(tr.meter.fill >= SEGMENTS ? 1 : 0.4);
   tr.plantText.setText(String(tr.planted));
   tr.timeText.setText(clock(Math.floor(tr.t)));

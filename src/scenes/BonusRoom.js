@@ -22,20 +22,21 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=fba9837';
-import { texKey } from '../data/artsets.js?v=fba9837';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=fba9837';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=fba9837';
-import { addPortalWarp } from '../portalWarp.js?v=fba9837';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=fba9837';
-import { audio } from '../audio.js?v=fba9837';
-import { COLORS, heading, text } from '../theme.js?v=fba9837';
-import * as zpower from '../bonus/zpower.js?v=fba9837';
-import * as foam from '../bonus/foam.js?v=fba9837';
-import * as circuits from '../bonus/circuits.js?v=fba9837';
-import * as chase from '../bonus/chase.js?v=fba9837';
-import * as rings from '../bonus/rings.js?v=fba9837';
-import * as terraces from '../bonus/terraces.js?v=fba9837';
+import { MAP_W, MAP_H } from '../data/world.js?v=7b2df1b';
+import { texKey } from '../data/artsets.js?v=7b2df1b';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=7b2df1b';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=7b2df1b';
+import { addPortalWarp } from '../portalWarp.js?v=7b2df1b';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=7b2df1b';
+import { audio } from '../audio.js?v=7b2df1b';
+import { COLORS, heading, text } from '../theme.js?v=7b2df1b';
+import { TOUCH_ONLY } from '../touch.js?v=7b2df1b';
+import * as zpower from '../bonus/zpower.js?v=7b2df1b';
+import * as foam from '../bonus/foam.js?v=7b2df1b';
+import * as circuits from '../bonus/circuits.js?v=7b2df1b';
+import * as chase from '../bonus/chase.js?v=7b2df1b';
+import * as rings from '../bonus/rings.js?v=7b2df1b';
+import * as terraces from '../bonus/terraces.js?v=7b2df1b';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 
@@ -1315,7 +1316,7 @@ Zoom ${Math.round(cam.zoom * 100)}%: mouse wheel, + and -, or the buttons`);
     // In water only: swim down (the jump button swims up).
     this.btnDown = this.add.image(MAP_W - 210, y, 'btn-jump').setFlipY(true).setVisible(false);
     hold(this.btnDown, 'down');
-    const keyLabel = (x, label) => this.add.text(x, y + 50, label, text(16, '#ffffff', {
+    const keyLabel = (x, label) => TOUCH_ONLY ? null : this.add.text(x, y + 50, label, text(16, '#ffffff', {
       backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
     })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(20);
     keyLabel(80, '← or A');

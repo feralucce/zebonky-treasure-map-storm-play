@@ -1,16 +1,16 @@
-import { MAP_W, MAP_H } from './data/world.js?v=fba9837';
-import { state } from './state.js?v=fba9837';
-import { audio } from './audio.js?v=fba9837';
-import { BootScene } from './scenes/Boot.js?v=fba9837';
-import { OverworldScene } from './scenes/Overworld.js?v=fba9837';
-import { PlatformerScene } from './scenes/Platformer.js?v=fba9837';
-import { QuizScene } from './scenes/Quiz.js?v=fba9837';
-import { BonusScene } from './scenes/Bonus.js?v=fba9837';
-import { BonusRoomScene } from './scenes/BonusRoom.js?v=fba9837';
-import { SaveMenuScene } from './scenes/SaveMenu.js?v=fba9837';
-import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=fba9837';
-import { LevelEndScene } from './scenes/LevelEnd.js?v=fba9837';
-import { takeLinkSave } from './savecode.js?v=fba9837';
+import { MAP_W, MAP_H } from './data/world.js?v=7b2df1b';
+import { state } from './state.js?v=7b2df1b';
+import { audio } from './audio.js?v=7b2df1b';
+import { BootScene } from './scenes/Boot.js?v=7b2df1b';
+import { OverworldScene } from './scenes/Overworld.js?v=7b2df1b';
+import { PlatformerScene } from './scenes/Platformer.js?v=7b2df1b';
+import { QuizScene } from './scenes/Quiz.js?v=7b2df1b';
+import { BonusScene } from './scenes/Bonus.js?v=7b2df1b';
+import { BonusRoomScene } from './scenes/BonusRoom.js?v=7b2df1b';
+import { SaveMenuScene } from './scenes/SaveMenu.js?v=7b2df1b';
+import { CharacterMenuScene } from './scenes/CharacterMenu.js?v=7b2df1b';
+import { LevelEndScene } from './scenes/LevelEnd.js?v=7b2df1b';
+import { takeLinkSave } from './savecode.js?v=7b2df1b';
 
 state.load();
 // Opened from a save link: the map asks before loading it.
@@ -48,6 +48,29 @@ async function start() {
     scene: [BootScene, OverworldScene, PlatformerScene, QuizScene, BonusScene, BonusRoomScene, SaveMenuScene, CharacterMenuScene, LevelEndScene],
   });
   audio.init(window.game);
+  pauseWhileUpright(window.game);
+}
+
+// While index.html's "Turn your phone sideways" screen shows, the game
+// stops (2026-11-20), so a bonus room's clock doesn't run behind it. The
+// loop sleeps: Phaser 4's own pause (game.onHidden) only notes the time and
+// relies on the browser not drawing a hidden tab, which an upright phone
+// still does. Waking resets the clock, so nothing jumps.
+function pauseWhileUpright(game) {
+  if (!window.matchMedia) return;
+  const upright = window.matchMedia('(orientation: portrait) and (hover: none) and (pointer: coarse)');
+  let asleep = false;
+  const sync = () => {
+    if (upright.matches && !asleep) { asleep = true; game.loop.sleep(); game.sound.pauseAll(); }
+    else if (!upright.matches && asleep) { asleep = false; game.loop.wake(); game.sound.resumeAll(); }
+  };
+  if (upright.addEventListener) upright.addEventListener('change', sync);
+  else upright.addListener(sync);
+  // Older phones are patchy about that change event; these are not.
+  window.addEventListener('resize', sync);
+  window.addEventListener('orientationchange', sync);
+  // The first frame, not 'ready': Phaser starts its loop after 'ready'.
+  game.events.once('poststep', () => setTimeout(sync, 0));
 }
 
 start();
