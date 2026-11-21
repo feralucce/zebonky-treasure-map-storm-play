@@ -21,14 +21,14 @@
 //   open, and reaching the pad at the heart's foot ends the run. The medal
 //   is for time (provisional numbers).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
-import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
-import { texKey } from '../data/artsets.js?v=d69665c';
-import { tierInfo, clock } from '../paws.js?v=d69665c';
-import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=d69665c';
-import { audio } from '../audio.js?v=d69665c';
-import { COLORS, heading, text } from '../theme.js?v=d69665c';
-import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=12e35af';
+import { MAP_W, MAP_H } from '../data/world.js?v=12e35af';
+import { texKey } from '../data/artsets.js?v=12e35af';
+import { tierInfo, clock } from '../paws.js?v=12e35af';
+import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=12e35af';
+import { audio } from '../audio.js?v=12e35af';
+import { COLORS, heading, text } from '../theme.js?v=12e35af';
+import { TOUCH_ONLY } from '../touch.js?v=12e35af';
 
 export const owns = true;
 

@@ -8,7 +8,7 @@
 // tools/make_*.py: a room missing here just shows its own intro. If a room's
 // intro changes, change its line here too. Rooms whose intro names no keys
 // (Surf and Slope; most of the older rooms) aren't listed.
-import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=12e35af';
 
 // The button lines each Zebonky's rooms share (Break the Bubble's goes
 // first, the others under each door's own first line).

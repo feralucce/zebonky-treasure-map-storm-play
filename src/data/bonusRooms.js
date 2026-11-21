@@ -39,14 +39,14 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=d69665c';
-import { SURF_AND_SLOPE_DOORS } from './rooms/surfAndSlopeDoors.js?v=d69665c';
-import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=d69665c';
-import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=d69665c';
-import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=d69665c';
-import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=d69665c';
-import { CRYSTAL_HEART_2, CRYSTAL_HEART_3, CRYSTAL_HEART_4, CRYSTAL_HEART_5 } from './rooms/crystalHeartDoors.js?v=d69665c';
-import { TERRACE_GARDEN, TERRACE_GARDEN_2, TERRACE_GARDEN_3, TERRACE_GARDEN_4, TERRACE_GARDEN_5 } from './rooms/terraceGarden.js?v=d69665c';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=12e35af';
+import { SURF_AND_SLOPE_DOORS } from './rooms/surfAndSlopeDoors.js?v=12e35af';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=12e35af';
+import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=12e35af';
+import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=12e35af';
+import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=12e35af';
+import { CRYSTAL_HEART_2, CRYSTAL_HEART_3, CRYSTAL_HEART_4, CRYSTAL_HEART_5 } from './rooms/crystalHeartDoors.js?v=12e35af';
+import { TERRACE_GARDEN, TERRACE_GARDEN_2, TERRACE_GARDEN_3, TERRACE_GARDEN_4, TERRACE_GARDEN_5 } from './rooms/terraceGarden.js?v=12e35af';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
@@ -567,7 +567,7 @@ BONUS_ROOMS['cumulus-circuits'] = CUMULUS_CIRCUITS;
 // import sits here, beside them (imports are read first wherever they are).
 import {
   CUMULUS_CIRCUITS_2, CUMULUS_CIRCUITS_3, CUMULUS_CIRCUITS_4, CUMULUS_CIRCUITS_5,
-} from './rooms/cumulusCircuitsDoors.js?v=d69665c';
+} from './rooms/cumulusCircuitsDoors.js?v=12e35af';
 BONUS_ROOMS['cumulus-circuits-2'] = CUMULUS_CIRCUITS_2;
 BONUS_ROOMS['cumulus-circuits-3'] = CUMULUS_CIRCUITS_3;
 BONUS_ROOMS['cumulus-circuits-4'] = CUMULUS_CIRCUITS_4;
@@ -580,7 +580,7 @@ BONUS_ROOMS['bananalope-chase'] = BANANALOPE_CHASE;
 // same chase, longer and busier each door), made by the same script into the
 // same file. Imported here so this block is all Charlie's. Not in a level's
 // slot yet either.
-import { BANANALOPE_CHASE_2, BANANALOPE_CHASE_3, BANANALOPE_CHASE_4, BANANALOPE_CHASE_5 } from './rooms/bananalopeChase.js?v=d69665c';
+import { BANANALOPE_CHASE_2, BANANALOPE_CHASE_3, BANANALOPE_CHASE_4, BANANALOPE_CHASE_5 } from './rooms/bananalopeChase.js?v=12e35af';
 BONUS_ROOMS['bananalope-chase-2'] = BANANALOPE_CHASE_2;
 BONUS_ROOMS['bananalope-chase-3'] = BANANALOPE_CHASE_3;
 BONUS_ROOMS['bananalope-chase-4'] = BANANALOPE_CHASE_4;

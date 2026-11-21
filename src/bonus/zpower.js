@@ -14,7 +14,8 @@
 // - Boulders (`cracked` in the data) sit on the path, low enough to jump.
 //   Without Z power he bounces off them.
 // - Z power: tap X, K or F (or the star button) with at least one segment.
-//   It runs by itself for POWER_SECS for each segment he had when he tapped,
+//   It runs by itself for POWER_SECS for each segment he had when he tapped
+//   (Super Z power, from a full meter, for SUPER_SECS),
 //   a fixed time limit; grubberries he gets meanwhile charge the meter for
 //   next time. While it runs he smashes through every boulder and tall rock he
 //   rolls into, and their Z-bolts pop out.
@@ -27,13 +28,13 @@
 //   silver at 60%, bronze for finishing. Time isn't scored.
 // - Fall through a gap and he's put back on the last ground he stood on.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
-import { texKey } from '../data/artsets.js?v=d69665c';
-import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
-import { tierInfo } from '../paws.js?v=d69665c';
-import { audio } from '../audio.js?v=d69665c';
-import { COLORS, heading, text } from '../theme.js?v=d69665c';
-import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=12e35af';
+import { texKey } from '../data/artsets.js?v=12e35af';
+import { MAP_W, MAP_H } from '../data/world.js?v=12e35af';
+import { tierInfo } from '../paws.js?v=12e35af';
+import { audio } from '../audio.js?v=12e35af';
+import { COLORS, heading, text } from '../theme.js?v=12e35af';
+import { TOUCH_ONLY } from '../touch.js?v=12e35af';
 
 // On a phone Z power is the star button (2026-11-20).
 const POWER_HINT = TOUCH_ONLY ? 'Tap the star for Z power!' : 'Tap X for Z power!';
@@ -43,6 +44,9 @@ const WALL_HINT = 'Super Z power! (a full meter)';
 // half as many grubberries, spaced out, so each one counts for more).
 export const BERRIES_PER_SEGMENT = 5;
 const POWER_SECS = 6;                     // seconds of Z power each segment buys
+// Super Z power (a full meter) lasts 15 s, not 5 x 6 = 30 (the user,
+// 2026-11-21: "make super z power last 15 seconds").
+const SUPER_SECS = 15;
 const KINDS = {
   // a boulder: low enough to jump (he jumps about three tiles, ~190 px)
   cracked: { w: 130, h: 110, shade: 0 },
@@ -345,7 +349,7 @@ export function step(scene, time, dir, grounded) {
   // (Ending it when the meter was empty ran forever on a grubberry run.)
   if (zp.powerOn) {
     zp.powerLeft -= 1 / 60;
-    m.fill = Math.max(0, m.fill - 1 / (60 * POWER_SECS));
+    m.fill = Math.max(0, m.fill - zp.drain / 60);
     if (zp.powerLeft <= 0) {
       zp.powerOn = false;
       zp.superOn = false;
@@ -367,7 +371,9 @@ function tapPower(scene, time) {
   }
   zp.powerOn = true;
   zp.superOn = m.full;
-  zp.powerLeft = m.fill * POWER_SECS;
+  zp.powerLeft = zp.superOn ? SUPER_SECS : m.fill * POWER_SECS;
+  // the meter drains to empty over the time it runs
+  zp.drain = m.fill / zp.powerLeft;
   scene.cameras.main.shake(zp.superOn ? 300 : 160, zp.superOn ? 0.012 : 0.006);
   scene.floatText(b.position.x, b.position.y - 90, zp.superOn ? 'Super Z power!' : 'Z power!');
   audio.sfx(scene, 'energy');
