@@ -23,14 +23,14 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=12e35af';
-import { MAP_W, MAP_H } from '../data/world.js?v=12e35af';
-import { texKey } from '../data/artsets.js?v=12e35af';
-import { tierInfo, clock } from '../paws.js?v=12e35af';
-import { audio } from '../audio.js?v=12e35af';
-import { COLORS, heading, text } from '../theme.js?v=12e35af';
-import { bandId } from './band.js?v=12e35af';
-import { TOUCH_ONLY } from '../touch.js?v=12e35af';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=bb8c89c';
+import { MAP_W, MAP_H } from '../data/world.js?v=bb8c89c';
+import { texKey } from '../data/artsets.js?v=bb8c89c';
+import { tierInfo, clock } from '../paws.js?v=bb8c89c';
+import { audio } from '../audio.js?v=bb8c89c';
+import { COLORS, heading, text } from '../theme.js?v=bb8c89c';
+import { bandId } from './band.js?v=bb8c89c';
+import { TOUCH_ONLY } from '../touch.js?v=bb8c89c';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)

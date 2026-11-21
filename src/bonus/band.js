@@ -6,7 +6,7 @@
 //
 // Testing: `&band=junior` (or explorer, pioneer) on a ?bonustest= link
 // plays that band without changing the saved setting.
-import { state } from '../state.js?v=12e35af';
+import { state } from '../state.js?v=bb8c89c';
 
 const BANDS = ['junior', 'explorer', 'pioneer'];
 
