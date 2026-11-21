@@ -11,8 +11,8 @@
 // - She goes the way you press and follows the path; pressing toward a
 //   spoke turns her down it (the user tried both, "a is good").
 // - Sparkles (Chris's, her food) along every path charge the Z meter.
-// - Night Light: hold the power key. It needs one segment to start and
-//   drains half a segment a second while held; the cave lights up and the
+// - Night Light: tap the power key. A tap spends one segment on 5 s of
+//   light, which then runs out by itself; the cave lights up and the
 //   Zebonkies near her run off, slip away to the pen near the top, and come
 //   back in from it later.
 // - A Zebonky reaching her touches her hair: up to 3 sparkles fly out of her
@@ -21,14 +21,14 @@
 //   open, and reaching the pad at the heart's foot ends the run. The medal
 //   is for time (provisional numbers).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { texKey } from '../data/artsets.js?v=4607924';
-import { tierInfo, clock } from '../paws.js?v=4607924';
-import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { texKey } from '../data/artsets.js?v=d69665c';
+import { tierInfo, clock } from '../paws.js?v=d69665c';
+import { zebonkyArt, ensureAnims, play, faceArt, FEET_ROW } from '../actors.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
 
 export const owns = true;
 
@@ -38,6 +38,9 @@ const BW = 0.13;          // half a blocking crystal, in radians of ring
 const SNAP = 34;          // how near a spoke (px) counts as at it
 const UNITY_K = 0.55;     // her frames on screen
 const ZEB_K = 0.48;
+const NIGHT_SECS = 5;     // seconds of Night Light each meter segment buys
+const FIRST_IN = 1.5;    // seconds before the first Zebonky comes out of the pen
+const NEXT_IN = 1.2;      // and between each one after
 const rad = (d) => d * Math.PI / 180;
 const ang = (a, b) => { let d = (a - b) % TAU; if (d > Math.PI) d -= TAU; if (d < -Math.PI) d += TAU; return d; };
 const norm = (v) => { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; };
@@ -68,7 +71,14 @@ function geometry(scene) {
   const PA = rad(d.penAngle);
   const last = R.length - 1;
   spokes.push(mk(last, PA, ringPos(last, PA), d.pen, { pen: true }));
-  const blocks = d.blocks.map(([i, deg]) => ({ i, b: rad(deg) }));
+  // A crystal's half width (`w`) and the sparkle-free stretch round it
+  // (`skip`). Door 1 uses BW on every ring. Bigger rooms set `blockPx`, so a
+  // crystal on a ring bigger than door 1's outer one stops her no further off
+  // than it does there (Crystal Heart 2 to 5).
+  const blocks = d.blocks.map(([i, deg]) => {
+    const w = d.blockPx ? Math.min(BW, d.blockPx / R[i]) : BW;
+    return { i, b: rad(deg), w, skip: d.blockPx ? w - 0.01 : 0.12 };
+  });
   return { R, ringPos, arc, tangent, spokes, blocks };
 }
 
@@ -87,7 +97,7 @@ export function build(scene) {
     const n = Math.floor(TAU * r / d.sparkStep);
     for (let k = 0; k < n; k++) {
       const a = TAU * k / n;
-      if (G.blocks.some((bl) => bl.i === i && Math.abs(ang(a, bl.b)) < 0.12)) continue;
+      if (G.blocks.some((bl) => bl.i === i && Math.abs(ang(a, bl.b)) < bl.skip)) continue;
       at(G.ringPos(i, a));
     }
   });
@@ -107,14 +117,23 @@ export function build(scene) {
   // her: on a ring
   rg.U = { ring: d.start[0], a: rad(d.start[1]), spoke: null, t: 0, last: 0, face: 1, moving: false };
   // the Zebonkies who want to touch her hair
-  rg.zebs = d.zebs.map(([ring, deg, artset], k) => {
+  const penSpoke = G.spokes.find((sp) => sp.pen);
+  rg.zebs = d.zebs.map(([, deg, artset], k) => {
     const art = zebonkyArt(scene, artset);
     ensureAnims(scene, art);
     const s = scene.add.sprite(0, 0, texKey(art.name, art.z.anims.idle.file), 0)
       .setScale(ZEB_K).setOrigin(0.5, FEET_ROW / art.z.frameHeight).setDepth(4.5);
     faceArt(s, art);
     play(s, art, 'walk');
-    return { ring, a: rad(deg), spoke: null, t: 0, dir: k % 2 ? 1 : -1, sdir: 1, art, s, bump: 0, state: 'roam', timer: 0, k, justTurned: false };
+    // They start in the pen, the respawn point near the top, and come into
+    // the cave one after another down its path (the user, 2026-11-20: "the
+    // zebonkies that are chasing her should start at the respawn point and
+    // they are entering the cave"). The data's ring and angle are unused now.
+    s.setVisible(false);
+    return {
+      ring: null, a: rad(deg), spoke: penSpoke, t: 1, dir: k % 2 ? 1 : -1, sdir: 1, art, s, bump: 0,
+      state: 'pen', timer: FIRST_IN + k * NEXT_IN, k, justTurned: false,
+    };
   });
   // the dark, drawn each frame on a canvas the size of the screen
   if (scene.textures.exists('rings-dark')) scene.textures.remove('rings-dark');
@@ -135,7 +154,7 @@ function slide(G, e, sign, dist) {
   G.blocks.forEach((bl) => {
     if (bl.i !== e.ring) return;
     const d0 = ang(e.a, bl.b), d1 = ang(na, bl.b);
-    if (Math.abs(d1) < BW || (Math.sign(d0) !== Math.sign(d1) && Math.abs(d0) < 1)) { na = bl.b + Math.sign(d0 || -sign) * BW; hit = true; }
+    if (Math.abs(d1) < bl.w || (Math.sign(d0) !== Math.sign(d1) && Math.abs(d0) < 1)) { na = bl.b + Math.sign(d0 || -sign) * bl.w; hit = true; }
   });
   e.a = (na + TAU) % TAU;
   return hit;
@@ -370,17 +389,25 @@ export function step(scene) {
   ];
   const lightHeld = a ? a.light : (k.X.isDown || k.K.isDown || k.F.isDown || k.SPACE.isDown || k.Z.isDown || k.J.isDown
     || rg.touch.light || scene.touch.jump);
-  // Night Light: needs a segment to start, drains while held
+  // Night Light: a tap spends one segment on NIGHT_SECS of light, which then
+  // runs out by itself (Chris, 2026-11-20: "don't like having to hold to use
+  // night light, would like it to just run for a certain amount of time
+  // before running out"). One segment a tap, not the whole meter: she needs
+  // a full meter to open the heart. It was held, draining `drain` a second;
+  // `drain` in the data is no longer used.
   const m = rg.meter;
-  if (lightHeld && !rg.shining && m.fill >= 1) {
-    rg.shining = true; rg.shineT = 0;
+  const lightTap = lightHeld && !rg.lightWas;
+  rg.lightWas = lightHeld;
+  if (lightTap && !rg.shining && m.fill >= 1) {
+    rg.shining = true; rg.shineT = 0; rg.shineLeft = NIGHT_SECS;
     audio.sfx(scene, 'energy');
     say(scene, 'Night Light!');
   }
   if (rg.shining) {
-    m.fill = Math.max(0, m.fill - d.drain * dt);
+    m.fill = Math.max(0, m.fill - dt / NIGHT_SECS);
     rg.shineT += dt;
-    if (!lightHeld || m.fill <= 0) rg.shining = false;
+    rg.shineLeft -= dt;
+    if (rg.shineLeft <= 0 || m.fill <= 0) rg.shining = false;
   }
   rg.lit = Math.max(0, Math.min(1, rg.lit + (rg.shining ? 4 : -2) * dt));
   stepUnity(scene, input, dt);

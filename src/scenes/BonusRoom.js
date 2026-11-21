@@ -22,23 +22,23 @@
 // room on its own, no level behind it. Falling off starts the room over,
 // coins and all, and so does going through the door.
 
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { texKey } from '../data/artsets.js?v=4607924';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=4607924';
-import { introFor } from '../data/phoneIntros.js?v=4607924';
-import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=4607924';
-import { addPortalWarp } from '../portalWarp.js?v=4607924';
-import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
-import { buildDpad } from '../dpad.js?v=4607924';
-import * as zpower from '../bonus/zpower.js?v=4607924';
-import * as foam from '../bonus/foam.js?v=4607924';
-import * as circuits from '../bonus/circuits.js?v=4607924';
-import * as chase from '../bonus/chase.js?v=4607924';
-import * as rings from '../bonus/rings.js?v=4607924';
-import * as terraces from '../bonus/terraces.js?v=4607924';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { texKey } from '../data/artsets.js?v=d69665c';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=d69665c';
+import { introFor } from '../data/phoneIntros.js?v=d69665c';
+import { zebonkyArt, ensureAnims, faceArt, play, FEET_ROW, GRASS_SINK } from '../actors.js?v=d69665c';
+import { addPortalWarp } from '../portalWarp.js?v=d69665c';
+import { tokenIcon, timeTier, tierInfo, earn, held, clock, pawCard } from '../paws.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { buildDpad } from '../dpad.js?v=d69665c';
+import * as zpower from '../bonus/zpower.js?v=d69665c';
+import * as foam from '../bonus/foam.js?v=d69665c';
+import * as circuits from '../bonus/circuits.js?v=d69665c';
+import * as chase from '../bonus/chase.js?v=d69665c';
+import * as rings from '../bonus/rings.js?v=d69665c';
+import * as terraces from '../bonus/terraces.js?v=d69665c';
 
 const Matter = () => Phaser.Physics.Matter.Matter;
 

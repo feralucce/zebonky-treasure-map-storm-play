@@ -2,24 +2,24 @@
 // from assets/svg/. Uses the level contract in levelApi.js, so the map,
 // quiz and save flow all work exactly as they will in the finished game.
 
-import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { TILE, layoutFor } from '../data/levels.js?v=4607924';
-import { state } from '../state.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
-import { buildDpad } from '../dpad.js?v=4607924';
-import { bonusRoomFor } from '../data/bonusRooms.js?v=4607924';
-import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=4607924';
-import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=4607924';
-import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=4607924';
-import { makeNav } from '../pathing.js?v=4607924';
-import { startQuestionRun } from '../data/questions.js?v=4607924';
-import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=4607924';
-import { Companion } from '../companion.js?v=4607924';
-import { startShowcase } from '../showcase.js?v=4607924';
-import { startExplorerTour } from '../explorerTour.js?v=4607924';
-import { addPortalWarp } from '../portalWarp.js?v=4607924';
-import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=4607924';
+import { LEVELS, MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { TILE, layoutFor } from '../data/levels.js?v=d69665c';
+import { state } from '../state.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { buildDpad } from '../dpad.js?v=d69665c';
+import { bonusRoomFor } from '../data/bonusRooms.js?v=d69665c';
+import { startQuiz, finishLevel, leaveLevel } from '../levelApi.js?v=d69665c';
+import { TERRAIN_SETS, texKey, pick, tileHash, solidRole, roleFiles, platformRole, BLOCKS, BLOCK_COLORS, BLOCKS_SKY } from '../data/artsets.js?v=d69665c';
+import { WildZebonky, GuideZebonky, zebonkyArt, ensureAnims, GRASS_SINK, LAND_DEPTH, WATER_DEPTH, layerFor } from '../actors.js?v=d69665c';
+import { makeNav } from '../pathing.js?v=d69665c';
+import { startQuestionRun } from '../data/questions.js?v=d69665c';
+import { audio, musicFor, musicButton, soundButton, fullscreenButton } from '../audio.js?v=d69665c';
+import { Companion } from '../companion.js?v=d69665c';
+import { startShowcase } from '../showcase.js?v=d69665c';
+import { startExplorerTour } from '../explorerTour.js?v=d69665c';
+import { addPortalWarp } from '../portalWarp.js?v=d69665c';
+import { LETTERS, lettersFound, findLetter, allLetters, clock } from '../paws.js?v=d69665c';
 
 // Walking (the user, 2026-10-25): she builds up to speed instead of
 // starting at full speed, and letting go she slides a little before

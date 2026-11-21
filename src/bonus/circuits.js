@@ -13,16 +13,18 @@
 //   power key fires Static Shock: +20 s on the clock (all provisional).
 // - Score: 10 a tree, +30 for all of them; gold for all, silver for 5 or
 //   more, bronze otherwise, paid in Z-bolts. Time left isn't scored.
+//   Doors 2 to 5 set their own clock, all-lit bonus and silver (`silver`).
 // - Then he hops off the board and along the ground to the portal, off
 //   screen till then (as in Axel's room).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { tierInfo, clock } from '../paws.js?v=4607924';
-import { play } from '../actors.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { tierInfo, clock } from '../paws.js?v=d69665c';
+import { play } from '../actors.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
+import { bandId } from './band.js?v=d69665c';
 
 const N = 1, E = 2, S = 4, W = 8;
 const DIRS = [[N, 0, -1], [E, 1, 0], [S, 0, 1], [W, -1, 0]];
@@ -57,15 +59,25 @@ export function reset(scene) {
 export function build(scene) {
   const cm = scene.cm;
   const b = C(scene);
-  cm.timeLeft = b.time;
+  // The difficulty band eases the board (Chris, 2026-11-20: "maybe the
+  // difficulties change depending on the 'game difficulty' selected?"). The
+  // data is Pioneer's. Explorer: 30% more time, and every other tile starts
+  // one spin from right; Junior Explorer: 60% more time, every tile one spin
+  // from right. (One spin from right, never right: a tile already right
+  // could light a tree before he's done anything.)
+  const band = bandId();
+  const easeAll = band === 'junior';
+  const easeHalf = band === 'explorer';
+  cm.timeLeft = Math.round(b.time * (easeAll ? 1.6 : easeHalf ? 1.3 : 1));
   cm.at = b.source.slice();
   // the board's backing
   const bg = scene.add.graphics().setDepth(2.5);
   bg.fillStyle(0x1b1a2e, 0.55).fillRoundedRect(b.x - 10, b.y - 10, b.cols * b.tile + 20, b.rows * b.tile + 20, 16);
-  cm.tiles = b.tiles.map((t) => {
+  cm.tiles = b.tiles.map((t, k) => {
     const [x, y] = centre(scene, t.c, t.r);
     const g = scene.add.graphics({ x, y }).setDepth(3);
-    return { ...t, g, powered: false };
+    const ease = t.turns !== 0 && (easeAll || (easeHalf && k % 2 === 0));
+    return { ...t, turns: ease ? 3 : t.turns, g, powered: false };
   });
   // the storm cloud over the source
   const [sx, sy] = centre(scene, b.source[0], b.source[1]);
@@ -381,10 +393,13 @@ export function update(scene, time) {
   cm.timeText.setColor(cm.timeLeft <= 10 && !cm.ended ? '#b3261e' : COLORS.inkCss);
 }
 
+// Silver: the room's `silver` trees (doors 2 to 5 set it), or 5 (door 1).
+const silverAt = (scene) => C(scene).silver ?? 5;
+
 export function medal(scene) {
   const cm = scene.cm;
   const n = cm.trees.filter((t) => t.lit).length;
-  const tier = n >= cm.trees.length ? 3 : n >= 5 ? 2 : 1;
+  const tier = n >= cm.trees.length ? 3 : n >= silverAt(scene) ? 2 : 1;
   return { ...tierInfo(tier), score: cm.score, max: cm.trees.length * C(scene).treePoints + C(scene).allBonus };
 }
 export function scoreLine(scene) {
@@ -392,5 +407,5 @@ export function scoreLine(scene) {
   return `Trees lit ${cm.trees.filter((t) => t.lit).length} of ${cm.trees.length}`;
 }
 export function scoreRow(scene, med) {
-  return { label: `Score ${med.score}`, detail: `${med.name}   (gold: all trees, silver: 5)` };
+  return { label: `Score ${med.score}`, detail: `${med.name}   (gold: all trees, silver: ${silverAt(scene)})` };
 }

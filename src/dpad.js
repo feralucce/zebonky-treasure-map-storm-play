@@ -8,9 +8,9 @@
 // the old left and right buttons were, and calls onPress(dir) each time an
 // arm starts being held, for the one-shot actions (a door, a tile hop).
 // scene.touch is looked up each time: some scenes replace that object.
-import { MAP_H } from './data/world.js?v=4607924';
-import { TOUCH_ONLY } from './touch.js?v=4607924';
-import { text } from './theme.js?v=4607924';
+import { MAP_H } from './data/world.js?v=d69665c';
+import { TOUCH_ONLY } from './touch.js?v=d69665c';
+import { text } from './theme.js?v=d69665c';
 
 // Sized so its right arm stops short of Cumulus Circuits' board (x 244).
 export const DPAD_X = 124;

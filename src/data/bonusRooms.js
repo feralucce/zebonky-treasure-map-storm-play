@@ -39,12 +39,14 @@
 // Cove first (the user, 2026-11-02): hills and curves, geysers, upward
 // waterfalls.
 
-import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=4607924';
-import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=4607924';
-import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=4607924';
-import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=4607924';
-import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=4607924';
-import { TERRACE_GARDEN } from './rooms/terraceGarden.js?v=4607924';
+import { SURF_AND_SLOPE } from './rooms/surfAndSlope.js?v=d69665c';
+import { SURF_AND_SLOPE_DOORS } from './rooms/surfAndSlopeDoors.js?v=d69665c';
+import { BREAK_THE_BUBBLE } from './rooms/breakTheBubble.js?v=d69665c';
+import { CUMULUS_CIRCUITS } from './rooms/cumulusCircuits.js?v=d69665c';
+import { BANANALOPE_CHASE } from './rooms/bananalopeChase.js?v=d69665c';
+import { CRYSTAL_HEART } from './rooms/crystalHeart.js?v=d69665c';
+import { CRYSTAL_HEART_2, CRYSTAL_HEART_3, CRYSTAL_HEART_4, CRYSTAL_HEART_5 } from './rooms/crystalHeartDoors.js?v=d69665c';
+import { TERRACE_GARDEN, TERRACE_GARDEN_2, TERRACE_GARDEN_3, TERRACE_GARDEN_4, TERRACE_GARDEN_5 } from './rooms/terraceGarden.js?v=d69665c';
 
 export const BONUS_ROOMS = {
   'dorsal-1': {
@@ -538,24 +540,71 @@ export const BONUS_ROOMS = {
 // Surf and Slope: a Z meter room (`zmeter`, bonus/zpower.js), its layout made
 // by tools/make_surf_slope.py.
 BONUS_ROOMS['dorsal-surf'] = SURF_AND_SLOPE;
+// Surf and Slope doors 2 to 5, one per bonus door (the user, 2026-11-20): the
+// same room, each door longer with more dips, rocks and high routes. Made by
+// the same script into rooms/surfAndSlopeDoors.js.
+BONUS_ROOMS['dorsal-surf-2'] = SURF_AND_SLOPE_DOORS[0];
+BONUS_ROOMS['dorsal-surf-3'] = SURF_AND_SLOPE_DOORS[1];
+BONUS_ROOMS['dorsal-surf-4'] = SURF_AND_SLOPE_DOORS[2];
+BONUS_ROOMS['dorsal-surf-5'] = SURF_AND_SLOPE_DOORS[3];
 // Axel's Break the Bubble: a foam room (`foam`, bonus/foam.js), made by
-// tools/make_break_bubble.py: one field per bonus level, and just the one
-// for now (the user, 2026-11-17). Not in a Seafoam level's slot yet.
+// tools/make_break_bubble.py: one field per bonus level (the user,
+// 2026-11-17). Not in a Seafoam level's slot yet.
 BONUS_ROOMS['seafoam-bubble'] = BREAK_THE_BUBBLE[0];
+// Doors 2 to 5 of the set (the user, 2026-11-20: one for each bonus door,
+// the same mechanic and style, bigger and harder each time): the band, the
+// two hanging lumps, the diamond and the biggest field. Same generator.
+BONUS_ROOMS['seafoam-bubble-2'] = BREAK_THE_BUBBLE[1];
+BONUS_ROOMS['seafoam-bubble-3'] = BREAK_THE_BUBBLE[2];
+BONUS_ROOMS['seafoam-bubble-4'] = BREAK_THE_BUBBLE[3];
+BONUS_ROOMS['seafoam-bubble-5'] = BREAK_THE_BUBBLE[4];
 // Ricky's Cumulus Circuits (Chris's idea): a circuits room (`circuits`,
 // bonus/circuits.js), made by tools/make_cumulus_circuits.py. Not in a
 // level's slot yet.
 BONUS_ROOMS['cumulus-circuits'] = CUMULUS_CIRCUITS;
+// Its doors 2 to 5 (the user, 2026-11-20): the same game, each bigger and
+// harder, made by the same tool into rooms/cumulusCircuitsDoors.js. The
+// import sits here, beside them (imports are read first wherever they are).
+import {
+  CUMULUS_CIRCUITS_2, CUMULUS_CIRCUITS_3, CUMULUS_CIRCUITS_4, CUMULUS_CIRCUITS_5,
+} from './rooms/cumulusCircuitsDoors.js?v=d69665c';
+BONUS_ROOMS['cumulus-circuits-2'] = CUMULUS_CIRCUITS_2;
+BONUS_ROOMS['cumulus-circuits-3'] = CUMULUS_CIRCUITS_3;
+BONUS_ROOMS['cumulus-circuits-4'] = CUMULUS_CIRCUITS_4;
+BONUS_ROOMS['cumulus-circuits-5'] = CUMULUS_CIRCUITS_5;
 // Charlie's Chase the Bananalope (Chris's idea): a chase room (`chase`,
 // bonus/chase.js), made by tools/make_bananalope_chase.py. Not in a level's
 // slot yet.
 BONUS_ROOMS['bananalope-chase'] = BANANALOPE_CHASE;
+// Charlie's doors 2 to 5 (the user, 2026-11-20: one for each bonus door, the
+// same chase, longer and busier each door), made by the same script into the
+// same file. Imported here so this block is all Charlie's. Not in a level's
+// slot yet either.
+import { BANANALOPE_CHASE_2, BANANALOPE_CHASE_3, BANANALOPE_CHASE_4, BANANALOPE_CHASE_5 } from './rooms/bananalopeChase.js?v=d69665c';
+BONUS_ROOMS['bananalope-chase-2'] = BANANALOPE_CHASE_2;
+BONUS_ROOMS['bananalope-chase-3'] = BANANALOPE_CHASE_3;
+BONUS_ROOMS['bananalope-chase-4'] = BANANALOPE_CHASE_4;
+BONUS_ROOMS['bananalope-chase-5'] = BANANALOPE_CHASE_5;
 // Unity's Crystal Heart (Chris's idea): a ring-maze room (`ringMaze`, bonus/rings.js),
 // made by tools/make_crystal_heart.py. Not in a level's slot yet.
 BONUS_ROOMS['crystal-heart'] = CRYSTAL_HEART;
+// Crystal Heart 2 to 5, for Unity's other bonus doors (the user, 2026-11-20):
+// the same room, each bigger and twistier (more rings, spokes, crystals,
+// Zebonkies and sparkles to gather). Same generator. Not in a level's slot yet.
+BONUS_ROOMS['crystal-heart-2'] = CRYSTAL_HEART_2;
+BONUS_ROOMS['crystal-heart-3'] = CRYSTAL_HEART_3;
+BONUS_ROOMS['crystal-heart-4'] = CRYSTAL_HEART_4;
+BONUS_ROOMS['crystal-heart-5'] = CRYSTAL_HEART_5;
 // Sofia's Terrace Garden (Chris's idea): a terraces room (`terraces`,
 // bonus/terraces.js), made by tools/make_terrace_garden.py. Not in a level's
 // slot yet.
 BONUS_ROOMS['terrace-garden'] = TERRACE_GARDEN;
+// Its doors 2 to 5 (the user, 2026-11-20): the same terraces room, a bigger
+// hill, more clump shapes and a faster fall each door, from the same
+// generator. Not in a level's slot yet.
+BONUS_ROOMS['terrace-garden-2'] = TERRACE_GARDEN_2;
+BONUS_ROOMS['terrace-garden-3'] = TERRACE_GARDEN_3;
+BONUS_ROOMS['terrace-garden-4'] = TERRACE_GARDEN_4;
+BONUS_ROOMS['terrace-garden-5'] = TERRACE_GARDEN_5;
 
 export const bonusRoomFor = (levelId) => BONUS_ROOMS[levelId] || null;

@@ -6,40 +6,46 @@
 // The rules (decided by the user, docs/bonus-level-ideas.md):
 // - Food (the area's fruit, grubberries for Shaan) charges the meter, one
 //   segment per BERRIES_PER_SEGMENT, and scores 1 each. No coins.
-// - Rock blockers stand across the path on land. Wrecking Ball is automatic:
-//   hitting a cracked blocker with a full segment smashes it and spends that
-//   segment. Short of a segment he bounces off, and a little trail of
-//   grubberries pops out behind him so nobody gets stuck.
-// - Reinforced blockers (and the massive wall at the end) only break to the
-//   big blast: with a full meter, hold X, K or F (or the touch button) and he
-//   spins up in place, Sonic style; let go and he blasts forward. It always
-//   fires; a full charge goes farther and faster, shakes harder and adds +1
-//   Z-bolt for each reinforced blocker it breaks (provisional size).
-// - Z-bolts wait inside the blockers and score 10 each.
+// Reworked from Chris's notes (2026-11-20; docs/bonus-level-ideas.md, "Chris's
+// notes on the six rooms"): "a jump situation throughout the level like
+// charlie's where you need to jump over boulders until you get z power and
+// then you can just blast through" and "shouldn't have to hold for z power,
+// let's just give it a time limit".
+// - Boulders (`cracked` in the data) sit on the path, low enough to jump.
+//   Without Z power he bounces off them.
+// - Z power: tap X, K or F (or the star button) with at least one segment.
+//   It runs by itself for POWER_SECS for each segment he had when he tapped,
+//   a fixed time limit; grubberries he gets meanwhile charge the meter for
+//   next time. While it runs he smashes through every boulder and tall rock he
+//   rolls into, and their Z-bolts pop out.
+// - The tall rocks guarding the stashes up high (`reinforced`) need Z power.
+//   The giant wall at the end needs Super Z power: Z power started from a
+//   full meter. Short of that he bounces off it, and grubberries pop out
+//   behind him, enough to fill the meter, so nobody gets stuck.
+// - Z-bolts wait inside the rocks and score 10 each.
 // - Score = grubberries + 10 x Z-bolts. Gold at 90% of the room's most,
 //   silver at 60%, bronze for finishing. Time isn't scored.
 // - Fall through a gap and he's put back on the last ground he stood on.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
-import { texKey } from '../data/artsets.js?v=4607924';
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { tierInfo } from '../paws.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
+import { texKey } from '../data/artsets.js?v=d69665c';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { tierInfo } from '../paws.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
 
-// On a phone the blast is the star button (2026-11-20).
-const BLAST_HINT = TOUCH_ONLY ? 'Hold the star to blast!' : 'Hold X to blast!';
+// On a phone Z power is the star button (2026-11-20).
+const POWER_HINT = TOUCH_ONLY ? 'Tap the star for Z power!' : 'Tap X for Z power!';
+const WALL_HINT = 'Super Z power! (a full meter)';
 
-export const BERRIES_PER_SEGMENT = 8;     // provisional (the user didn't change it)
-const CHARGE_MS = 1200;                   // hold this long for a full charge
-const BLAST_SPEED = 22;                   // px a step, plus up to BLAST_EXTRA at full charge
-const BLAST_EXTRA = 8;
-const BLAST_MS = 350;                     // plus up to BLAST_EXTRA_MS at full charge
-const BLAST_EXTRA_MS = 850;
-const FULL_BONUS = 1;                     // Z-bolts added per reinforced blocker a full charge breaks
+// 5 grubberries a segment (8 before 2026-11-20: the courses now have about
+// half as many grubberries, spaced out, so each one counts for more).
+export const BERRIES_PER_SEGMENT = 5;
+const POWER_SECS = 6;                     // seconds of Z power each segment buys
 const KINDS = {
-  cracked: { w: 96, h: 300, shade: 0 },
+  // a boulder: low enough to jump (he jumps about three tiles, ~190 px)
+  cracked: { w: 130, h: 110, shade: 0 },
   reinforced: { w: 128, h: 360, shade: 0.25 },
   wall: { w: 210, h: 780, shade: 0.3 },
 };
@@ -60,8 +66,7 @@ export function reset(scene) {
     berries: [], bolts: [], blockers: [],
     berriesGot: 0, boltsGot: 0, bonusBolts: 0,
     berryTotal: 0, boltTotal: 0,
-    charging: false, chargeAt: 0, charge: 0,
-    blastUntil: 0, blastDir: 1, blastSpeed: 0, fullBlast: false,
+    powerOn: false, superOn: false, tapWas: false,
     facing: 1, holdBlast: false, toldAt: 0, lastIsl: null, sparkAt: 0, trailAt: 0,
   };
 }
@@ -201,7 +206,7 @@ function blocker(scene, set, bd, i, groundY) {
   }
   // A label over the reinforced ones: what they need.
   if (bd.kind !== 'cracked') {
-    b.tag = scene.add.text(x, y - h / 2 - 34, bd.kind === 'wall' ? BLAST_HINT : 'Big blast!', heading(22, '#ffffff', {
+    b.tag = scene.add.text(x, y - h / 2 - 34, bd.kind === 'wall' ? WALL_HINT : 'Z power!', heading(22, '#ffffff', {
       stroke: COLORS.inkCss, strokeThickness: 6,
     })).setOrigin(0.5).setDepth(8);
   }
@@ -221,7 +226,7 @@ export function buildHud(scene) {
     .setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
   zp.scoreText = scene.add.text(MAP_W - 130, 58, 'Score 0', heading(24, COLORS.yellowCss, { stroke: COLORS.inkCss, strokeThickness: 6 }))
     .setOrigin(0, 0.5).setScrollFactor(0).setDepth(21);
-  // The big blast's touch button (hold it), beside the jump button with the
+  // The Z power touch button (tap it), beside the jump button with the
   // other rooms' power buttons (2026-11-20; it was under the meter's right
   // end, too far from a thumb on a phone).
   const btn = scene.add.image(MAP_W - 210, MAP_H - 80, 'btn-power').setScale(0.8).setTint(0xffc93c)
@@ -231,7 +236,7 @@ export function buildHud(scene) {
   btn.on('pointerup', up);
   btn.on('pointerout', up);
   zp.btn = btn;
-  zp.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'Hold X · K · F', text(15, '#ffffff', {
+  zp.btnLabel = scene.add.text(MAP_W - 210, MAP_H - 30, 'X · K · F', text(15, '#ffffff', {
     backgroundColor: 'rgba(43,29,18,0.7)', padding: { x: 6, y: 2 },
   })).setOrigin(0.5, 0).setScrollFactor(0).setDepth(21).setAlpha(0.4).setVisible(!TOUCH_ONLY);
 }
@@ -256,31 +261,27 @@ export function collide(scene, pair) {
   if (bl.broken) { pair.isActive = false; return true; }
   const zp = scene.zp;
   const m = zp.meter;
-  const blasting = scene.time.now < zp.blastUntil;
-  if (blasting) {
+  // With Z power on he smashes through (the wall needs Super Z power).
+  if (zp.powerOn && (bl.kind !== 'wall' || zp.superOn)) {
     pair.isActive = false;
-    smash(scene, bl, zp.fullBlast);
+    smash(scene, bl, zp.superOn);
     return true;
   }
-  if (bl.kind === 'cracked' && m.fill >= 1 - 1e-6) {
-    pair.isActive = false;
-    m.fill = Math.max(0, m.fill - 1);
-    smash(scene, bl, false);
-    scene.floatText(bl.x, bl.y - bl.h / 2 - 30, 'Wrecking Ball!');
-    return true;
-  }
-  // Not enough: bounce off, and (on the main line) a trail of grubberries
-  // pops out behind him, enough to charge what it needs.
-  const need = bl.kind === 'cracked' ? 1 : SEGMENTS;
+  // Without it: bounce off. A boulder is to jump; the wall, on the main
+  // line, pops out grubberries behind him, enough to fill the meter.
   const now = scene.time.now;
   if (now > zp.toldAt + 900) {
     zp.toldAt = now;
-    scene.floatText(bl.x, bl.y - bl.h / 2 - 30, bl.kind === 'cracked' ? 'Fill a segment!' : m.full ? BLAST_HINT : 'Fill the Z meter!');
+    const say = bl.kind === 'cracked' ? (m.fill >= 1 ? 'Jump it, or Z power!' : 'Jump it!')
+      : bl.kind === 'wall' ? (m.full ? POWER_HINT : 'Fill the Z meter!')
+        : (m.fill >= 1 ? POWER_HINT : 'Fill a segment!');
+    scene.floatText(bl.x, bl.y - bl.h / 2 - 30, say);
   }
-  const live = bl.popped.filter((s) => !s.got).length;
-  const short = Math.ceil((need - m.fill) * BERRIES_PER_SEGMENT - 1e-6);
-  const main = bl.kind !== 'reinforced';
-  if (main && short > 0 && live < short) popBerries(scene, bl, short - live);
+  if (bl.kind === 'wall') {
+    const live = bl.popped.filter((s) => !s.got).length;
+    const short = Math.ceil((SEGMENTS - m.fill) * BERRIES_PER_SEGMENT - 1e-6);
+    if (short > 0 && live < short) popBerries(scene, bl, short - live);
+  }
   return true;
 }
 
@@ -325,11 +326,6 @@ function smash(scene, bl, full) {
     bolt.hidden = false;
     scene.tweens.add({ targets: bolt, x: bolt.to[0], y: bolt.to[1], duration: 300, delay: k * 50, ease: 'Back.Out' });
   });
-  if (full && big) {
-    scene.zp.bonusBolts += FULL_BONUS;
-    refresh(scene.zp);
-    scene.floatText(bl.x, bl.y - bl.h / 2 - 70, `+${FULL_BONUS} Z-bolt!`);
-  }
 }
 
 // Once a physics step. True if it moved him (the scene's own rolling is skipped).
@@ -343,44 +339,38 @@ export function step(scene, time, dir, grounded) {
     const isl = scene.islandAt(b.position.x, b.position.y);
     if (isl) zp.lastIsl = isl;
   }
-  // The blast: along the ground at blast speed the way he was facing.
-  if (time < zp.blastUntil) {
-    const a = grounded ? scene.slopeAt(b.position.x, b.position.y + 38) : null;
-    const v = zp.blastSpeed;
-    if (a !== null && Math.abs(a) < 0.9) M.Body.setVelocity(b, { x: zp.blastDir * v * Math.cos(a), y: zp.blastDir * v * Math.sin(a) });
-    else M.Body.setVelocity(b, { x: zp.blastDir * v, y: Math.min(b.velocity.y, 24) });
-    M.Body.setAngularVelocity(b, zp.blastDir * 0.6);
-    return true;
-  }
-  // Charging: held still, spinning up (it fires on release, however short).
-  if (zp.holdBlast && m.full && grounded && !zp.charging) {
-    zp.charging = true;
-    zp.chargeAt = time;
-    audio.sfx(scene, 'toss');
-  }
-  if (zp.charging) {
-    zp.charge = Math.min(1, (time - zp.chargeAt) / CHARGE_MS);
-    m.charge = zp.charge;
-    M.Body.setVelocity(b, { x: b.velocity.x * 0.7, y: b.velocity.y });
-    M.Body.setAngularVelocity(b, zp.facing * (0.3 + 0.6 * zp.charge));
-    if (zp.charge >= 1 && !zp.maxSaid) { zp.maxSaid = true; scene.floatText(b.position.x, b.position.y - 90, 'MAX!'); audio.sfx(scene, 'correct'); }
-    if (!zp.holdBlast) {
-      // Let go: blast.
-      zp.charging = false;
-      zp.maxSaid = false;
-      zp.fullBlast = zp.charge >= 1;
-      zp.blastDir = zp.facing;
-      zp.blastSpeed = BLAST_SPEED + BLAST_EXTRA * zp.charge;
-      zp.blastUntil = time + BLAST_MS + BLAST_EXTRA_MS * zp.charge;
-      m.fill = 0;
-      m.charge = 0;
-      scene.cameras.main.shake(zp.fullBlast ? 300 : 160, zp.fullBlast ? 0.012 : 0.006);
-      scene.floatText(b.position.x, b.position.y - 90, zp.fullBlast ? 'Super Wrecking Ball!' : 'Wrecking Ball!');
-      audio.sfx(scene, 'splash');
+  // Z power: a time limit, set when it starts (POWER_SECS for each segment
+  // he had), counting down whatever he picks up. The meter shows it
+  // draining, but grubberries he gets meanwhile charge it for next time.
+  // (Ending it when the meter was empty ran forever on a grubberry run.)
+  if (zp.powerOn) {
+    zp.powerLeft -= 1 / 60;
+    m.fill = Math.max(0, m.fill - 1 / (60 * POWER_SECS));
+    if (zp.powerLeft <= 0) {
+      zp.powerOn = false;
+      zp.superOn = false;
+      scene.floatText(b.position.x, b.position.y - 90, 'Z power ran out');
     }
-    return true;
   }
   return false;
+}
+
+// A tap of the power key: Z power, if there's a segment to spend.
+function tapPower(scene, time) {
+  const zp = scene.zp;
+  const m = zp.meter;
+  const b = scene.ball;
+  if (zp.powerOn) return;
+  if (m.fill < 1 - 1e-6) {
+    if (time > zp.toldAt + 1200) { zp.toldAt = time; scene.floatText(b.position.x, b.position.y - 90, 'Fill a segment first!'); }
+    return;
+  }
+  zp.powerOn = true;
+  zp.superOn = m.full;
+  zp.powerLeft = m.fill * POWER_SECS;
+  scene.cameras.main.shake(zp.superOn ? 300 : 160, zp.superOn ? 0.012 : 0.006);
+  scene.floatText(b.position.x, b.position.y - 90, zp.superOn ? 'Super Z power!' : 'Z power!');
+  audio.sfx(scene, 'energy');
 }
 
 // Every frame: the blast key, pickups, the meter, the effects.
@@ -389,11 +379,10 @@ export function update(scene, time, delta) {
   const k = scene.keys;
   const b = scene.ball;
   const m = zp.meter;
+  // the power key: a tap (press, not hold) starts Z power
   zp.holdBlast = k.X.isDown || k.K.isDown || k.F.isDown || !!scene.touch.blast;
-  if (zp.holdBlast && !m.full && !zp.charging && time > zp.toldAt + 1200 && (Phaser.Input.Keyboard.JustDown(k.X) || Phaser.Input.Keyboard.JustDown(k.K) || Phaser.Input.Keyboard.JustDown(k.F))) {
-    zp.toldAt = time;
-    scene.floatText(b.position.x, b.position.y - 90, 'Fill the Z meter first!');
-  }
+  if (zp.holdBlast && !zp.tapWas) tapPower(scene, time);
+  zp.tapWas = zp.holdBlast;
   // Pickups.
   const near = (s, r) => !s.got && !s.hidden && Math.abs(s.x - b.position.x) < r && Math.abs(s.y - b.position.y) < r;
   zp.berries.forEach((s) => {
@@ -417,26 +406,16 @@ export function update(scene, time, delta) {
     refresh(zp);
   });
   m.update(time);
-  zp.btn.setAlpha(m.full ? 1 : 0.65);
-  zp.btnLabel.setAlpha(m.full ? 1 : 0.4);
-  // Charging: he spins fast in place, sparks round him. Blasting: a trail.
+  const can = m.fill >= 1 - 1e-6 || zp.powerOn;
+  zp.btn.setAlpha(can ? 1 : 0.65);
+  zp.btnLabel.setAlpha(can ? 1 : 0.4);
+  // Z power on: a trail of glowing copies behind him (gold when it's Super).
   const s = scene.shaan;
-  if (zp.charging) {
-    s.anims.timeScale = 2 + 3 * zp.charge;
-    if (time - zp.sparkAt > 50) {
-      zp.sparkAt = time;
-      const a = Math.random() * Math.PI * 2;
-      const r = 50 + Math.random() * 20;
-      const sp = scene.add.star(b.position.x + Math.cos(a) * r, b.position.y + Math.sin(a) * r, 4, 3, 9,
-        zp.charge >= 1 ? 0xffffff : 0xffe600).setStrokeStyle(2, COLORS.ink).setDepth(6);
-      scene.tweens.add({ targets: sp, x: b.position.x, y: b.position.y, scale: 0.2, duration: 260, onComplete: () => sp.destroy() });
-    }
-  }
-  if (time < zp.blastUntil && time - zp.trailAt > 40) {
+  if (zp.powerOn && time - zp.trailAt > 50) {
     zp.trailAt = time;
     const ghost = scene.add.sprite(s.x, s.y, s.texture.key, s.frame.name).setOrigin(s.originX, s.originY)
       .setScale(s.scaleX, s.scaleY).setFlipX(s.flipX).setDepth(s.depth - 0.1).setAlpha(0.6)
-      .setTint(zp.fullBlast ? 0xfff27a : 0x9be2ff);
+      .setTint(zp.superOn ? 0xfff27a : 0x9be2ff);
     scene.tweens.add({ targets: ghost, alpha: 0, duration: 300, onComplete: () => ghost.destroy() });
   }
 }
@@ -477,8 +456,6 @@ export function respawn(scene) {
   const y = surfaceY(isl.curve, nx) - 38 - 6;
   M.Body.setPosition(b, { x: nx, y });
   M.Body.setVelocity(b, { x: 0, y: 0 });
-  zp.blastUntil = 0;
-  zp.charging = false;
   scene.jumping = false;
   scene.cameras.main.flash(250, 255, 255, 255);
   scene.floatText(nx, y - 120, 'Whoops! Go again!');

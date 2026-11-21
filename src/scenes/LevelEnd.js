@@ -9,12 +9,12 @@
 //        questions, hasCrates, bonus, hasBonus }
 //   levelData: set for a test run, to play it again
 
-import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=4607924';
-import { timesFor } from '../data/levelTimes.js?v=4607924';
-import { state } from '../state.js?v=4607924';
-import { COLORS, heading, text, makeButton } from '../theme.js?v=4607924';
-import { LETTERS, AWARDS, earn, held, lettersFound, allLetters, timeTier, tierInfo, clock, pawCard } from '../paws.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
+import { MAP_W, MAP_H, LEVELS } from '../data/world.js?v=d69665c';
+import { timesFor } from '../data/levelTimes.js?v=d69665c';
+import { state } from '../state.js?v=d69665c';
+import { COLORS, heading, text, makeButton } from '../theme.js?v=d69665c';
+import { LETTERS, AWARDS, earn, held, lettersFound, allLetters, timeTier, tierInfo, clock, pawCard } from '../paws.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
 
 export class LevelEndScene extends Phaser.Scene {
   constructor() {

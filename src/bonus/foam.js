@@ -8,7 +8,9 @@
 //   at the surface, from his tail, at an angle: the arrows swing the aim,
 //   and a dotted line predicts the path, bouncing off the screen's edges.
 //   After each throw he dives, fetches the next puff from the floor by
-//   himself (its kind chosen for him) and comes back to the spot.
+//   himself and comes back to the spot. The floor's puffs are a queue
+//   (Chris, 2026-11-20): he always takes the leftmost, which glows, the rest
+//   slide along and a new one (its kind chosen as before) joins at the right.
 // - Four kinds, each a tint with its own picture. A thrown puff sticks
 //   where it meets the field; five or more of a kind connected break. Puffs
 //   left with nothing holding them up fall into the water (a match on a
@@ -23,13 +25,13 @@
 //   scored. One field per bonus level. Clear it and he leaves the pool and
 //   walks along the shore to the portal, off screen till then.
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { tierInfo, clock } from '../paws.js?v=4607924';
-import { play } from '../actors.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { tierInfo, clock } from '../paws.js?v=d69665c';
+import { play } from '../actors.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
 
 const MATCH = 5;                      // this many connected break (the user; 6 until 2026-11-18)
 const PER_PUFF = 1 / 10;              // meter charge for each puff broken or fallen (provisional)
@@ -160,7 +162,11 @@ export function build(scene) {
     const s = scene.add.image(x, f.floor, puffTexture(scene, kind, f.radius)).setScale(2).setDepth(1.55).setAlpha(0.9);
     scene.tweens.add({ targets: s, y: f.floor - 5, duration: 900 + (x % 7) * 60, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     return { x, kind, sprite: s, taken: false };
-  });
+  }).sort((a, b) => a.x - b.x);
+  // the next one he'll fetch (the leftmost): a soft glow behind it
+  fm.nextGlow = scene.add.ellipse(0, 0, f.radius * 5, f.radius * 5, 0xfff2a0, 0.55).setDepth(1.5);
+  scene.tweens.add({ targets: fm.nextGlow, alpha: 0.2, scale: 0.85, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  markNext(scene);
   fm.held = pick(scene);
   fm.heldImg = scene.add.image(0, 0, puffTexture(scene, fm.held, f.radius)).setScale(2).setDepth(6);
   fm.aimG = scene.add.graphics().setDepth(7);
@@ -329,21 +335,66 @@ function throwPuff(scene) {
   scene.time.delayedCall(120, () => fetchNext(scene));
 }
 
+// The floor's puffs are a queue, left to right (Chris, 2026-11-20). Taking
+// the first moves each one a place left (they slide over); a new kind,
+// chosen as before from what's in the field, joins at the right end.
+function shiftQueue(scene) {
+  const fm = scene.fm;
+  const f = F(scene);
+  const n = fm.slots.length;
+  for (let i = 0; i < n - 1; i++) fm.slots[i].kind = fm.slots[i + 1].kind;
+  fm.slots[n - 1].kind = pick(scene);
+  fm.slots.forEach((s, i) => {
+    s.sprite.setTexture(puffTexture(scene, s.kind, f.radius));
+    if (i < n - 1) {
+      // slide in from the right
+      const from = fm.slots[i + 1].x - s.x;
+      s.sprite.x = s.x + from;
+      scene.tweens.add({ targets: s.sprite, x: s.x, duration: 350, ease: 'Sine.Out' });
+    } else {
+      s.sprite.setAlpha(0);
+      scene.tweens.add({ targets: s.sprite, alpha: 0.9, duration: 350 });
+    }
+  });
+  markNext(scene);
+}
+
+// A queued kind that's no longer in the field is no use: swap it for one
+// that is (left to right, so the order the kid sees stays the order he takes).
+function refreshQueue(scene) {
+  const fm = scene.fm;
+  const f = F(scene);
+  const inField = new Set([...section(scene).cells.values()].map((q) => q.kind));
+  if (!inField.size) return;
+  fm.slots.forEach((s) => {
+    if (!inField.has(s.kind)) {
+      s.kind = pick(scene);
+      s.sprite.setTexture(puffTexture(scene, s.kind, f.radius));
+    }
+  });
+  markNext(scene);
+}
+
+// The next one he'll fetch glows and bobs higher.
+function markNext(scene) {
+  const fm = scene.fm;
+  if (!fm.nextGlow) return;
+  const s = fm.slots[0];
+  fm.nextGlow.setPosition(s.x, F(scene).floor);
+}
+
 // Down to the floor for the next puff (its kind chosen for him) and back up
 // to the spot (the user: he fetches by himself, from one spot).
 function fetchNext(scene) {
   const fm = scene.fm;
   const f = F(scene);
   if (fm.moving) return;
-  const kind = pick(scene);
-  const free = fm.slots.filter((s) => !s.taken);
-  let slot = free.filter((s) => s.kind === kind).sort((a, b) => Math.abs(a.x - f.spot[0]) - Math.abs(b.x - f.spot[0]))[0];
-  if (!slot) {
-    // none of that kind lying there: the nearest one turns into it
-    slot = free.sort((a, b) => Math.abs(a.x - f.spot[0]) - Math.abs(b.x - f.spot[0]))[0];
-    slot.kind = kind;
-    slot.sprite.setTexture(puffTexture(scene, kind, f.radius));
-  }
+  // In order (Chris, 2026-11-20: "would like the seafoam to come out in
+  // order, helps strategize shots"): he always takes the floor's leftmost
+  // puff, the one that glows. A kind that's gone from the field is swapped
+  // first, so he never fetches one that can't match.
+  refreshQueue(scene);
+  const slot = fm.slots[0];
   slot.taken = true;
   fm.fetching = true;
   const M = Matter();
@@ -358,17 +409,12 @@ function fetchNext(scene) {
     targets: go, t: 1, duration: FETCH_MS, ease: 'Sine.InOut',
     onUpdate: () => M.Body.setPosition(b, { x: px + (bx - px) * go.t, y: py + (by - py) * go.t }),
     onComplete: () => {
-      // grab it; a new one settles in its place a moment later
-      slot.sprite.setVisible(false);
+      // grab it; the rest move up one place and a new one joins at the right
       fm.held = slot.kind;
       fm.hasPuff = true;
       fm.heldImg.setTexture(puffTexture(scene, fm.held, f.radius));
-      scene.time.delayedCall(700, () => {
-        slot.kind = pick(scene);
-        slot.sprite.setTexture(puffTexture(scene, slot.kind, f.radius)).setVisible(true).setAlpha(0);
-        scene.tweens.add({ targets: slot.sprite, alpha: 0.9, duration: 300 });
-        slot.taken = false;
-      });
+      shiftQueue(scene);
+      slot.taken = false;
       const back = { t: 0 };
       scene.tweens.add({
         targets: back, t: 1, duration: FETCH_MS, ease: 'Sine.InOut',

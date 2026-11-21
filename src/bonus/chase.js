@@ -23,13 +23,14 @@
 //   the medal is for how fast. A cap (90 s) ends it anyway.
 // All the numbers are provisional (the user: tweak once played).
 
-import { ZMeter, SEGMENTS } from '../zmeter.js?v=4607924';
-import { MAP_W, MAP_H } from '../data/world.js?v=4607924';
-import { texKey } from '../data/artsets.js?v=4607924';
-import { tierInfo, clock } from '../paws.js?v=4607924';
-import { audio } from '../audio.js?v=4607924';
-import { COLORS, heading, text } from '../theme.js?v=4607924';
-import { TOUCH_ONLY } from '../touch.js?v=4607924';
+import { ZMeter, SEGMENTS } from '../zmeter.js?v=d69665c';
+import { MAP_W, MAP_H } from '../data/world.js?v=d69665c';
+import { texKey } from '../data/artsets.js?v=d69665c';
+import { tierInfo, clock } from '../paws.js?v=d69665c';
+import { audio } from '../audio.js?v=d69665c';
+import { COLORS, heading, text } from '../theme.js?v=d69665c';
+import { bandId } from './band.js?v=d69665c';
+import { TOUCH_ONLY } from '../touch.js?v=d69665c';
 
 const SEG = 200;              // a segment's length (world units)
 const ROAD = 700;             // the trail's half-width (world units)
@@ -125,7 +126,16 @@ export function build(scene, set) {
     kind: o.k, key: `chase-${o.k}`, x: o.x, w: o.k === 'log' ? 2 * ROAD * segs[o.s].h * 1.15 : SIZES[o.k], hit: false,
   }));
   ch.logs = d.obstacles.filter((o) => o.k === 'log').map((o) => o.s);
-  ch.bolts = d.bolts || 0;
+  // How many times it bolts ("Almost!") depends on the difficulty band
+  // (Chris, 2026-11-20: "maybe each difficulty has a different number of
+  // 'almost!'?"): the data's `bolts` is Pioneer's; Explorer gets two
+  // thirds of them, Junior Explorer a third (door 1: 6, 4, 2). Its real
+  // escapes are the data's that still fall within the band's bolts.
+  const band = bandId();
+  const full = d.bolts || 0;
+  ch.boltsTotal = band === 'pioneer' ? full : Math.max(1, Math.round(full * (band === 'explorer' ? 2 / 3 : 1 / 3)));
+  ch.escapes = (d.escapes || []).filter((n) => n <= ch.boltsTotal);
+  ch.bolts = ch.boltsTotal;
   const fruit = texKey(scene.room.artset, set.food);
   ch.fruitKey = scene.textures.exists(fruit) ? fruit : 'chase-fruit';
   d.bananlers.forEach((b) => segs[b.s] && segs[b.s].things.push({ kind: 'fruit', key: ch.fruitKey, x: b.x, w: SIZES.fruit, got: false }));
@@ -376,8 +386,8 @@ export function step(scene, time, dir) {
   const gap = ch.lopeZ - (ch.pos + PLAYER_Z);
   if (gap < SEG * 2.5 && ch.bolts > 0 && ch.boltT <= 0) {
     ch.bolts -= 1;
-    const n = (d.bolts || 0) - ch.bolts;
-    ch.escape = (d.escapes || []).includes(n);
+    const n = ch.boltsTotal - ch.bolts;
+    ch.escape = ch.escapes.includes(n);
     ch.boltT = ch.escape ? 4 : 1.6;
     say(scene, MAP_W / 2, 190, ch.escape ? 'It got away!' : ch.bolts ? 'Almost!' : "Almost... it's getting tired!");
     audio.sfx(scene, ch.escape ? 'splash' : 'toss');
@@ -616,7 +626,7 @@ export function update(scene, time) {
   ch.gapBar.fillStyle(0xff8a1e, 1).fillRoundedRect(bx0 - 10, 91, (bx1 - bx0 + 20) * frac, 12, 6);
   ch.gapMe.x = bx0 + (bx1 - bx0) * frac;
   // its bolts left: once they're gone it's tired and can be caught
-  const nb = D(scene).bolts || 0;
+  const nb = ch.boltsTotal || 0;
   for (let i = 0; i < nb; i++) {
     const cx = bx1 + 44 + i * 18;
     ch.gapBar.fillStyle(COLORS.ink, 1).fillCircle(cx, 97, 8);
